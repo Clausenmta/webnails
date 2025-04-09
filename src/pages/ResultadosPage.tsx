@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,7 +17,20 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line } from "recharts";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 // Sample monthly data for the charts
 const monthlyData = [
@@ -56,9 +68,12 @@ const expenseData = [
   { categoria: "Otros", monto: 9000 },
 ];
 
+// Lista de años disponibles
+const availableYears = ["2023", "2024", "2025", "2026"];
+
 export default function ResultadosPage() {
-  const [selectedMonth, setSelectedMonth] = useState("Sep");
-  const [year, setYear] = useState("2023");
+  const [selectedMonth, setSelectedMonth] = useState("Mar");
+  const [year, setYear] = useState("2025");
 
   // Find the selected month data
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || monthlyData[0];
@@ -66,6 +81,18 @@ export default function ResultadosPage() {
   // Calculate percentages for current month
   const revenueGrowth = 8.2; // Sample growth percentage
   const profitGrowth = 12.5; // Sample growth percentage
+
+  const handleExportPDF = () => {
+    // Simulación de exportación a PDF
+    toast.success("Informe exportado a PDF correctamente");
+    console.log("Exportando a PDF para mes:", selectedMonth, "año:", year);
+  };
+
+  const handleExportExcel = () => {
+    // Simulación de exportación a Excel
+    toast.success("Informe exportado a Excel correctamente");
+    console.log("Exportando a Excel para mes:", selectedMonth, "año:", year);
+  };
 
   return (
     <div className="space-y-6">
@@ -76,33 +103,55 @@ export default function ResultadosPage() {
             Visualiza los resultados financieros del negocio
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="month">Mes</Label>
-            <select 
-              id="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {monthlyData.map((data) => (
-                <option key={data.month} value={data.month}>{data.month}</option>
-              ))}
-            </select>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Seleccionar mes" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthlyData.map((data) => (
+                  <SelectItem key={data.month} value={data.month}>
+                    {data.month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="year">Año</Label>
-            <Input 
-              id="year" 
-              value={year} 
-              onChange={(e) => setYear(e.target.value)}
-              className="w-24"
-            />
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Seleccionar año" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((yr) => (
+                  <SelectItem key={yr} value={yr}>
+                    {yr}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Button className="mt-auto bg-salon-400 hover:bg-salon-500">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Informe
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="mt-auto bg-salon-400 hover:bg-salon-500">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Informe
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48">
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar a PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar a Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

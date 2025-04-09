@@ -1,7 +1,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 
 export function AppHeader() {
   return (
@@ -19,20 +18,6 @@ export function AppHeader() {
       <div className="flex h-12 items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger />
-          <div className="md:flex items-center gap-2 hidden">
-            <img 
-              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
-              alt="Nails&Co" 
-              className="h-6 w-auto object-contain"
-            />
-          </div>
-          <div className="relative md:w-64 hidden sm:block">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar..."
-              className="w-full pl-8 bg-secondary"
-            />
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" aria-label="Notificaciones">

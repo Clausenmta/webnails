@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -146,7 +144,6 @@ export default function GiftCardsPage() {
     issueDate: new Date().toISOString().split('T')[0]
   });
 
-  // New state variables for dialog controls
   const [isNewGiftCardDialogOpen, setIsNewGiftCardDialogOpen] = useState(false);
   const [isViewDetailsDialogOpen, setIsViewDetailsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -246,20 +243,17 @@ export default function GiftCardsPage() {
     });
   };
 
-  // Handle view details
   const handleViewDetails = (card: GiftCard) => {
     setSelectedGiftCard(card);
     setIsViewDetailsDialogOpen(true);
   };
 
-  // Handle edit
   const handleEdit = (card: GiftCard) => {
     setSelectedGiftCard(card);
     setEditGiftCard({...card});
     setIsEditDialogOpen(true);
   };
 
-  // Handle save edit
   const handleSaveEdit = () => {
     if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
       toast.error({
@@ -274,6 +268,7 @@ export default function GiftCardsPage() {
         return {
           ...card,
           ...editGiftCard,
+          status: editGiftCard.status as GiftCardStatus || card.status
         } as GiftCard;
       }
       return card;
@@ -289,13 +284,11 @@ export default function GiftCardsPage() {
     });
   };
 
-  // Handle delete
   const handleDelete = (card: GiftCard) => {
     setSelectedGiftCard(card);
     setIsDeleteDialogOpen(true);
   };
 
-  // Confirm delete
   const handleConfirmDelete = () => {
     if (!selectedGiftCard) return;
     
@@ -310,13 +303,11 @@ export default function GiftCardsPage() {
     });
   };
 
-  // Handle mark as redeemed
   const handleMarkAsRedeemed = (card: GiftCard) => {
     setSelectedGiftCard(card);
     setIsConfirmRedeemDialogOpen(true);
   };
 
-  // Confirm mark as redeemed
   const handleConfirmRedeem = () => {
     if (!selectedGiftCard) return;
     
@@ -324,7 +315,7 @@ export default function GiftCardsPage() {
       if (card.id === selectedGiftCard.id) {
         return {
           ...card,
-          status: "Canjeada",
+          status: "Canjeada" as GiftCardStatus,
           receivedDate: new Date().toISOString().split('T')[0]
         };
       }
@@ -780,7 +771,6 @@ export default function GiftCardsPage() {
         </CardContent>
       </Card>
 
-      {/* New Gift Card Dialog */}
       <Dialog open={isNewGiftCardDialogOpen} onOpenChange={setIsNewGiftCardDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -900,7 +890,6 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* View Details Dialog */}
       <Dialog open={isViewDetailsDialogOpen} onOpenChange={setIsViewDetailsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -968,7 +957,6 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Edit Gift Card Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -1101,7 +1089,6 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
@@ -1133,7 +1120,6 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Redeem Confirmation Dialog */}
       <Dialog open={isConfirmRedeemDialogOpen} onOpenChange={setIsConfirmRedeemDialogOpen}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
@@ -1166,7 +1152,6 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>

@@ -16,33 +16,37 @@ import ResultadosPage from "./pages/ResultadosPage";
 import FacturacionPage from "./pages/FacturacionPage";
 import NotFound from "./pages/NotFound";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/gift-cards" element={<GiftCardsPage />} />
-            <Route path="/stock" element={<StockPage />} />
-            <Route path="/arreglos" element={<ArreglosPage />} />
-            <Route path="/gastos" element={<GastosPage />} />
-            <Route path="/empleados" element={<EmpleadosPage />} />
-            <Route path="/resultados" element={<ResultadosPage />} />
-            <Route path="/facturacion" element={<FacturacionPage />} />
-          </Route>
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Create the App component as a function component to properly use hooks
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/gift-cards" element={<GiftCardsPage />} />
+              <Route path="/stock" element={<StockPage />} />
+              <Route path="/arreglos" element={<ArreglosPage />} />
+              <Route path="/gastos" element={<GastosPage />} />
+              <Route path="/empleados" element={<EmpleadosPage />} />
+              <Route path="/resultados" element={<ResultadosPage />} />
+              <Route path="/facturacion" element={<FacturacionPage />} />
+            </Route>
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

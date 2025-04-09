@@ -207,7 +207,7 @@ export default function FacturacionPage() {
             <SelectValue placeholder="Filtrar por estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="Pagada">Pagada</SelectItem>
             <SelectItem value="Pendiente">Pendiente</SelectItem>
             <SelectItem value="Cancelada">Cancelada</SelectItem>

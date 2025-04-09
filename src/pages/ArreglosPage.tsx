@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Edit, Trash, ArrowUpDown, ChevronDown, FileText, FileSpreadsheet, Calendar as CalendarIcon, CheckSquare, Filter, X, Calendar } from "lucide-react";
+import { Plus, Search, Edit, Trash, ArrowUpDown, ChevronDown, FileText, FileSpreadsheet, Calendar as CalendarIcon, CheckSquare, Filter, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,18 @@ const manicuristasOptions = [
 // Descuenta options
 const descuentaOptions = ["SI", "NO"];
 
+// Define interface for filters
+interface Filtros {
+  estados: string[];
+  manicuristasOriginal: string[];
+  manicuristasArreglo: string[];
+  fechaDesde: string | null;
+  fechaHasta: string | null;
+  descuenta: string;
+  precioMinimo: string;
+  precioMaximo: string;
+}
+
 export default function ArreglosPage() {
   const [arreglos, setArreglos] = useState(initialArreglos);
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,7 +111,7 @@ export default function ArreglosPage() {
   });
 
   // Filtros
-  const [filtros, setFiltros] = useState({
+  const [filtros, setFiltros] = useState<Filtros>({
     estados: [],
     manicuristasOriginal: [],
     manicuristasArreglo: [],
@@ -110,17 +122,26 @@ export default function ArreglosPage() {
     precioMaximo: ""
   });
 
-  const [filtrosAplicados, setFiltrosAplicados] = useState({});
+  const [filtrosAplicados, setFiltrosAplicados] = useState<Filtros>({
+    estados: [],
+    manicuristasOriginal: [],
+    manicuristasArreglo: [],
+    fechaDesde: null,
+    fechaHasta: null,
+    descuenta: "",
+    precioMinimo: "",
+    precioMaximo: ""
+  });
   const [cantidadFiltrosAplicados, setCantidadFiltrosAplicados] = useState(0);
   
   // Vista activa para la tabla
   const [vistaActiva, setVistaActiva] = useState("todos"); // todos, pendientes, proceso, completados
 
   // Calendar states
-  const [fechaComandaDate, setFechaComandaDate] = useState(undefined);
-  const [fechaArregloDate, setFechaArregloDate] = useState(undefined);
-  const [fechaDesdeDate, setFechaDesdeDate] = useState(undefined);
-  const [fechaHastaDate, setFechaHastaDate] = useState(undefined);
+  const [fechaComandaDate, setFechaComandaDate] = useState<Date | undefined>(undefined);
+  const [fechaArregloDate, setFechaArregloDate] = useState<Date | undefined>(undefined);
+  const [fechaDesdeDate, setFechaDesdeDate] = useState<Date | undefined>(undefined);
+  const [fechaHastaDate, setFechaHastaDate] = useState<Date | undefined>(undefined);
 
   // Checkbox state for "Misma manicura que original"
   const [mismaManicura, setMismaManicura] = useState(false);
@@ -169,14 +190,23 @@ export default function ArreglosPage() {
     });
     setFechaDesdeDate(undefined);
     setFechaHastaDate(undefined);
-    setFiltrosAplicados({});
+    setFiltrosAplicados({
+      estados: [],
+      manicuristasOriginal: [],
+      manicuristasArreglo: [],
+      fechaDesde: null,
+      fechaHasta: null,
+      descuenta: "",
+      precioMinimo: "",
+      precioMaximo: ""
+    });
     setCantidadFiltrosAplicados(0);
     setIsFilterDialogOpen(false);
     toast.success("Filtros restablecidos");
   };
 
   // Handle filter changes
-  const handleFilterChange = (field, value) => {
+  const handleFilterChange = (field: keyof Filtros, value: any) => {
     setFiltros({
       ...filtros,
       [field]: value
@@ -184,19 +214,21 @@ export default function ArreglosPage() {
   };
 
   // Handle toggle changes for multi-select filters
-  const handleToggleFilter = (field, value) => {
-    const currentValues = filtros[field] || [];
-    
-    if (currentValues.includes(value)) {
-      setFiltros({
-        ...filtros,
-        [field]: currentValues.filter(v => v !== value)
-      });
-    } else {
-      setFiltros({
-        ...filtros,
-        [field]: [...currentValues, value]
-      });
+  const handleToggleFilter = (field: keyof Filtros, value: string) => {
+    if (field === 'estados' || field === 'manicuristasOriginal' || field === 'manicuristasArreglo') {
+      const currentValues = filtros[field] || [];
+      
+      if (currentValues.includes(value)) {
+        setFiltros({
+          ...filtros,
+          [field]: currentValues.filter(v => v !== value)
+        });
+      } else {
+        setFiltros({
+          ...filtros,
+          [field]: [...currentValues, value]
+        });
+      }
     }
   };
 
@@ -213,17 +245,17 @@ export default function ArreglosPage() {
     if (!matchesSearch) return false;
     
     // Applied filters
-    if (filtrosAplicados.estados && filtrosAplicados.estados.length > 0 && 
+    if (filtrosAplicados.estados.length > 0 && 
         !filtrosAplicados.estados.includes(arreglo.estado)) {
       return false;
     }
     
-    if (filtrosAplicados.manicuristasOriginal && filtrosAplicados.manicuristasOriginal.length > 0 && 
+    if (filtrosAplicados.manicuristasOriginal.length > 0 && 
         !filtrosAplicados.manicuristasOriginal.includes(arreglo.comandaOriginal)) {
       return false;
     }
     
-    if (filtrosAplicados.manicuristasArreglo && filtrosAplicados.manicuristasArreglo.length > 0 && 
+    if (filtrosAplicados.manicuristasArreglo.length > 0 && 
         !filtrosAplicados.manicuristasArreglo.includes(arreglo.arregladoPor)) {
       return false;
     }
@@ -263,17 +295,17 @@ export default function ArreglosPage() {
 
   // Sort arreglos based on sortConfig
   const sortedArreglos = [...filteredArreglos].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
+    if (a[sortConfig.key as keyof typeof a] < b[sortConfig.key as keyof typeof b]) {
       return sortConfig.direction === "asc" ? -1 : 1;
     }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
+    if (a[sortConfig.key as keyof typeof a] > b[sortConfig.key as keyof typeof b]) {
       return sortConfig.direction === "asc" ? 1 : -1;
     }
     return 0;
   });
 
   // Handle sorting
-  const handleSort = (key) => {
+  const handleSort = (key: string) => {
     setSortConfig({
       key,
       direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc",
@@ -308,7 +340,7 @@ export default function ArreglosPage() {
   };
 
   // Open edit dialog
-  const handleEditClick = (arreglo) => {
+  const handleEditClick = (arreglo: typeof initialArreglos[0]) => {
     setCurrentArreglo(arreglo);
     setFechaComandaDate(arreglo.fechaComanda ? new Date(arreglo.fechaComanda) : undefined);
     setFechaArregloDate(arreglo.fechaArreglo ? new Date(arreglo.fechaArreglo) : undefined);
@@ -317,7 +349,7 @@ export default function ArreglosPage() {
   };
 
   // Handle form input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCurrentArreglo({
       ...currentArreglo,
@@ -326,7 +358,7 @@ export default function ArreglosPage() {
   };
 
   // Handle select changes
-  const handleSelectChange = (name, value) => {
+  const handleSelectChange = (name: string, value: string) => {
     setCurrentArreglo({
       ...currentArreglo,
       [name]: value,
@@ -342,7 +374,7 @@ export default function ArreglosPage() {
   };
 
   // Handle checkbox change
-  const handleMismaManicuraChange = (checked) => {
+  const handleMismaManicuraChange = (checked: boolean) => {
     setMismaManicura(checked);
     
     // If checked and there's a comanda original selected, auto-fill arregladoPor
@@ -355,7 +387,7 @@ export default function ArreglosPage() {
   };
 
   // Handle date changes
-  const handleDateChange = (name, date) => {
+  const handleDateChange = (name: string, date: Date | undefined) => {
     if (name === "fechaComanda") {
       setFechaComandaDate(date);
       setCurrentArreglo({
@@ -419,7 +451,7 @@ export default function ArreglosPage() {
   };
 
   // Delete arreglo
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     if (confirm("¿Está seguro de que desea eliminar este arreglo?")) {
       const updatedArreglos = arreglos.filter(arreglo => arreglo.id !== id);
       setArreglos(updatedArreglos);
@@ -438,7 +470,7 @@ export default function ArreglosPage() {
     // Implement actual Excel export functionality here
   };
 
-  const getEstadoBadgeClass = (estado) => {
+  const getEstadoBadgeClass = (estado: string) => {
     switch (estado) {
       case 'Completado': return 'bg-green-100 text-green-800';
       case 'En proceso': return 'bg-blue-100 text-blue-800';
@@ -1166,7 +1198,7 @@ export default function ArreglosPage() {
                             !fechaDesdeDate && "text-muted-foreground"
                           )}
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {fechaDesdeDate ? format(fechaDesdeDate, "dd/MM/yyyy") : <span>Fecha inicio</span>}
                         </Button>
                       </PopoverTrigger>
@@ -1192,7 +1224,7 @@ export default function ArreglosPage() {
                             !fechaHastaDate && "text-muted-foreground"
                           )}
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {fechaHastaDate ? format(fechaHastaDate, "dd/MM/yyyy") : <span>Fecha fin</span>}
                         </Button>
                       </PopoverTrigger>

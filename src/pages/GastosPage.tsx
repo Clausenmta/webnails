@@ -41,10 +41,13 @@ import {
   Plus, 
   PencilIcon, 
   Trash2, 
-  ArrowUpDown 
+  ArrowUpDown,
+  Upload,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Tipos de gastos disponibles
 const TIPOS_GASTOS = [
@@ -67,6 +70,7 @@ const initialGastos = [
     monto: 250000,
     tipo: "Alquiler",
     comprobante: "Recibo #1234",
+    comprobanteFile: null,
     observaciones: ""
   },
   {
@@ -76,6 +80,7 @@ const initialGastos = [
     monto: 75000,
     tipo: "Insumos",
     comprobante: "Factura A-4567",
+    comprobanteFile: null,
     observaciones: "Proveedor: Beauty Supplies"
   },
   {
@@ -85,6 +90,7 @@ const initialGastos = [
     monto: 45000,
     tipo: "Servicios",
     comprobante: "Factura #89012",
+    comprobanteFile: null,
     observaciones: ""
   }
 ];
@@ -101,6 +107,7 @@ export default function GastosPage() {
     monto: 0,
     tipo: "",
     comprobante: "",
+    comprobanteFile: null as File | null,
     observaciones: ""
   });
   
@@ -127,6 +134,7 @@ export default function GastosPage() {
       monto: 0,
       tipo: "",
       comprobante: "",
+      comprobanteFile: null,
       observaciones: ""
     });
     setFechaGasto(undefined);
@@ -175,6 +183,18 @@ export default function GastosPage() {
       ...prev,
       fecha: date ? format(date, "yyyy-MM-dd") : ""
     }));
+  };
+
+  // Función para manejar el cambio en el archivo de comprobante
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setCurrentGasto(prev => ({
+        ...prev,
+        comprobante: file.name,
+        comprobanteFile: file
+      }));
+    }
   };
 
   // Función para agregar un nuevo gasto
@@ -345,7 +365,14 @@ export default function GastosPage() {
                   <TableCell className="text-right font-medium">
                     {formatCurrency(gasto.monto)}
                   </TableCell>
-                  <TableCell>{gasto.comprobante}</TableCell>
+                  <TableCell>
+                    {gasto.comprobante && (
+                      <div className="flex items-center gap-1">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{gasto.comprobante}</span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button 
@@ -464,13 +491,32 @@ export default function GastosPage() {
             
             <div className="grid gap-2">
               <Label htmlFor="comprobante">Comprobante</Label>
-              <Input
-                id="comprobante"
-                name="comprobante"
-                value={currentGasto.comprobante}
-                onChange={handleInputChange}
-                placeholder="Ej: Factura #1234"
-              />
+              <div className="grid gap-2">
+                <div className="flex items-center gap-2">
+                  <Label 
+                    htmlFor="file-upload" 
+                    className="cursor-pointer flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Upload className="h-4 w-4" />
+                      <span>{currentGasto.comprobante || "Adjuntar comprobante"}</span>
+                    </div>
+                  </Label>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                </div>
+                {currentGasto.comprobante && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FileText className="h-3 w-3" />
+                    <span>{currentGasto.comprobante}</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="grid gap-2">
@@ -580,13 +626,32 @@ export default function GastosPage() {
             
             <div className="grid gap-2">
               <Label htmlFor="edit-comprobante">Comprobante</Label>
-              <Input
-                id="edit-comprobante"
-                name="comprobante"
-                value={currentGasto.comprobante}
-                onChange={handleInputChange}
-                placeholder="Ej: Factura #1234"
-              />
+              <div className="grid gap-2">
+                <div className="flex items-center gap-2">
+                  <Label 
+                    htmlFor="edit-file-upload" 
+                    className="cursor-pointer flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Upload className="h-4 w-4" />
+                      <span>{currentGasto.comprobante || "Adjuntar comprobante"}</span>
+                    </div>
+                  </Label>
+                  <Input
+                    id="edit-file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                </div>
+                {currentGasto.comprobante && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FileText className="h-3 w-3" />
+                    <span>{currentGasto.comprobante}</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="grid gap-2">

@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown } from "lucide-react";
+import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown, PlusCircle, Pencil, Trash2, Calculator } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line } from "recharts";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { 
   Select,
   SelectContent,
@@ -30,6 +32,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
 
 // Sample monthly data for the charts
@@ -71,9 +88,81 @@ const expenseData = [
 // Lista de años disponibles
 const availableYears = ["2023", "2024", "2025", "2026"];
 
+// Categorías para gastos iniciales
+const initialExpenseCategories = [
+  "Remodelación",
+  "Mobiliario",
+  "Equipamiento",
+  "Licencias",
+  "Inventario inicial",
+  "Marketing inicial",
+  "Depósitos y garantías",
+  "Otros"
+];
+
+// Interfaz para los gastos iniciales
+interface InitialExpense {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+}
+
+// Ejemplo de gastos iniciales
+const sampleInitialExpenses: InitialExpense[] = [
+  { 
+    id: "1", 
+    date: "2025-01-15", 
+    description: "Remodelación del local", 
+    category: "Remodelación", 
+    amount: 120000 
+  },
+  { 
+    id: "2", 
+    date: "2025-01-20", 
+    description: "Compra de sillones de peluquería", 
+    category: "Mobiliario", 
+    amount: 85000 
+  },
+  { 
+    id: "3", 
+    date: "2025-01-25", 
+    description: "Secadores y planchas profesionales", 
+    category: "Equipamiento", 
+    amount: 45000 
+  },
+  { 
+    id: "4", 
+    date: "2025-02-01", 
+    description: "Inventario inicial de productos", 
+    category: "Inventario inicial", 
+    amount: 65000 
+  },
+  { 
+    id: "5", 
+    date: "2025-02-05", 
+    description: "Depósito y garantía del local", 
+    category: "Depósitos y garantías", 
+    amount: 90000 
+  }
+];
+
 export default function ResultadosPage() {
   const [selectedMonth, setSelectedMonth] = useState("Mar");
   const [year, setYear] = useState("2025");
+  const [initialExpenses, setInitialExpenses] = useState<InitialExpense[]>(sampleInitialExpenses);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
+  const [currentExpense, setCurrentExpense] = useState<InitialExpense | null>(null);
+  
+  // Formulario para nuevo gasto inicial
+  const [newExpense, setNewExpense] = useState<Omit<InitialExpense, 'id'>>({
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    category: initialExpenseCategories[0],
+    amount: 0
+  });
 
   // Find the selected month data
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || monthlyData[0];
@@ -81,6 +170,17 @@ export default function ResultadosPage() {
   // Calculate percentages for current month
   const revenueGrowth = 8.2; // Sample growth percentage
   const profitGrowth = 12.5; // Sample growth percentage
+
+  // Calcular el total de inversión inicial
+  const totalInitialInvestment = initialExpenses.reduce((total, expense) => total + expense.amount, 0);
+
+  // Función para calcular el ROI
+  const calculateROI = () => {
+    // Suponiendo que queremos calcular el ROI basado en la utilidad acumulada del año
+    const annualProfit = monthlyData.reduce((total, data) => total + data.utilidad, 0);
+    if (totalInitialInvestment === 0) return 0;
+    return (annualProfit / totalInitialInvestment) * 100;
+  };
 
   const handleExportPDF = () => {
     // Simulación de exportación a PDF
@@ -93,6 +193,61 @@ export default function ResultadosPage() {
     toast.success("Informe exportado a Excel correctamente");
     console.log("Exportando a Excel para mes:", selectedMonth, "año:", year);
   };
+
+  // Manejar la adición de un nuevo gasto inicial
+  const handleAddInitialExpense = () => {
+    const expense: InitialExpense = {
+      ...newExpense,
+      id: Date.now().toString(),
+    };
+    setInitialExpenses([...initialExpenses, expense]);
+    setNewExpense({
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      category: initialExpenseCategories[0],
+      amount: 0
+    });
+    setIsAddExpenseOpen(false);
+    toast.success("Gasto inicial agregado correctamente");
+  };
+
+  // Manejar la edición de un gasto existente
+  const handleEditInitialExpense = () => {
+    if (!currentExpense) return;
+    
+    const updatedExpenses = initialExpenses.map(expense => 
+      expense.id === currentExpense.id ? currentExpense : expense
+    );
+    
+    setInitialExpenses(updatedExpenses);
+    setCurrentExpense(null);
+    setIsEditExpenseOpen(false);
+    toast.success("Gasto inicial actualizado correctamente");
+  };
+
+  // Eliminar un gasto
+  const handleDeleteExpense = (id: string) => {
+    setInitialExpenses(initialExpenses.filter(expense => expense.id !== id));
+    toast.success("Gasto inicial eliminado correctamente");
+  };
+
+  // Preparar para editar un gasto
+  const prepareEditExpense = (expense: InitialExpense) => {
+    setCurrentExpense(expense);
+    setIsEditExpenseOpen(true);
+  };
+
+  // Agrupar gastos por categoría para mostrar en el gráfico
+  const initialExpensesByCategory = initialExpenseCategories.map(category => {
+    const total = initialExpenses
+      .filter(expense => expense.category === category)
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    
+    return {
+      category,
+      amount: total
+    };
+  }).filter(item => item.amount > 0);
 
   return (
     <div className="space-y-6">
@@ -339,6 +494,273 @@ export default function ResultadosPage() {
             </Table>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Sección de Gastos Iniciales */}
+      <div className="space-y-4">
+        <Accordion type="single" collapsible defaultValue="item-1">
+          <AccordionItem value="item-1">
+            <AccordionTrigger className="text-xl font-bold">
+              Inversión Inicial y ROI
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Inversión inicial total: ${totalInitialInvestment.toLocaleString()}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Desglose de los gastos para la puesta en marcha del negocio
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Card className="w-64">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">ROI Estimado</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{calculateROI().toFixed(2)}%</div>
+                        <p className="text-xs text-muted-foreground">
+                          Retorno sobre la inversión inicial
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-salon-400 hover:bg-salon-500">
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Agregar Gasto Inicial
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Agregar Gasto Inicial</DialogTitle>
+                          <DialogDescription>
+                            Ingrese los detalles del gasto inicial para el montaje del negocio.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="expense-date">Fecha</Label>
+                            <Input
+                              id="expense-date"
+                              type="date"
+                              value={newExpense.date}
+                              onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="expense-description">Descripción</Label>
+                            <Input
+                              id="expense-description"
+                              placeholder="Ej: Remodelación del local"
+                              value={newExpense.description}
+                              onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="expense-category">Categoría</Label>
+                            <Select 
+                              value={newExpense.category} 
+                              onValueChange={(value) => setNewExpense({...newExpense, category: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar categoría" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {initialExpenseCategories.map((category) => (
+                                  <SelectItem key={category} value={category}>
+                                    {category}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="expense-amount">Monto ($)</Label>
+                            <Input
+                              id="expense-amount"
+                              type="number"
+                              min="0"
+                              step="100"
+                              value={newExpense.amount.toString()}
+                              onChange={(e) => setNewExpense({...newExpense, amount: Number(e.target.value)})}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>
+                            Cancelar
+                          </Button>
+                          <Button 
+                            onClick={handleAddInitialExpense}
+                            disabled={!newExpense.description || newExpense.amount <= 0}
+                            className="bg-salon-400 hover:bg-salon-500"
+                          >
+                            Guardar
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Dialog para editar gasto */}
+                    <Dialog open={isEditExpenseOpen} onOpenChange={setIsEditExpenseOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Editar Gasto Inicial</DialogTitle>
+                          <DialogDescription>
+                            Modifique los detalles del gasto inicial.
+                          </DialogDescription>
+                        </DialogHeader>
+                        {currentExpense && (
+                          <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-expense-date">Fecha</Label>
+                              <Input
+                                id="edit-expense-date"
+                                type="date"
+                                value={currentExpense.date}
+                                onChange={(e) => setCurrentExpense({...currentExpense, date: e.target.value})}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-expense-description">Descripción</Label>
+                              <Input
+                                id="edit-expense-description"
+                                placeholder="Ej: Remodelación del local"
+                                value={currentExpense.description}
+                                onChange={(e) => setCurrentExpense({...currentExpense, description: e.target.value})}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-expense-category">Categoría</Label>
+                              <Select 
+                                value={currentExpense.category} 
+                                onValueChange={(value) => setCurrentExpense({...currentExpense, category: value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar categoría" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {initialExpenseCategories.map((category) => (
+                                    <SelectItem key={category} value={category}>
+                                      {category}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-expense-amount">Monto ($)</Label>
+                              <Input
+                                id="edit-expense-amount"
+                                type="number"
+                                min="0"
+                                step="100"
+                                value={currentExpense.amount.toString()}
+                                onChange={(e) => setCurrentExpense({...currentExpense, amount: Number(e.target.value)})}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsEditExpenseOpen(false)}>
+                            Cancelar
+                          </Button>
+                          <Button 
+                            onClick={handleEditInitialExpense}
+                            disabled={!currentExpense?.description || (currentExpense?.amount || 0) <= 0}
+                            className="bg-salon-400 hover:bg-salon-500"
+                          >
+                            Actualizar
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                {/* Gráfico de gastos iniciales por categoría */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Distribución de la Inversión Inicial</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-64">
+                    <ChartContainer config={{}}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart 
+                          data={initialExpensesByCategory} 
+                          layout="vertical"
+                          margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
+                        >
+                          <XAxis type="number" />
+                          <YAxis dataKey="category" type="category" />
+                          <Tooltip content={<ChartTooltipContent />} />
+                          <Legend />
+                          <Bar 
+                            name="Monto" 
+                            dataKey="amount" 
+                            fill="#8884d8" 
+                            radius={[0, 4, 4, 0]} 
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Tabla de gastos iniciales */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Detalle de Gastos Iniciales</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Fecha</TableHead>
+                          <TableHead>Descripción</TableHead>
+                          <TableHead>Categoría</TableHead>
+                          <TableHead className="text-right">Monto</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {initialExpenses.map((expense) => (
+                          <TableRow key={expense.id}>
+                            <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
+                            <TableCell>{expense.description}</TableCell>
+                            <TableCell>{expense.category}</TableCell>
+                            <TableCell className="text-right">$ {expense.amount.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => prepareEditExpense(expense)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   );

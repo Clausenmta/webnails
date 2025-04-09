@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,11 +42,15 @@ import {
   Trash2, 
   ArrowUpDown,
   Upload,
-  FileText
+  FileText,
+  Search,
+  Filter,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 // Tipos de gastos disponibles
 const TIPOS_GASTOS = [
@@ -118,12 +121,33 @@ export default function GastosPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   
   // Estado para la ordenación
   const [sortConfig, setSortConfig] = useState({
     key: "fecha",
     direction: "desc" as "asc" | "desc"
   });
+
+  // Estados para la búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filtros, setFiltros] = useState({
+    tipos: [] as string[],
+    fechaDesde: null as string | null,
+    fechaHasta: null as string | null,
+    montoMinimo: "" as string,
+    montoMaximo: "" as string
+  });
+  
+  // Estado para los filtros aplicados
+  const [filtrosAplicados, setFiltrosAplicados] = useState(filtros);
+  
+  // Estado para las fechas del filtro
+  const [fechaDesdeFilter, setFechaDesdeFilter] = useState<Date | undefined>(undefined);
+  const [fechaHastaFilter, setFechaHastaFilter] = useState<Date | undefined>(undefined);
+  
+  // Contador de filtros aplicados
+  const [cantidadFiltrosAplicados, setCantidadFiltrosAplicados] = useState(0);
 
   // Función para resetear el formulario
   const resetForm = () => {
@@ -242,6 +266,142 @@ export default function GastosPage() {
     resetForm();
   };
 
+  // Función para manejar cambios en los filtros
+  const handleFilterChange = (name, value) => {
+    setFiltros(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Función para manejar cambios en los filtros de tipo (multiple select)
+  const handleTipoFilterToggle = (tipo) => {
+    setFiltros(prev => {
+      const tiposActuales = [...prev.tipos];
+      const index = tiposActuales.indexOf(tipo);
+      
+      if (index >= 0) {
+        tiposActuales.splice(index, 1);
+      } else {
+        tiposActuales.push(tipo);
+      }
+      
+      return {
+        ...prev,
+        tipos: tiposActuales
+      };
+    });
+  };
+
+  // Función para manejar cambios en las fechas de filtro
+  const handleFilterDateChange = (name, date) => {
+    if (name === "fechaDesde") {
+      setFechaDesdeFilter(date);
+      setFiltros(prev => ({
+        ...prev,
+        fechaDesde: date ? format(date, "yyyy-MM-dd") : null
+      }));
+    } else if (name === "fechaHasta") {
+      setFechaHastaFilter(date);
+      setFiltros(prev => ({
+        ...prev,
+        fechaHasta: date ? format(date, "yyyy-MM-dd") : null
+      }));
+    }
+  };
+
+  // Función para aplicar los filtros
+  const handleApplyFilters = () => {
+    setFiltrosAplicados({...filtros});
+    
+    // Calcular la cantidad de filtros aplicados
+    let count = 0;
+    if (filtros.tipos.length > 0) count++;
+    if (filtros.fechaDesde) count++;
+    if (filtros.fechaHasta) count++;
+    if (filtros.montoMinimo) count++;
+    if (filtros.montoMaximo) count++;
+    
+    setCantidadFiltrosAplicados(count);
+    setIsFilterDialogOpen(false);
+    toast.success("Filtros aplicados");
+  };
+
+  // Función para resetear los filtros
+  const handleResetFilters = () => {
+    setFiltros({
+      tipos: [],
+      fechaDesde: null,
+      fechaHasta: null,
+      montoMinimo: "",
+      montoMaximo: ""
+    });
+    setFechaDesdeFilter(undefined);
+    setFechaHastaFilter(undefined);
+    setFiltrosAplicados({
+      tipos: [],
+      fechaDesde: null,
+      fechaHasta: null,
+      montoMinimo: "",
+      montoMaximo: ""
+    });
+    setCantidadFiltrosAplicados(0);
+    toast.success("Filtros reseteados");
+  };
+
+  // Filtrar los gastos según el término de búsqueda y los filtros aplicados
+  const filteredGastos = gastos.filter(gasto => {
+    // Filtrar por término de búsqueda
+    if (searchTerm && !gasto.concepto.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !gasto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !gasto.comprobante.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !gasto.observaciones.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    // Filtrar por tipo de gasto
+    if (filtrosAplicados.tipos.length > 0 && !filtrosAplicados.tipos.includes(gasto.tipo)) {
+      return false;
+    }
+    
+    // Filtrar por fecha desde
+    if (filtrosAplicados.fechaDesde) {
+      const fechaGasto = new Date(gasto.fecha);
+      const fechaDesde = new Date(filtrosAplicados.fechaDesde);
+      if (fechaGasto < fechaDesde) return false;
+    }
+    
+    // Filtrar por fecha hasta
+    if (filtrosAplicados.fechaHasta) {
+      const fechaGasto = new Date(gasto.fecha);
+      const fechaHasta = new Date(filtrosAplicados.fechaHasta);
+      if (fechaGasto > fechaHasta) return false;
+    }
+    
+    // Filtrar por monto mínimo
+    if (filtrosAplicados.montoMinimo && gasto.monto < parseFloat(filtrosAplicados.montoMinimo)) {
+      return false;
+    }
+    
+    // Filtrar por monto máximo
+    if (filtrosAplicados.montoMaximo && gasto.monto > parseFloat(filtrosAplicados.montoMaximo)) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Ordenar los gastos según la configuración actual
+  const sortedGastos = [...filteredGastos].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === "asc" ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
   // Función para ordenar la tabla
   const handleSort = (key) => {
     let direction: "asc" | "desc" = "asc";
@@ -253,19 +413,8 @@ export default function GastosPage() {
     setSortConfig({ key, direction });
   };
 
-  // Ordenar los gastos según la configuración actual
-  const sortedGastos = [...gastos].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
   // Cálculo del total de gastos
-  const totalGastos = gastos.reduce((sum, gasto) => sum + gasto.monto, 0);
+  const totalGastos = filteredGastos.reduce((sum, gasto) => sum + gasto.monto, 0);
   
   // Formatear montos como pesos argentinos
   const formatCurrency = (value) => {
@@ -302,6 +451,32 @@ export default function GastosPage() {
             <span className="text-2xl font-bold">{formatCurrency(totalGastos)}</span>
           </div>
         </div>
+      </div>
+      
+      {/* Barra de búsqueda y filtros */}
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar gastos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={() => setIsFilterDialogOpen(true)}
+        >
+          <Filter className="h-4 w-4" />
+          Filtros
+          {cantidadFiltrosAplicados > 0 && (
+            <Badge className="ml-1 bg-salon-400 text-white">
+              {cantidadFiltrosAplicados}
+            </Badge>
+          )}
+        </Button>
       </div>
       
       {/* Tabla de gastos */}
@@ -695,6 +870,151 @@ export default function GastosPage() {
             <Button variant="destructive" onClick={handleDeleteGasto}>
               Eliminar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para filtros */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filtrar Gastos</DialogTitle>
+            <DialogDescription>
+              Seleccione los criterios para filtrar la lista de gastos
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Tipo de Gasto</Label>
+              <div className="flex flex-wrap gap-2">
+                {TIPOS_GASTOS.map((tipo) => (
+                  <Badge
+                    key={tipo}
+                    variant={filtros.tipos.includes(tipo) ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer",
+                      filtros.tipos.includes(tipo) ? "bg-salon-400 hover:bg-salon-500" : ""
+                    )}
+                    onClick={() => handleTipoFilterToggle(tipo)}
+                  >
+                    {tipo}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Rango de Fechas</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-1">
+                  <Label className="text-xs">Desde</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !fechaDesdeFilter && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {fechaDesdeFilter ? format(fechaDesdeFilter, "dd/MM/yyyy") : "Seleccionar"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaDesdeFilter}
+                        onSelect={(date) => handleFilterDateChange("fechaDesde", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div className="grid gap-1">
+                  <Label className="text-xs">Hasta</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !fechaHastaFilter && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {fechaHastaFilter ? format(fechaHastaFilter, "dd/MM/yyyy") : "Seleccionar"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaHastaFilter}
+                        onSelect={(date) => handleFilterDateChange("fechaHasta", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Rango de Montos</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-1">
+                  <Label className="text-xs">Mínimo</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      className="pl-9"
+                      value={filtros.montoMinimo}
+                      onChange={(e) => handleFilterChange("montoMinimo", e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-1">
+                  <Label className="text-xs">Máximo</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      className="pl-9"
+                      value={filtros.montoMaximo}
+                      onChange={(e) => handleFilterChange("montoMaximo", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {cantidadFiltrosAplicados > 0 && (
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-muted-foreground">
+                  {cantidadFiltrosAplicados} filtro(s) aplicado(s)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-sm gap-1"
+                  onClick={handleResetFilters}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFilterDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleApplyFilters}>Aplicar Filtros</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

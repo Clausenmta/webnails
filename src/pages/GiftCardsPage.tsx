@@ -147,8 +147,8 @@ export default function GiftCardsPage() {
   
   // Estado para el filtro de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "">("");
-  const [branchFilter, setBranchFilter] = useState<Branch | "">("");
+  const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
+  const [branchFilter, setBranchFilter] = useState<Branch | "all">("all");
 
   // Manejadores para el formulario de nuevo gift card
   const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
@@ -206,10 +206,10 @@ export default function GiftCardsPage() {
                          card.service.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Filtrar por estado
-    const matchesStatus = !statusFilter || card.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || card.status === statusFilter;
     
     // Filtrar por sucursal
-    const matchesBranch = !branchFilter || card.branch === branchFilter;
+    const matchesBranch = branchFilter === "all" || card.branch === branchFilter;
     
     return matchesSearch && matchesStatus && matchesBranch;
   });
@@ -300,13 +300,13 @@ export default function GiftCardsPage() {
                       <Label>Estado</Label>
                       <Select
                         value={statusFilter}
-                        onValueChange={(value) => setStatusFilter(value as GiftCardStatus | "")}
+                        onValueChange={(value) => setStatusFilter(value as GiftCardStatus | "all")}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Todos los estados" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos los estados</SelectItem>
+                          <SelectItem value="all">Todos los estados</SelectItem>
                           <SelectItem value="Pendiente">Pendiente</SelectItem>
                           <SelectItem value="Canjeada">Canjeada</SelectItem>
                           <SelectItem value="Vencida">Vencida</SelectItem>
@@ -317,13 +317,13 @@ export default function GiftCardsPage() {
                       <Label>Sucursal</Label>
                       <Select
                         value={branchFilter}
-                        onValueChange={(value) => setBranchFilter(value as Branch | "")}
+                        onValueChange={(value) => setBranchFilter(value as Branch | "all")}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Todas las sucursales" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todas las sucursales</SelectItem>
+                          <SelectItem value="all">Todas las sucursales</SelectItem>
                           <SelectItem value="Fisherton">Fisherton</SelectItem>
                           <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
                           <SelectItem value="Moreno">Moreno</SelectItem>

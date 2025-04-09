@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown, PlusCircle, Pencil, Trash2, Calculator } from "lucide-react";
+import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -49,7 +48,6 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
-// Sample monthly data for the charts
 const monthlyData = [
   { month: "Ene", ventas: 42000, gastos: 28000, utilidad: 14000 },
   { month: "Feb", ventas: 48000, gastos: 30000, utilidad: 18000 },
@@ -65,7 +63,6 @@ const monthlyData = [
   { month: "Dic", ventas: 65000, gastos: 39000, utilidad: 26000 },
 ];
 
-// Sample service data
 const serviceData = [
   { servicio: "Corte de cabello", cantidad: 320, ingresos: 96000 },
   { servicio: "Tinte", cantidad: 180, ingresos: 108000 },
@@ -75,7 +72,6 @@ const serviceData = [
   { servicio: "Masajes", cantidad: 70, ingresos: 56000 },
 ];
 
-// Sample expense categories
 const expenseData = [
   { categoria: "Salarios", monto: 118000 },
   { categoria: "Productos", monto: 45000 },
@@ -85,10 +81,8 @@ const expenseData = [
   { categoria: "Otros", monto: 9000 },
 ];
 
-// Lista de años disponibles
 const availableYears = ["2023", "2024", "2025", "2026"];
 
-// Categorías para gastos iniciales
 const initialExpenseCategories = [
   "Remodelación",
   "Mobiliario",
@@ -100,7 +94,6 @@ const initialExpenseCategories = [
   "Otros"
 ];
 
-// Interfaz para los gastos iniciales
 interface InitialExpense {
   id: string;
   date: string;
@@ -109,7 +102,6 @@ interface InitialExpense {
   amount: number;
 }
 
-// Ejemplo de gastos iniciales
 const sampleInitialExpenses: InitialExpense[] = [
   { 
     id: "1", 
@@ -156,7 +148,6 @@ export default function ResultadosPage() {
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<InitialExpense | null>(null);
   
-  // Formulario para nuevo gasto inicial
   const [newExpense, setNewExpense] = useState<Omit<InitialExpense, 'id'>>({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -164,37 +155,29 @@ export default function ResultadosPage() {
     amount: 0
   });
 
-  // Find the selected month data
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || monthlyData[0];
   
-  // Calculate percentages for current month
-  const revenueGrowth = 8.2; // Sample growth percentage
-  const profitGrowth = 12.5; // Sample growth percentage
+  const revenueGrowth = 8.2;
+  const profitGrowth = 12.5;
 
-  // Calcular el total de inversión inicial
   const totalInitialInvestment = initialExpenses.reduce((total, expense) => total + expense.amount, 0);
 
-  // Función para calcular el ROI
   const calculateROI = () => {
-    // Suponiendo que queremos calcular el ROI basado en la utilidad acumulada del año
     const annualProfit = monthlyData.reduce((total, data) => total + data.utilidad, 0);
     if (totalInitialInvestment === 0) return 0;
     return (annualProfit / totalInitialInvestment) * 100;
   };
 
   const handleExportPDF = () => {
-    // Simulación de exportación a PDF
     toast.success("Informe exportado a PDF correctamente");
     console.log("Exportando a PDF para mes:", selectedMonth, "año:", year);
   };
 
   const handleExportExcel = () => {
-    // Simulación de exportación a Excel
     toast.success("Informe exportado a Excel correctamente");
     console.log("Exportando a Excel para mes:", selectedMonth, "año:", year);
   };
 
-  // Manejar la adición de un nuevo gasto inicial
   const handleAddInitialExpense = () => {
     const expense: InitialExpense = {
       ...newExpense,
@@ -211,7 +194,6 @@ export default function ResultadosPage() {
     toast.success("Gasto inicial agregado correctamente");
   };
 
-  // Manejar la edición de un gasto existente
   const handleEditInitialExpense = () => {
     if (!currentExpense) return;
     
@@ -225,19 +207,16 @@ export default function ResultadosPage() {
     toast.success("Gasto inicial actualizado correctamente");
   };
 
-  // Eliminar un gasto
   const handleDeleteExpense = (id: string) => {
     setInitialExpenses(initialExpenses.filter(expense => expense.id !== id));
     toast.success("Gasto inicial eliminado correctamente");
   };
 
-  // Preparar para editar un gasto
   const prepareEditExpense = (expense: InitialExpense) => {
     setCurrentExpense(expense);
     setIsEditExpenseOpen(true);
   };
 
-  // Agrupar gastos por categoría para mostrar en el gráfico
   const initialExpensesByCategory = initialExpenseCategories.map(category => {
     const total = initialExpenses
       .filter(expense => expense.category === category)
@@ -310,7 +289,6 @@ export default function ResultadosPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -386,7 +364,6 @@ export default function ResultadosPage() {
         </Card>
       </div>
 
-      {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
@@ -436,7 +413,6 @@ export default function ResultadosPage() {
         </Card>
       </div>
 
-      {/* Tables */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
@@ -496,7 +472,6 @@ export default function ResultadosPage() {
         </Card>
       </div>
 
-      {/* Sección de Gastos Iniciales */}
       <div className="space-y-4">
         <Accordion type="single" collapsible defaultValue="item-1">
           <AccordionItem value="item-1">
@@ -505,31 +480,31 @@ export default function ResultadosPage() {
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-1">
                       Inversión inicial total: ${totalInitialInvestment.toLocaleString()}
                     </h3>
                     <p className="text-muted-foreground">
                       Desglose de los gastos para la puesta en marcha del negocio
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <Card className="w-64">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">ROI Estimado</CardTitle>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                    <Card className="w-full sm:w-60 shadow-sm border border-slate-200">
+                      <CardHeader className="pb-2 pt-4">
+                        <CardTitle className="text-base font-medium">ROI Estimado</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{calculateROI().toFixed(2)}%</div>
-                        <p className="text-xs text-muted-foreground">
+                        <div className="text-3xl font-bold text-[#9b87f5]">{calculateROI().toFixed(2)}%</div>
+                        <p className="text-xs text-muted-foreground mt-1">
                           Retorno sobre la inversión inicial
                         </p>
                       </CardContent>
                     </Card>
                     <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
                       <DialogTrigger asChild>
-                        <Button className="bg-salon-400 hover:bg-salon-500">
-                          <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white h-10 px-4 py-2 rounded-md flex items-center gap-2 ml-auto mt-1 md:mt-4">
+                          <PlusCircle className="h-4 w-4" />
                           Agregar Gasto Inicial
                         </Button>
                       </DialogTrigger>
@@ -596,7 +571,7 @@ export default function ResultadosPage() {
                           <Button 
                             onClick={handleAddInitialExpense}
                             disabled={!newExpense.description || newExpense.amount <= 0}
-                            className="bg-salon-400 hover:bg-salon-500"
+                            className="bg-[#9b87f5] hover:bg-[#7E69AB]"
                           >
                             Guardar
                           </Button>
@@ -604,7 +579,6 @@ export default function ResultadosPage() {
                       </DialogContent>
                     </Dialog>
 
-                    {/* Dialog para editar gasto */}
                     <Dialog open={isEditExpenseOpen} onOpenChange={setIsEditExpenseOpen}>
                       <DialogContent>
                         <DialogHeader>
@@ -671,7 +645,7 @@ export default function ResultadosPage() {
                           <Button 
                             onClick={handleEditInitialExpense}
                             disabled={!currentExpense?.description || (currentExpense?.amount || 0) <= 0}
-                            className="bg-salon-400 hover:bg-salon-500"
+                            className="bg-[#9b87f5] hover:bg-[#7E69AB]"
                           >
                             Actualizar
                           </Button>
@@ -681,27 +655,31 @@ export default function ResultadosPage() {
                   </div>
                 </div>
 
-                {/* Gráfico de gastos iniciales por categoría */}
-                <Card>
+                <Card className="shadow-sm border border-slate-200">
                   <CardHeader>
-                    <CardTitle>Distribución de la Inversión Inicial</CardTitle>
+                    <CardTitle className="text-xl">Distribución de la Inversión Inicial</CardTitle>
                   </CardHeader>
-                  <CardContent className="h-64">
+                  <CardContent className="h-72">
                     <ChartContainer config={{}}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart 
                           data={initialExpensesByCategory} 
                           layout="vertical"
-                          margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
+                          margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
                         >
                           <XAxis type="number" />
-                          <YAxis dataKey="category" type="category" />
+                          <YAxis 
+                            dataKey="category" 
+                            type="category" 
+                            tick={{ fill: '#666' }}
+                            width={80}
+                          />
                           <Tooltip content={<ChartTooltipContent />} />
                           <Legend />
                           <Bar 
                             name="Monto" 
                             dataKey="amount" 
-                            fill="#8884d8" 
+                            fill="#9b87f5" 
                             radius={[0, 4, 4, 0]} 
                           />
                         </BarChart>
@@ -710,27 +688,26 @@ export default function ResultadosPage() {
                   </CardContent>
                 </Card>
 
-                {/* Tabla de gastos iniciales */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Detalle de Gastos Iniciales</CardTitle>
+                <Card className="shadow-sm border border-slate-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl">Detalle de Gastos Iniciales</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Descripción</TableHead>
+                          <TableHead className="w-[120px]">Fecha</TableHead>
+                          <TableHead className="max-w-[250px]">Descripción</TableHead>
                           <TableHead>Categoría</TableHead>
                           <TableHead className="text-right">Monto</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
+                          <TableHead className="w-[100px] text-right">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {initialExpenses.map((expense) => (
                           <TableRow key={expense.id}>
                             <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                            <TableCell>{expense.description}</TableCell>
+                            <TableCell className="max-w-[250px] truncate">{expense.description}</TableCell>
                             <TableCell>{expense.category}</TableCell>
                             <TableCell className="text-right">$ {expense.amount.toLocaleString()}</TableCell>
                             <TableCell className="text-right">
@@ -739,13 +716,15 @@ export default function ResultadosPage() {
                                   variant="ghost" 
                                   size="icon"
                                   onClick={() => prepareEditExpense(expense)}
+                                  className="h-8 w-8"
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <Pencil className="h-4 w-4 text-slate-600" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
                                   onClick={() => handleDeleteExpense(expense.id)}
+                                  className="h-8 w-8"
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>

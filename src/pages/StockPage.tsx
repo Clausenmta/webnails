@@ -36,6 +36,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Package,
   Plus,
   Search,
@@ -58,47 +65,51 @@ type Product = {
   location: string;
 };
 
+// Opciones para los desplegables
+const CATEGORY_OPTIONS = ["SEMI OPI", "SEMI NAILS", "SHINE", "TRADICIONAL", "VARIOS"];
+const LOCATION_OPTIONS = ["Stock Casa", "Stock Local", "Stock en Uso"];
+
 // Datos de ejemplo
 const initialProducts: Product[] = [
   {
     id: "1",
     name: "Esmalte OPI",
-    category: "Esmaltes",
+    category: "SEMI OPI",
     price: 3500,
     stock: 12,
-    location: "Estante A",
+    location: "Stock Local",
   },
   {
     id: "2",
     name: "Removedor de esmalte",
-    category: "Removedores",
+    category: "VARIOS",
     price: 1800,
     stock: 8,
-    location: "Estante B",
+    location: "Stock Casa",
   },
   {
     id: "3",
     name: "Lima de uñas profesional",
-    category: "Herramientas",
+    category: "SHINE",
     price: 950,
     stock: 20,
-    location: "Estante A",
+    location: "Stock Local",
   },
   {
     id: "4",
     name: "Kit de acrílico",
-    category: "Kits",
+    category: "TRADICIONAL",
     price: 8500,
     stock: 5,
-    location: "Vitrina",
+    location: "Stock en Uso",
   },
   {
     id: "5",
     name: "Aceite para cutícula",
-    category: "Tratamientos",
+    category: "VARIOS",
     price: 1200,
     stock: 15,
-    location: "Estante C",
+    location: "Stock Casa",
   },
 ];
 
@@ -108,10 +119,10 @@ export default function StockPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newProduct, setNewProduct] = useState<Omit<Product, "id">>({
     name: "",
-    category: "",
+    category: CATEGORY_OPTIONS[0],
     price: 0,
     stock: 0,
-    location: "",
+    location: LOCATION_OPTIONS[0],
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -138,10 +149,10 @@ export default function StockPage() {
     setProducts([...products, product]);
     setNewProduct({
       name: "",
-      category: "",
+      category: CATEGORY_OPTIONS[0],
       price: 0,
       stock: 0,
-      location: "",
+      location: LOCATION_OPTIONS[0],
     });
     setIsAddDialogOpen(false);
     toast.success("Producto creado exitosamente");
@@ -244,17 +255,23 @@ export default function StockPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Categoría</Label>
-                    <Input
-                      id="category"
+                    <Select
                       value={newProduct.category}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          category: e.target.value,
-                        })
+                      onValueChange={(value) =>
+                        setNewProduct({ ...newProduct, category: value })
                       }
-                      placeholder="Esmaltes"
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORY_OPTIONS.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -293,17 +310,23 @@ export default function StockPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Ubicación</Label>
-                  <Input
-                    id="location"
+                  <Select
                     value={newProduct.location}
-                    onChange={(e) =>
-                      setNewProduct({
-                        ...newProduct,
-                        location: e.target.value,
-                      })
+                    onValueChange={(value) =>
+                      setNewProduct({ ...newProduct, location: value })
                     }
-                    placeholder="Estante A"
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una ubicación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATION_OPTIONS.map((location) => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
@@ -433,16 +456,23 @@ export default function StockPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-category">Categoría</Label>
-                  <Input
-                    id="edit-category"
+                  <Select
                     value={editingProduct.category}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        category: e.target.value,
-                      })
+                    onValueChange={(value) =>
+                      setEditingProduct({ ...editingProduct, category: value })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona una categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_OPTIONS.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -479,16 +509,23 @@ export default function StockPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-location">Ubicación</Label>
-                <Input
-                  id="edit-location"
+                <Select
                   value={editingProduct.location}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      location: e.target.value,
-                    })
+                  onValueChange={(value) =>
+                    setEditingProduct({ ...editingProduct, location: value })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una ubicación" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOCATION_OPTIONS.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

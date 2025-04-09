@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Plus, Search, Edit, Trash, ArrowUpDown, ChevronDown, FileText, FileSpre
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Mock data for repairs
 const initialArreglos = [
@@ -97,6 +99,9 @@ export default function ArreglosPage() {
   const [fechaComandaDate, setFechaComandaDate] = useState<Date | undefined>(undefined);
   const [fechaArregloDate, setFechaArregloDate] = useState<Date | undefined>(undefined);
 
+  // Checkbox state for "Misma manicura que original"
+  const [mismaManicura, setMismaManicura] = useState(false);
+
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
     key: "fecha",
@@ -150,6 +155,7 @@ export default function ArreglosPage() {
     });
     setFechaComandaDate(undefined);
     setFechaArregloDate(undefined);
+    setMismaManicura(false);
   };
 
   // Open add dialog
@@ -163,6 +169,7 @@ export default function ArreglosPage() {
     setCurrentArreglo(arreglo);
     setFechaComandaDate(arreglo.fechaComanda ? new Date(arreglo.fechaComanda) : undefined);
     setFechaArregloDate(arreglo.fechaArreglo ? new Date(arreglo.fechaArreglo) : undefined);
+    setMismaManicura(arreglo.comandaOriginal === arreglo.arregladoPor);
     setIsEditDialogOpen(true);
   };
 
@@ -182,11 +189,24 @@ export default function ArreglosPage() {
       [name]: value,
     });
 
-    // Auto-fill arregladoPor when comandaOriginal changes
-    if (name === "comandaOriginal") {
+    // If changing comanda original and "misma manicura" is checked, auto-fill arregladoPor
+    if (name === "comandaOriginal" && mismaManicura) {
       setCurrentArreglo(prev => ({
         ...prev,
         arregladoPor: value
+      }));
+    }
+  };
+
+  // Handle checkbox change
+  const handleMismaManicuraChange = (checked) => {
+    setMismaManicura(checked);
+    
+    // If checked and there's a comanda original selected, auto-fill arregladoPor
+    if (checked && currentArreglo.comandaOriginal) {
+      setCurrentArreglo(prev => ({
+        ...prev,
+        arregladoPor: prev.comandaOriginal
       }));
     }
   };
@@ -519,6 +539,19 @@ export default function ArreglosPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Checkbox 
+                      id="misma-manicura" 
+                      checked={mismaManicura}
+                      onCheckedChange={handleMismaManicuraChange}
+                    />
+                    <label
+                      htmlFor="misma-manicura"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Misma manicura que original
+                    </label>
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="fechaArreglo">Fecha Arreglo</Label>
@@ -714,6 +747,19 @@ export default function ArreglosPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Checkbox 
+                      id="edit-misma-manicura" 
+                      checked={mismaManicura}
+                      onCheckedChange={handleMismaManicuraChange}
+                    />
+                    <label
+                      htmlFor="edit-misma-manicura"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Misma manicura que original
+                    </label>
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-fechaArreglo">Fecha Arreglo</Label>

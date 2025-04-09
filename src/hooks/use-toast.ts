@@ -140,7 +140,11 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+interface ToastOptions extends Toast {
+  [key: string]: any
+}
+
+function toast(props: ToastOptions) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -170,19 +174,19 @@ function toast({ ...props }: Toast) {
 }
 
 // Add variant helpers for the toast function
-toast.success = (props: Omit<Toast, "variant">) => {
+toast.success = (props: Omit<ToastOptions, "variant">) => {
   return toast({ ...props, variant: "default" });
 };
 
-toast.error = (props: Omit<Toast, "variant">) => {
+toast.error = (props: Omit<ToastOptions, "variant">) => {
   return toast({ ...props, variant: "destructive" });
 };
 
-toast.warning = (props: Omit<Toast, "variant">) => {
+toast.warning = (props: Omit<ToastOptions, "variant">) => {
   return toast({ ...props, variant: "default", className: "bg-yellow-500" });
 };
 
-toast.info = (props: Omit<Toast, "variant">) => {
+toast.info = (props: Omit<ToastOptions, "variant">) => {
   return toast({ ...props, variant: "default", className: "bg-blue-500" });
 };
 

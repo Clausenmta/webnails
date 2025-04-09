@@ -791,3 +791,773 @@ export default function FacturacionPage() {
     if (facturaActual) {
       // Preparar impresión del iframe visible
       const printContent = document.getElementById('factura-para-imprimir');
+      
+      if (printContent) {
+        // Configurar la impresión
+        const originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContent.innerHTML;
+        
+        // Imprimir
+        window.print();
+        
+        // Restaurar el contenido original
+        document.body.innerHTML = originalContents;
+        
+        toast({
+          title: "Impresión iniciada",
+          description: `La factura ${facturaActual.numero} se ha enviado a la impresora.`,
+        });
+      } else {
+        toast({
+          title: "Error de impresión",
+          description: "No se pudo encontrar el contenido para imprimir.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Función para exportar a Excel
+  const exportarExcel = () => {
+    // Crear workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Preparar datos para Excel
+    const datos = facturas.map(factura => ({
+      Numero: factura.numero,
+      Tipo: factura.tipo,
+      Fecha: factura.fecha,
+      Cliente: factura.receptor.razonSocial,
+      CUIT: factura.receptor.cuit,
+      Estado: factura.estado,
+      ImporteNeto: factura.importeNeto,
+      IVA: factura.importeIVA.iva21 + factura.importeIVA.iva105 + factura.importeIVA.iva27,
+      ImporteTotal: factura.importeTotal,
+      CAE: factura.cae,
+    }));
+    
+    // Crear worksheet con los datos
+    const ws = XLSX.utils.json_to_sheet(datos);
+    
+    // Añadir worksheet al workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Facturas");
+    
+    // Guardar el archivo
+    XLSX.writeFile(wb, "Facturas.xlsx");
+    
+    toast({
+      title: "Exportación completada",
+      description: "Las facturas han sido exportadas a Excel correctamente.",
+    });
+  };
+
+  // Función para exportar múltiples facturas como PDFs en un archivo ZIP
+  const exportarZIP = async () => {
+    // Crear una nueva instancia de JSZip
+    const zip = new JSZip();
+    
+    // Notificar inicio del proceso
+    toast({
+      title: "Preparando archivos",
+      description: "Generando PDFs para comprimir...",
+    });
+    
+    // Generar un PDF para cada factura y añadirlo al ZIP
+    for (const factura of facturas) {
+      const doc = new jsPDF();
+      
+      // Configurar información básica (versión simplificada)
+      doc.setFontSize(22);
+      doc.text(`FACTURA ${factura.tipo}`, 105, 20, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(`${factura.numero} - ${factura.receptor.razonSocial}`, 105, 30, { align: 'center' });
+      doc.text(`Importe total: $${factura.importeTotal.toFixed(2)}`, 105, 40, { align: 'center' });
+      
+      // Obtener el PDF como blob
+      const pdfBlob = doc.output('blob');
+      
+      // Añadir el PDF al ZIP
+      zip.file(`Factura_${factura.numero}.pdf`, pdfBlob);
+    }
+    
+    // Generar el archivo ZIP y descargarlo
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(zipBlob, "Facturas.zip");
+    
+    toast({
+      title: "Exportación completada",
+      description: `Se han exportado ${facturas.length} facturas en un archivo ZIP.`,
+    });
+  };
+
+  // Renderizado del componente
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Gestión de Facturación</h1>
+        <div className="flex space-x-2">
+          <Button onClick={exportarExcel}>
+            <FileDown className="mr-2" />
+            Exportar Excel
+          </Button>
+          <Button onClick={exportarZIP} variant="outline">
+            <Download className="mr-2" />
+            Exportar ZIP
+          </Button>
+          <Button onClick={nuevaFactura} variant="default">
+            <Plus className="mr-2" />
+            Nueva Factura
+          </Button>
+        </div>
+      </div>
+      
+      {/* Alerta informativa sobre AFIP */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <FileCheck className="h-5 w-5 text-yellow-400" />
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>Modo simulación:</strong> La conexión con AFIP está en modo de simulación. Los CAE generados no son válidos para uso fiscal.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Filtros */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-grow">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Buscar por número, cliente o razón social..."
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select
+          value={estadoFiltro}
+          onValueChange={(value) => setEstadoFiltro(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="Pendiente">Pendiente</SelectItem>
+            <SelectItem value="Pagada">Pagada</SelectItem>
+            <SelectItem value="Cancelada">Cancelada</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* Tabla de facturas */}
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Número</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Monto</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>CAE</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {facturasFiltradas.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                  No se encontraron facturas con los criterios de búsqueda
+                </TableCell>
+              </TableRow>
+            ) : (
+              facturasFiltradas.map((factura) => (
+                <TableRow key={factura.id}>
+                  <TableCell>{factura.numero}</TableCell>
+                  <TableCell>
+                    <span className="font-bold">Factura {factura.tipo}</span>
+                  </TableCell>
+                  <TableCell>{factura.fecha}</TableCell>
+                  <TableCell>{factura.cliente}</TableCell>
+                  <TableCell>${factura.monto.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium 
+                        ${factura.estado === 'Pagada' ? 'bg-green-100 text-green-800' : 
+                          factura.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-red-100 text-red-800'}`}
+                    >
+                      {factura.estado}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-mono">{factura.cae}</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Ver factura"
+                        onClick={() => verFactura(factura)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Editar factura"
+                        onClick={() => editarFactura(factura)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Descargar PDF"
+                        onClick={() => descargarFactura(factura)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Eliminar factura"
+                        onClick={() => eliminarFactura(factura.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Diálogo para crear/editar factura */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{facturaActual ? "Editar Factura" : "Nueva Factura"}</DialogTitle>
+            <DialogDescription>
+              Complete los datos para {facturaActual ? "modificar la" : "crear una nueva"} factura.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              {/* Información básica de la factura */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg">Datos de la factura</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...form.register("numero")} 
+                        readOnly={!!facturaActual} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                  
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Tipo</FormLabel>
+                    <Select 
+                      value={form.watch("tipo")} 
+                      onValueChange={(value) => form.setValue("tipo", value as "A" | "B" | "C" | "E")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">Factura A</SelectItem>
+                        <SelectItem value="B">Factura B</SelectItem>
+                        <SelectItem value="C">Factura C</SelectItem>
+                        <SelectItem value="E">Factura E</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...form.register("fecha")} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                  
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Vencimiento</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...form.register("fechaVencimiento")} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                </div>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Estado</FormLabel>
+                  <Select 
+                    value={form.watch("estado")} 
+                    onValueChange={(value) => form.setValue("estado", value as "Pagada" | "Pendiente" | "Cancelada")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendiente">Pendiente</SelectItem>
+                      <SelectItem value="Pagada">Pagada</SelectItem>
+                      <SelectItem value="Cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Cliente</FormLabel>
+                  <FormControl>
+                    <Input {...form.register("cliente")} />
+                  </FormControl>
+                </FormItem>
+              </div>
+              
+              {/* Datos del receptor */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg">Datos del receptor</h3>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Razón Social</FormLabel>
+                  <FormControl>
+                    <Input 
+                      value={form.watch("receptor.razonSocial") || ""}
+                      onChange={(e) => form.setValue("receptor.razonSocial", e.target.value)} 
+                    />
+                  </FormControl>
+                </FormItem>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>CUIT</FormLabel>
+                  <FormControl>
+                    <Input 
+                      value={form.watch("receptor.cuit") || ""}
+                      onChange={(e) => form.setValue("receptor.cuit", e.target.value)} 
+                    />
+                  </FormControl>
+                </FormItem>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Domicilio Comercial</FormLabel>
+                  <FormControl>
+                    <Input 
+                      value={form.watch("receptor.domicilioComercial") || ""}
+                      onChange={(e) => form.setValue("receptor.domicilioComercial", e.target.value)} 
+                    />
+                  </FormControl>
+                </FormItem>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Condición IVA</FormLabel>
+                    <Select 
+                      value={form.watch("receptor.condicionIVA") || ""}
+                      onValueChange={(value) => form.setValue("receptor.condicionIVA", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Condición IVA" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="IVA Responsable Inscripto">Resp. Inscripto</SelectItem>
+                        <SelectItem value="IVA Sujeto Exento">Sujeto Exento</SelectItem>
+                        <SelectItem value="Consumidor Final">Consumidor Final</SelectItem>
+                        <SelectItem value="Responsable Monotributo">Monotributo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                  
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Condición Venta</FormLabel>
+                    <Select 
+                      value={form.watch("receptor.condicionVenta") || "Contado"}
+                      onValueChange={(value) => form.setValue("receptor.condicionVenta", value as "Contado" | "Cuenta Corriente" | "Cheque" | "Tarjeta de Crédito")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Condición Venta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Contado">Contado</SelectItem>
+                        <SelectItem value="Cuenta Corriente">Cuenta Corriente</SelectItem>
+                        <SelectItem value="Cheque">Cheque</SelectItem>
+                        <SelectItem value="Tarjeta de Crédito">Tarjeta de Crédito</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
+              </div>
+            </div>
+            
+            {/* Productos y servicios */}
+            <div className="space-y-4 mt-6">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-lg">Productos y servicios</h3>
+                <Button type="button" variant="outline" size="sm" onClick={nuevoProducto}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar producto
+                </Button>
+              </div>
+              
+              {productosFactura.length === 0 ? (
+                <div className="text-center py-4 border rounded-md bg-muted/20">
+                  <p className="text-sm text-muted-foreground">No se han agregado productos o servicios</p>
+                </div>
+              ) : (
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Cant.</TableHead>
+                        <TableHead>Precio Unit.</TableHead>
+                        <TableHead>Bonif.</TableHead>
+                        <TableHead>Subtotal</TableHead>
+                        <TableHead>IVA</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productosFactura.map((producto) => (
+                        <TableRow key={producto.id}>
+                          <TableCell>{producto.codigo}</TableCell>
+                          <TableCell>{producto.descripcion}</TableCell>
+                          <TableCell>{producto.cantidad}</TableCell>
+                          <TableCell>${producto.precioUnitario.toFixed(2)}</TableCell>
+                          <TableCell>{producto.porcentajeBonificacion}%</TableCell>
+                          <TableCell>${producto.subtotal.toFixed(2)}</TableCell>
+                          <TableCell>{producto.alicuotaIVA}</TableCell>
+                          <TableCell>${producto.subtotalConIVA.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Editar producto"
+                                onClick={() => editarProducto(producto)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Eliminar producto"
+                                onClick={() => eliminarProducto(producto.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+            
+            {/* Totales */}
+            <div className="mt-6 space-y-2 border-t pt-4">
+              <div className="flex justify-between">
+                <span>Importe Neto:</span>
+                <span className="font-medium">${form.watch("importeNeto")?.toFixed(2) || "0.00"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>IVA 21%:</span>
+                <span>${form.watch("importeIVA.iva21")?.toFixed(2) || "0.00"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>IVA 10.5%:</span>
+                <span>${form.watch("importeIVA.iva105")?.toFixed(2) || "0.00"}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-bold">TOTAL:</span>
+                <span className="font-bold">${form.watch("importeTotal")?.toFixed(2) || "0.00"}</span>
+              </div>
+            </div>
+            
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {facturaActual ? "Actualizar Factura" : "Crear Factura"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para agregar/editar producto */}
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editandoProducto ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
+            <DialogDescription>
+              Complete los datos del producto o servicio.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={productoForm.handleSubmit(handleProductSubmit)}>
+            <div className="space-y-4 py-4">
+              <FormItem className="flex flex-col">
+                <FormLabel>Código</FormLabel>
+                <FormControl>
+                  <Input {...productoForm.register("codigo")} />
+                </FormControl>
+              </FormItem>
+              
+              <FormItem className="flex flex-col">
+                <FormLabel>Descripción</FormLabel>
+                <FormControl>
+                  <Textarea {...productoForm.register("descripcion")} />
+                </FormControl>
+              </FormItem>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormItem className="flex flex-col">
+                  <FormLabel>Cantidad</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...productoForm.register("cantidad", { valueAsNumber: true })} 
+                    />
+                  </FormControl>
+                </FormItem>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Unidad de medida</FormLabel>
+                  <FormControl>
+                    <Input {...productoForm.register("unidadMedida")} />
+                  </FormControl>
+                </FormItem>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormItem className="flex flex-col">
+                  <FormLabel>Precio unitario</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      {...productoForm.register("precioUnitario", { valueAsNumber: true })} 
+                    />
+                  </FormControl>
+                </FormItem>
+                
+                <FormItem className="flex flex-col">
+                  <FormLabel>Bonificación (%)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...productoForm.register("porcentajeBonificacion", { valueAsNumber: true })} 
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
+              
+              <FormItem className="flex flex-col">
+                <FormLabel>Alícuota IVA</FormLabel>
+                <Select 
+                  value={productoForm.watch("alicuotaIVA")} 
+                  onValueChange={(value) => productoForm.setValue("alicuotaIVA", value as "21%" | "10.5%" | "27%" | "5%" | "2.5%" | "0%")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alícuota IVA" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="21%">21%</SelectItem>
+                    <SelectItem value="10.5%">10.5%</SelectItem>
+                    <SelectItem value="27%">27%</SelectItem>
+                    <SelectItem value="5%">5%</SelectItem>
+                    <SelectItem value="2.5%">2.5%</SelectItem>
+                    <SelectItem value="0%">0% (Exento)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsProductDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {editandoProducto ? "Actualizar Producto" : "Agregar Producto"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Vista previa de factura */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Vista Previa de Factura</DialogTitle>
+          </DialogHeader>
+          
+          {facturaActual && (
+            <div id="factura-para-imprimir" className="p-4 border rounded-md bg-white">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold">{facturaActual.emisor.razonSocial}</h2>
+                  <p className="text-sm text-gray-600">{facturaActual.emisor.domicilioComercial}</p>
+                  <p className="text-sm text-gray-600">CUIT: {facturaActual.emisor.cuit}</p>
+                  <p className="text-sm text-gray-600">{facturaActual.emisor.condicionIVA}</p>
+                </div>
+                <div className="text-center border-2 border-black p-4 rounded">
+                  <h2 className="text-2xl font-bold">FACTURA {facturaActual.tipo}</h2>
+                  <p className="text-sm">N°: {facturaActual.numero}</p>
+                  <p className="text-sm">Fecha: {facturaActual.fecha}</p>
+                </div>
+              </div>
+              
+              <div className="mt-8 border p-4 rounded">
+                <h3 className="font-medium">Cliente</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-2">
+                  <div>
+                    <span className="text-sm font-medium">Razón Social:</span> {facturaActual.receptor.razonSocial}
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">CUIT:</span> {facturaActual.receptor.cuit}
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Domicilio:</span> {facturaActual.receptor.domicilioComercial}
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Condición IVA:</span> {facturaActual.receptor.condicionIVA}
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">Condición Venta:</span> {facturaActual.receptor.condicionVenta}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="font-medium mb-2">Detalle</h3>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-2 text-left">Código</th>
+                      <th className="border p-2 text-left">Descripción</th>
+                      <th className="border p-2 text-right">Cant.</th>
+                      <th className="border p-2 text-right">Precio Unit.</th>
+                      <th className="border p-2 text-right">Bonif.</th>
+                      <th className="border p-2 text-right">Subtotal</th>
+                      <th className="border p-2 text-right">IVA</th>
+                      <th className="border p-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facturaActual.productos.map((producto) => (
+                      <tr key={producto.id}>
+                        <td className="border p-2">{producto.codigo}</td>
+                        <td className="border p-2">{producto.descripcion}</td>
+                        <td className="border p-2 text-right">{producto.cantidad}</td>
+                        <td className="border p-2 text-right">${producto.precioUnitario.toFixed(2)}</td>
+                        <td className="border p-2 text-right">{producto.porcentajeBonificacion}%</td>
+                        <td className="border p-2 text-right">${producto.subtotal.toFixed(2)}</td>
+                        <td className="border p-2 text-right">{producto.alicuotaIVA}</td>
+                        <td className="border p-2 text-right">${producto.subtotalConIVA.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <div className="w-1/3">
+                  <div className="flex justify-between py-1">
+                    <span>Importe Neto:</span>
+                    <span>${facturaActual.importeNeto.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>IVA 21%:</span>
+                    <span>${facturaActual.importeIVA.iva21.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>IVA 10.5%:</span>
+                    <span>${facturaActual.importeIVA.iva105.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>Otros Tributos:</span>
+                    <span>${facturaActual.otrosTributos.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-t font-bold mt-2 pt-2">
+                    <span>TOTAL:</span>
+                    <span>${facturaActual.importeTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 pt-4 border-t">
+                <div className="flex justify-between">
+                  <div>
+                    <p className="text-sm"><span className="font-medium">CAE:</span> {facturaActual.cae}</p>
+                    <p className="text-sm"><span className="font-medium">Fecha Vto. CAE:</span> {facturaActual.fechaVtoCAE}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="mt-4 space-x-2">
+            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+              Cerrar
+            </Button>
+            <Button variant="outline" onClick={imprimirFactura}>
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir
+            </Button>
+            {facturaActual && (
+              <>
+                <Button variant="outline" onClick={() => descargarFactura(facturaActual)}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar PDF
+                </Button>
+                <Button variant="default" onClick={() => generarFacturaAFIP(facturaActual)} disabled={conectandoAFIP}>
+                  {conectandoAFIP ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Conectando con AFIP...
+                    </span>
+                  ) : (
+                    <>
+                      <FileCheck className="mr-2 h-4 w-4" />
+                      Enviar a AFIP
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

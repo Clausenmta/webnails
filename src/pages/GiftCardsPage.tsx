@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,13 +54,16 @@ import {
   Search,
   Trash,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Upload
 } from "lucide-react";
 import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import * as XLSX from 'xlsx';
 
-// Definición de tipos para las gift cards
 type GiftCardStatus = "Pendiente" | "Canjeada" | "Vencida";
 type GiftCardType = "Física" | "Virtual";
 type Branch = "Fisherton" | "Alto Rosario" | "Moreno" | "Tucumán";
@@ -79,7 +81,6 @@ interface GiftCard {
 }
 
 export default function GiftCardsPage() {
-  // Estado para la lista de gift cards
   const [giftCards, setGiftCards] = useState<GiftCard[]>([
     {
       id: "1",
@@ -137,23 +138,30 @@ export default function GiftCardsPage() {
       status: "Canjeada"
     }
   ]);
-  
-  // Estado para el nuevo gift card
+
   const [newGiftCard, setNewGiftCard] = useState<Partial<GiftCard>>({
     type: "Física",
     branch: "Fisherton",
     issueDate: new Date().toISOString().split('T')[0]
   });
-  
-  // Estado para el diálogo
+
   const [isNewGiftCardDialogOpen, setIsNewGiftCardDialogOpen] = useState(false);
-  
-  // Estado para el filtro de búsqueda
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
   const [branchFilter, setBranchFilter] = useState<Branch | "all">("all");
 
-  // Manejadores para el formulario de nuevo gift card
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [importResults, setImportResults] = useState<{ total: number; successful: number; failed: number }>({
+    total: 0,
+    successful: 0,
+    failed: 0
+  });
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
     setNewGiftCard({
       ...newGiftCard,
@@ -161,45 +169,37 @@ export default function GiftCardsPage() {
     });
   };
 
-  // Export functions
   const handleExportPDF = () => {
-    // Mock implementation - would connect to a PDF generation library in production
     toast.success("Exportando a PDF...", {
       description: "El archivo se descargará en breve."
     });
     console.log("Exporting to PDF...");
-    // In a real implementation, would use a library like jsPDF or call a backend endpoint
   };
 
   const handleExportExcel = () => {
-    // Mock implementation - would connect to an Excel generation library in production
     toast.success("Exportando a Excel...", {
       description: "El archivo se descargará en breve."
     });
     console.log("Exporting to Excel...");
-    // In a real implementation, would use a library like xlsx or call a backend endpoint
   };
 
-  // Crear nueva gift card
   const handleCreateGiftCard = () => {
     if (!newGiftCard.number || !newGiftCard.service) {
       alert("Por favor complete todos los campos requeridos.");
       return;
     }
-    
-    // Calcular fecha de vencimiento (30 días después de la emisión)
+
     const issueDate = new Date(newGiftCard.issueDate || new Date());
     const expirationDate = new Date(issueDate);
     expirationDate.setDate(expirationDate.getDate() + 30);
-    
-    // Determinar estado
+
     let status: GiftCardStatus = "Pendiente";
     if (newGiftCard.receivedDate) {
       status = "Canjeada";
     } else if (new Date() > expirationDate) {
       status = "Vencida";
     }
-    
+
     const newCard: GiftCard = {
       id: (giftCards.length + 1).toString(),
       number: newGiftCard.number || "",
@@ -211,7 +211,7 @@ export default function GiftCardsPage() {
       expirationDate: expirationDate.toISOString().split('T')[0],
       status: status
     };
-    
+
     setGiftCards([...giftCards, newCard]);
     setIsNewGiftCardDialogOpen(false);
     setNewGiftCard({
@@ -221,22 +221,17 @@ export default function GiftCardsPage() {
     });
   };
 
-  // Filtrar gift cards
   const filteredGiftCards = giftCards.filter(card => {
-    // Filtrar por término de búsqueda
     const matchesSearch = card.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          card.service.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Filtrar por estado
+
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
-    
-    // Filtrar por sucursal
+
     const matchesBranch = branchFilter === "all" || card.branch === branchFilter;
-    
+
     return matchesSearch && matchesStatus && matchesBranch;
   });
 
-  // Función para renderizar el badge de estado
   const renderStatusBadge = (status: GiftCardStatus) => {
     switch (status) {
       case "Pendiente":
@@ -262,6 +257,210 @@ export default function GiftCardsPage() {
         );
       default:
         return null;
+    }
+  };
+
+  const validateGiftCardData = (data: any): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (!data.number) errors.push(`Falta el número de gift card en la fila ${data.__rowNum__ + 1}`);
+    if (!data.service) errors.push(`Falta el servicio en la fila ${data.__rowNum__ + 1}`);
+    if (!data.type) errors.push(`Falta el tipo en la fila ${data.__rowNum__ + 1}`);
+    if (!data.branch) errors.push(`Falta la sucursal en la fila ${data.__rowNum__ + 1}`);
+    if (!data.issueDate) errors.push(`Falta la fecha de emisión en la fila ${data.__rowNum__ + 1}`);
+    
+    if (data.type && !["Física", "Virtual"].includes(data.type)) {
+      errors.push(`Tipo inválido "${data.type}" en la fila ${data.__rowNum__ + 1}. Debe ser "Física" o "Virtual"`);
+    }
+    
+    if (data.branch && !["Fisherton", "Alto Rosario", "Moreno", "Tucumán"].includes(data.branch)) {
+      errors.push(`Sucursal inválida "${data.branch}" en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    try {
+      if (data.issueDate) new Date(data.issueDate);
+      if (data.expirationDate) new Date(data.expirationDate);
+      if (data.receivedDate) new Date(data.receivedDate);
+    } catch (e) {
+      errors.push(`Formato de fecha inválido en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const processExcelFile = (file: File) => {
+    setImportStatus("processing");
+    setImportProgress(10);
+    setImportErrors([]);
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        setImportProgress(30);
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+        
+        setImportProgress(50);
+        
+        if (jsonData.length === 0) {
+          setImportStatus("error");
+          setImportErrors(["El archivo no contiene datos"]);
+          return;
+        }
+        
+        const newGiftCards: GiftCard[] = [];
+        const errors: string[] = [];
+        
+        jsonData.forEach((row, index) => {
+          setImportProgress(50 + Math.floor((index / jsonData.length) * 40));
+          
+          const { isValid, errors: rowErrors } = validateGiftCardData(row);
+          
+          if (isValid) {
+            const issueDate = new Date(row.issueDate);
+            const expirationDate = new Date(issueDate);
+            expirationDate.setDate(expirationDate.getDate() + 30);
+            
+            let status: GiftCardStatus = "Pendiente";
+            if (row.receivedDate) {
+              status = "Canjeada";
+            } else if (row.expirationDate && new Date() > new Date(row.expirationDate)) {
+              status = "Vencida";
+            }
+            
+            const newGiftCard: GiftCard = {
+              id: (giftCards.length + newGiftCards.length + 1).toString(),
+              number: row.number,
+              type: row.type as GiftCardType,
+              service: row.service,
+              branch: row.branch as Branch,
+              issueDate: row.issueDate,
+              receivedDate: row.receivedDate || null,
+              expirationDate: row.expirationDate || expirationDate.toISOString().split('T')[0],
+              status
+            };
+            
+            newGiftCards.push(newGiftCard);
+          } else {
+            errors.push(...rowErrors);
+          }
+        });
+        
+        setImportProgress(95);
+        
+        if (newGiftCards.length > 0) {
+          setGiftCards([...giftCards, ...newGiftCards]);
+        }
+        
+        setImportResults({
+          total: jsonData.length,
+          successful: newGiftCards.length,
+          failed: jsonData.length - newGiftCards.length
+        });
+        
+        setImportErrors(errors);
+        setImportStatus(errors.length > 0 ? "error" : "success");
+        setImportProgress(100);
+        
+        if (newGiftCards.length > 0) {
+          toast.success({
+            title: "Importación completada",
+            description: `Se importaron ${newGiftCards.length} gift cards correctamente`
+          });
+        } else {
+          toast.error({
+            title: "Error en la importación",
+            description: "No se pudo importar ninguna gift card. Revise los errores."
+          });
+        }
+      } catch (error) {
+        console.error("Error al procesar el archivo Excel:", error);
+        setImportStatus("error");
+        setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
+        
+        toast.error({
+          title: "Error en la importación",
+          description: "No se pudo procesar el archivo Excel. Verifique el formato."
+        });
+      }
+    };
+    
+    reader.onerror = () => {
+      setImportStatus("error");
+      setImportErrors(["Error al leer el archivo"]);
+      
+      toast.error({
+        title: "Error en la importación",
+        description: "No se pudo leer el archivo."
+      });
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      processExcelFile(file);
+    }
+  };
+
+  const downloadExcelTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    const headers = [
+      "number", "type", "service", "branch", "issueDate", "receivedDate", "expirationDate"
+    ];
+    
+    const sampleData = [
+      {
+        number: "GC-SAMPLE-001",
+        type: "Física",
+        service: "Manicura Completa",
+        branch: "Fisherton",
+        issueDate: "2025-04-10",
+        receivedDate: "",
+        expirationDate: "2025-05-10"
+      },
+      {
+        number: "GC-SAMPLE-002",
+        type: "Virtual",
+        service: "Corte y Peinado",
+        branch: "Alto Rosario",
+        issueDate: "2025-04-10",
+        receivedDate: "2025-04-15",
+        expirationDate: "2025-05-10"
+      }
+    ];
+    
+    const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Gift Cards");
+    
+    XLSX.writeFile(workbook, "plantilla_gift_cards.xlsx");
+    
+    toast({
+      title: "Plantilla descargada",
+      description: "La plantilla de Excel para importar gift cards ha sido descargada"
+    });
+  };
+
+  const resetImportState = () => {
+    setImportStatus("idle");
+    setImportProgress(0);
+    setImportErrors([]);
+    setImportResults({ total: 0, successful: 0, failed: 0 });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -303,6 +502,14 @@ export default function GiftCardsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <Button
+            variant="outline"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importar
+          </Button>
         </div>
       </div>
 
@@ -564,6 +771,144 @@ export default function GiftCardsPage() {
               Crear Gift Card
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
+        setIsImportDialogOpen(open);
+        if (!open) resetImportState();
+      }}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Importar Gift Cards</DialogTitle>
+            <DialogDescription>
+              Cargue un archivo Excel con la información de múltiples gift cards para crearlas en lote.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {importStatus === "idle" && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="import-file">Archivo Excel</Label>
+                  <Input
+                    id="import-file"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    El archivo debe tener las columnas: number, type, service, branch, issueDate, receivedDate, expirationDate
+                  </p>
+                </div>
+
+                <div className="border rounded-md p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-medium">¿No tiene una plantilla?</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Descargue nuestra plantilla de Excel con el formato correcto y ejemplos.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadExcelTemplate}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar Plantilla
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {importStatus === "processing" && (
+              <div className="space-y-4 py-4">
+                <Label>Procesando archivo...</Label>
+                <Progress value={importProgress} className="h-2" />
+                <p className="text-sm text-muted-foreground">
+                  Por favor espere mientras se procesan las gift cards...
+                </p>
+              </div>
+            )}
+
+            {(importStatus === "success" || importStatus === "error") && (
+              <div className="space-y-4">
+                <div className="rounded-md bg-green-50 p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      {importResults.successful > 0 ? (
+                        <BadgeCheck className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <BadgeAlert className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">
+                        Resumen de la importación
+                      </h3>
+                      <div className="mt-2 text-sm text-green-700">
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Total de registros: {importResults.total}</li>
+                          <li>Gift cards importadas: {importResults.successful}</li>
+                          <li>Registros con errores: {importResults.failed}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {importErrors.length > 0 && (
+                  <div>
+                    <Label>Errores encontrados:</Label>
+                    <div className="max-h-40 overflow-y-auto border rounded-md mt-2">
+                      <ul className="px-4 py-3 space-y-1">
+                        {importErrors.map((error, index) => (
+                          <li key={index} className="text-sm text-red-600">{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => resetImportState()}
+                  >
+                    Importar otro archivo
+                  </Button>
+                  
+                  <Button
+                    variant="default"
+                    onClick={() => setIsImportDialogOpen(false)}
+                  >
+                    {importResults.successful > 0 ? "Finalizar" : "Cerrar"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {importStatus === "idle" && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                disabled={!fileInputRef.current?.files?.length}
+                onClick={() => {
+                  if (fileInputRef.current?.files?.length) {
+                    processExcelFile(fileInputRef.current.files[0]);
+                  }
+                }}
+              >
+                Importar
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

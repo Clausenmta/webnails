@@ -175,7 +175,7 @@ function toast(props: ToastOptions) {
 
 // Add variant helpers for the toast function
 toast.success = (props: Omit<ToastOptions, "variant">) => {
-  return toast({ ...props, variant: "default" });
+  return toast({ ...props, variant: "default", className: "bg-green-100 border-green-300 text-green-800" });
 };
 
 toast.error = (props: Omit<ToastOptions, "variant">) => {
@@ -183,11 +183,11 @@ toast.error = (props: Omit<ToastOptions, "variant">) => {
 };
 
 toast.warning = (props: Omit<ToastOptions, "variant">) => {
-  return toast({ ...props, variant: "default", className: "bg-yellow-500" });
+  return toast({ ...props, variant: "default", className: "bg-yellow-100 border-yellow-300 text-yellow-800" });
 };
 
 toast.info = (props: Omit<ToastOptions, "variant">) => {
-  return toast({ ...props, variant: "default", className: "bg-blue-500" });
+  return toast({ ...props, variant: "default", className: "bg-blue-100 border-blue-300 text-blue-800" });
 };
 
 function useToast() {

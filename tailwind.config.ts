@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,6 +53,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+                // Colores personalizados para la app de estética
+                salon: {
+                    50: "#f5f3fe",
+                    100: "#ebe7fd",
+                    200: "#d6cffb",
+                    300: "#b7a7f8",
+                    400: "#9b87f5",
+                    500: "#7e69ab",
+                    600: "#6E59A5",
+                    700: "#5e45a2",
+                    800: "#503d84",
+                    900: "#433769",
+                },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

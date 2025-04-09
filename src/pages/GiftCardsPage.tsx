@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -167,6 +167,30 @@ export default function GiftCardsPage() {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Efecto para limpiar el estado después de cada operación
+  useEffect(() => {
+    return () => {
+      // Limpiar el estado al desmontar el componente
+      setSelectedGiftCard(null);
+      setEditGiftCard({});
+    };
+  }, []);
+
+  const closeAllDialogs = () => {
+    setIsNewGiftCardDialogOpen(false);
+    setIsViewDetailsDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setIsDeleteDialogOpen(false);
+    setIsConfirmRedeemDialogOpen(false);
+    setIsImportDialogOpen(false);
+    
+    // Pequeño tiempo de espera antes de limpiar los estados
+    setTimeout(() => {
+      setSelectedGiftCard(null);
+      setEditGiftCard({});
+    }, 100);
+  };
+
   const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
     setNewGiftCard({
       ...newGiftCard,
@@ -182,171 +206,285 @@ export default function GiftCardsPage() {
   };
 
   const handleExportPDF = () => {
-    toast.success({
-      title: "Exportando a PDF...",
-      description: "El archivo se descargará en breve."
-    });
-    console.log("Exporting to PDF...");
+    try {
+      toast.success({
+        title: "Exportando a PDF...",
+        description: "El archivo se descargará en breve."
+      });
+      console.log("Exporting to PDF...");
+    } catch (error) {
+      console.error("Error al exportar a PDF:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo exportar a PDF. Intente nuevamente."
+      });
+    }
   };
 
   const handleExportExcel = () => {
-    toast.success({
-      title: "Exportando a Excel...",
-      description: "El archivo se descargará en breve."
-    });
-    console.log("Exporting to Excel...");
+    try {
+      toast.success({
+        title: "Exportando a Excel...",
+        description: "El archivo se descargará en breve."
+      });
+      console.log("Exporting to Excel...");
+    } catch (error) {
+      console.error("Error al exportar a Excel:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo exportar a Excel. Intente nuevamente."
+      });
+    }
   };
 
   const handleCreateGiftCard = () => {
-    if (!newGiftCard.number || !newGiftCard.service) {
-      toast.error({
-        title: "Error",
-        description: "Por favor complete todos los campos requeridos."
-      });
-      return;
+    try {
+      if (!newGiftCard.number || !newGiftCard.service) {
+        toast.error({
+          title: "Error",
+          description: "Por favor complete todos los campos requeridos."
+        });
+        return;
+      }
+
+      const issueDate = new Date(newGiftCard.issueDate || new Date());
+      const expirationDate = new Date(issueDate);
+      expirationDate.setDate(expirationDate.getDate() + 30);
+
+      let status: GiftCardStatus = "Pendiente";
+      if (newGiftCard.receivedDate) {
+        status = "Canjeada";
+      } else if (new Date() > expirationDate) {
+        status = "Vencida";
+      }
+
+      const newCard: GiftCard = {
+        id: (giftCards.length + 1).toString(),
+        number: newGiftCard.number || "",
+        type: newGiftCard.type || "Física",
+        service: newGiftCard.service || "",
+        branch: newGiftCard.branch || "Fisherton",
+        issueDate: newGiftCard.issueDate || new Date().toISOString().split('T')[0],
+        receivedDate: newGiftCard.receivedDate || null,
+        expirationDate: expirationDate.toISOString().split('T')[0],
+        status: status
+      };
+
+      // Cerrar diálogo primero
+      setIsNewGiftCardDialogOpen(false);
+      
+      // Pequeño retraso para asegurar que la interfaz responda
+      setTimeout(() => {
+        setGiftCards(prevCards => [...prevCards, newCard]);
+        
+        setNewGiftCard({
+          type: "Física",
+          branch: "Fisherton",
+          issueDate: new Date().toISOString().split('T')[0]
+        });
+        
+        toast.success({
+          title: "Gift Card creada",
+          description: `La gift card ${newCard.number} ha sido creada exitosamente.`
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Error al crear gift card:", error);
+      setIsNewGiftCardDialogOpen(false);
+      
+      setTimeout(() => {
+        toast.error({
+          title: "Error",
+          description: "Ocurrió un error al crear la gift card. Intente nuevamente."
+        });
+      }, 100);
     }
-
-    const issueDate = new Date(newGiftCard.issueDate || new Date());
-    const expirationDate = new Date(issueDate);
-    expirationDate.setDate(expirationDate.getDate() + 30);
-
-    let status: GiftCardStatus = "Pendiente";
-    if (newGiftCard.receivedDate) {
-      status = "Canjeada";
-    } else if (new Date() > expirationDate) {
-      status = "Vencida";
-    }
-
-    const newCard: GiftCard = {
-      id: (giftCards.length + 1).toString(),
-      number: newGiftCard.number || "",
-      type: newGiftCard.type || "Física",
-      service: newGiftCard.service || "",
-      branch: newGiftCard.branch || "Fisherton",
-      issueDate: newGiftCard.issueDate || new Date().toISOString().split('T')[0],
-      receivedDate: newGiftCard.receivedDate || null,
-      expirationDate: expirationDate.toISOString().split('T')[0],
-      status: status
-    };
-
-    setGiftCards([...giftCards, newCard]);
-    setIsNewGiftCardDialogOpen(false);
-    setNewGiftCard({
-      type: "Física",
-      branch: "Fisherton",
-      issueDate: new Date().toISOString().split('T')[0]
-    });
-    
-    toast.success({
-      title: "Gift Card creada",
-      description: `La gift card ${newCard.number} ha sido creada exitosamente.`
-    });
   };
 
   const handleViewDetails = (card: GiftCard) => {
-    setSelectedGiftCard(card);
-    setIsViewDetailsDialogOpen(true);
+    try {
+      setSelectedGiftCard(card);
+      setIsViewDetailsDialogOpen(true);
+    } catch (error) {
+      console.error("Error al ver detalles:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudieron cargar los detalles. Intente nuevamente."
+      });
+    }
   };
 
   const handleEdit = (card: GiftCard) => {
-    setSelectedGiftCard(card);
-    setEditGiftCard({...card});
-    setIsEditDialogOpen(true);
+    try {
+      setSelectedGiftCard(card);
+      setEditGiftCard({...card});
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error("Error al editar:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo abrir el editor. Intente nuevamente."
+      });
+    }
   };
 
   const handleSaveEdit = () => {
-    if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
-      toast.error({
-        title: "Error",
-        description: "Por favor complete todos los campos requeridos."
-      });
-      return;
-    }
-
-    const updatedGiftCards = giftCards.map(card => {
-      if (card.id === selectedGiftCard.id) {
-        return {
-          ...card,
-          ...editGiftCard,
-          status: editGiftCard.status as GiftCardStatus || card.status
-        } as GiftCard;
+    try {
+      if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
+        toast.error({
+          title: "Error",
+          description: "Por favor complete todos los campos requeridos."
+        });
+        return;
       }
-      return card;
-    });
 
-    setGiftCards(updatedGiftCards);
-    setIsEditDialogOpen(false);
-    setSelectedGiftCard(null);
-    
-    toast.success({
-      title: "Gift Card actualizada",
-      description: `La gift card ${editGiftCard.number} ha sido actualizada exitosamente.`
-    });
+      // Cerrar primero el diálogo
+      setIsEditDialogOpen(false);
+      
+      const cardId = selectedGiftCard.id;
+      const updatedCardNumber = editGiftCard.number;
+      
+      // Limpiar referencias
+      const currentSelectedGiftCard = {...selectedGiftCard};
+      setSelectedGiftCard(null);
+
+      // Pequeño retraso para asegurar que la interfaz responda
+      setTimeout(() => {
+        setGiftCards(prevCards => prevCards.map(card => {
+          if (card.id === cardId) {
+            return {
+              ...card,
+              ...editGiftCard,
+              status: editGiftCard.status as GiftCardStatus || card.status
+            } as GiftCard;
+          }
+          return card;
+        }));
+        
+        toast.success({
+          title: "Gift Card actualizada",
+          description: `La gift card ${updatedCardNumber} ha sido actualizada exitosamente.`
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Error al guardar edición:", error);
+      setIsEditDialogOpen(false);
+      setSelectedGiftCard(null);
+      
+      setTimeout(() => {
+        toast.error({
+          title: "Error",
+          description: "Ocurrió un error al actualizar la gift card. Intente nuevamente."
+        });
+      }, 100);
+    }
   };
 
   const handleDelete = (card: GiftCard) => {
-    setSelectedGiftCard(card);
-    setIsDeleteDialogOpen(true);
+    try {
+      setSelectedGiftCard(card);
+      setIsDeleteDialogOpen(true);
+    } catch (error) {
+      console.error("Error al preparar eliminación:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo preparar la eliminación. Intente nuevamente."
+      });
+    }
   };
 
   const handleConfirmDelete = () => {
     try {
       if (!selectedGiftCard) return;
       
-      const updatedGiftCards = giftCards.filter(card => card.id !== selectedGiftCard.id);
-      
+      // Primero cerrar el diálogo y guardar los datos que necesitamos
+      const cardToDelete = {...selectedGiftCard};
       setIsDeleteDialogOpen(false);
       
-      const deletedCardNumber = selectedGiftCard.number;
-      
+      // Limpiar la referencia al card seleccionado
       setSelectedGiftCard(null);
       
-      setGiftCards(updatedGiftCards);
-      
+      // Pequeño retraso para asegurar que la interfaz responda
       setTimeout(() => {
+        setGiftCards(prevCards => prevCards.filter(card => card.id !== cardToDelete.id));
+        
         toast.success({
           title: "Gift Card eliminada",
-          description: `La gift card ${deletedCardNumber} ha sido eliminada exitosamente.`
+          description: `La gift card ${cardToDelete.number} ha sido eliminada exitosamente.`
         });
       }, 100);
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
-      toast.error({
-        title: "Error",
-        description: "Ocurrió un error al eliminar la gift card. Intente nuevamente."
-      });
+      
+      // Cerrar el diálogo y limpiar la selección en caso de error
       setIsDeleteDialogOpen(false);
       setSelectedGiftCard(null);
+      
+      setTimeout(() => {
+        toast.error({
+          title: "Error",
+          description: "Ocurrió un error al eliminar la gift card. Intente nuevamente."
+        });
+      }, 100);
     }
   };
 
   const handleMarkAsRedeemed = (card: GiftCard) => {
-    setSelectedGiftCard(card);
-    setIsConfirmRedeemDialogOpen(true);
+    try {
+      setSelectedGiftCard(card);
+      setIsConfirmRedeemDialogOpen(true);
+    } catch (error) {
+      console.error("Error al preparar canje:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo preparar el canje. Intente nuevamente."
+      });
+    }
   };
 
   const handleConfirmRedeem = () => {
-    if (!selectedGiftCard) return;
-    
-    const updatedGiftCards = giftCards.map(card => {
-      if (card.id === selectedGiftCard.id) {
-        return {
-          ...card,
-          status: "Canjeada" as GiftCardStatus,
-          receivedDate: new Date().toISOString().split('T')[0]
-        };
-      }
-      return card;
-    });
-
-    setGiftCards(updatedGiftCards);
-    setIsConfirmRedeemDialogOpen(false);
-    setSelectedGiftCard(null);
-    
-    toast.success({
-      title: "Gift Card canjeada",
-      description: `La gift card ${selectedGiftCard.number} ha sido marcada como canjeada.`
-    });
+    try {
+      if (!selectedGiftCard) return;
+      
+      // Primero cerrar el diálogo y guardar los datos que necesitamos
+      const cardToRedeem = {...selectedGiftCard};
+      setIsConfirmRedeemDialogOpen(false);
+      
+      // Limpiar la referencia al card seleccionado
+      setSelectedGiftCard(null);
+      
+      // Pequeño retraso para asegurar que la interfaz responda
+      setTimeout(() => {
+        setGiftCards(prevCards => prevCards.map(card => {
+          if (card.id === cardToRedeem.id) {
+            return {
+              ...card,
+              status: "Canjeada" as GiftCardStatus,
+              receivedDate: new Date().toISOString().split('T')[0]
+            };
+          }
+          return card;
+        }));
+        
+        toast.success({
+          title: "Gift Card canjeada",
+          description: `La gift card ${cardToRedeem.number} ha sido marcada como canjeada.`
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Error al canjear gift card:", error);
+      
+      // Cerrar el diálogo y limpiar la selección en caso de error
+      setIsConfirmRedeemDialogOpen(false);
+      setSelectedGiftCard(null);
+      
+      setTimeout(() => {
+        toast.error({
+          title: "Error",
+          description: "Ocurrió un error al canjear la gift card. Intente nuevamente."
+        });
+      }, 100);
+    }
   };
 
   const filteredGiftCards = giftCards.filter(card => {
@@ -420,175 +558,229 @@ export default function GiftCardsPage() {
   };
 
   const processExcelFile = (file: File) => {
-    setImportStatus("processing");
-    setImportProgress(10);
-    setImportErrors([]);
-    
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        setImportProgress(30);
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-        
-        setImportProgress(50);
-        
-        if (jsonData.length === 0) {
-          setImportStatus("error");
-          setImportErrors(["El archivo no contiene datos"]);
-          return;
-        }
-        
-        const newGiftCards: GiftCard[] = [];
-        const errors: string[] = [];
-        
-        jsonData.forEach((row, index) => {
-          setImportProgress(50 + Math.floor((index / jsonData.length) * 40));
+    try {
+      setImportStatus("processing");
+      setImportProgress(10);
+      setImportErrors([]);
+      
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          setImportProgress(30);
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
           
-          const { isValid, errors: rowErrors } = validateGiftCardData(row);
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
           
-          if (isValid) {
-            const issueDate = new Date(row.issueDate);
-            const expirationDate = new Date(issueDate);
-            expirationDate.setDate(expirationDate.getDate() + 30);
-            
-            let status: GiftCardStatus = "Pendiente";
-            if (row.receivedDate) {
-              status = "Canjeada";
-            } else if (row.expirationDate && new Date() > new Date(row.expirationDate)) {
-              status = "Vencida";
-            }
-            
-            const newGiftCard: GiftCard = {
-              id: (giftCards.length + newGiftCards.length + 1).toString(),
-              number: row.number,
-              type: row.type as GiftCardType,
-              service: row.service,
-              branch: row.branch as Branch,
-              issueDate: row.issueDate,
-              receivedDate: row.receivedDate || null,
-              expirationDate: row.expirationDate || expirationDate.toISOString().split('T')[0],
-              status
-            };
-            
-            newGiftCards.push(newGiftCard);
-          } else {
-            errors.push(...rowErrors);
+          const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+          
+          setImportProgress(50);
+          
+          if (jsonData.length === 0) {
+            setImportStatus("error");
+            setImportErrors(["El archivo no contiene datos"]);
+            return;
           }
-        });
-        
-        setImportProgress(95);
-        
-        if (newGiftCards.length > 0) {
-          setGiftCards([...giftCards, ...newGiftCards]);
-        }
-        
-        setImportResults({
-          total: jsonData.length,
-          successful: newGiftCards.length,
-          failed: jsonData.length - newGiftCards.length
-        });
-        
-        setImportErrors(errors);
-        setImportStatus(errors.length > 0 ? "error" : "success");
-        setImportProgress(100);
-        
-        if (newGiftCards.length > 0) {
-          toast.success({
-            title: "Importación completada",
-            description: `Se importaron ${newGiftCards.length} gift cards correctamente`
+          
+          const newGiftCards: GiftCard[] = [];
+          const errors: string[] = [];
+          
+          jsonData.forEach((row, index) => {
+            setImportProgress(50 + Math.floor((index / jsonData.length) * 40));
+            
+            const { isValid, errors: rowErrors } = validateGiftCardData(row);
+            
+            if (isValid) {
+              const issueDate = new Date(row.issueDate);
+              const expirationDate = new Date(issueDate);
+              expirationDate.setDate(expirationDate.getDate() + 30);
+              
+              let status: GiftCardStatus = "Pendiente";
+              if (row.receivedDate) {
+                status = "Canjeada";
+              } else if (row.expirationDate && new Date() > new Date(row.expirationDate)) {
+                status = "Vencida";
+              }
+              
+              const newGiftCard: GiftCard = {
+                id: (giftCards.length + newGiftCards.length + 1).toString(),
+                number: row.number,
+                type: row.type as GiftCardType,
+                service: row.service,
+                branch: row.branch as Branch,
+                issueDate: row.issueDate,
+                receivedDate: row.receivedDate || null,
+                expirationDate: row.expirationDate || expirationDate.toISOString().split('T')[0],
+                status
+              };
+              
+              newGiftCards.push(newGiftCard);
+            } else {
+              errors.push(...rowErrors);
+            }
           });
-        } else {
+          
+          setImportProgress(95);
+          
+          setImportResults({
+            total: jsonData.length,
+            successful: newGiftCards.length,
+            failed: jsonData.length - newGiftCards.length
+          });
+          
+          setImportErrors(errors);
+          
+          if (newGiftCards.length > 0) {
+            // Cerrar diálogo primero si es exitoso
+            if (errors.length === 0) {
+              setImportStatus("success");
+              setImportProgress(100);
+              
+              // Pequeño retraso para la actualización
+              setTimeout(() => {
+                setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
+                
+                toast.success({
+                  title: "Importación completada",
+                  description: `Se importaron ${newGiftCards.length} gift cards correctamente`
+                });
+              }, 100);
+            } else {
+              setImportStatus("error");
+              setImportProgress(100);
+              
+              // Actualizar cards pero mostrar errores
+              setTimeout(() => {
+                setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
+                
+                toast({
+                  title: "Importación parcial",
+                  description: `Se importaron ${newGiftCards.length} gift cards con ${errors.length} errores.`,
+                  variant: "destructive"
+                });
+              }, 100);
+            }
+          } else {
+            setImportStatus("error");
+            setImportProgress(100);
+            
+            toast.error({
+              title: "Error en la importación",
+              description: "No se pudo importar ninguna gift card. Revise los errores."
+            });
+          }
+        } catch (error) {
+          console.error("Error al procesar el archivo Excel:", error);
+          setImportStatus("error");
+          setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
+          
           toast.error({
             title: "Error en la importación",
-            description: "No se pudo importar ninguna gift card. Revise los errores."
+            description: "No se pudo procesar el archivo Excel. Verifique el formato."
           });
         }
-      } catch (error) {
-        console.error("Error al procesar el archivo Excel:", error);
+      };
+      
+      reader.onerror = () => {
         setImportStatus("error");
-        setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
+        setImportErrors(["Error al leer el archivo"]);
         
         toast.error({
           title: "Error en la importación",
-          description: "No se pudo procesar el archivo Excel. Verifique el formato."
+          description: "No se pudo leer el archivo."
         });
-      }
-    };
-    
-    reader.onerror = () => {
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Error al procesar el archivo:", error);
       setImportStatus("error");
-      setImportErrors(["Error al leer el archivo"]);
+      setImportProgress(0);
+      setImportErrors(["Error inesperado al procesar el archivo"]);
       
       toast.error({
-        title: "Error en la importación",
-        description: "No se pudo leer el archivo."
+        title: "Error",
+        description: "Error inesperado al procesar el archivo."
       });
-    };
-    
-    reader.readAsArrayBuffer(file);
+    }
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      processExcelFile(file);
+    try {
+      const file = event.target.files?.[0];
+      if (file) {
+        processExcelFile(file);
+      }
+    } catch (error) {
+      console.error("Error al seleccionar archivo:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo seleccionar el archivo. Intente nuevamente."
+      });
     }
   };
 
   const downloadExcelTemplate = () => {
-    const workbook = XLSX.utils.book_new();
-    
-    const headers = [
-      "number", "type", "service", "branch", "issueDate", "receivedDate", "expirationDate"
-    ];
-    
-    const sampleData = [
-      {
-        number: "GC-SAMPLE-001",
-        type: "Física",
-        service: "Manicura Completa",
-        branch: "Fisherton",
-        issueDate: "2025-04-10",
-        receivedDate: "",
-        expirationDate: "2025-05-10"
-      },
-      {
-        number: "GC-SAMPLE-002",
-        type: "Virtual",
-        service: "Corte y Peinado",
-        branch: "Alto Rosario",
-        issueDate: "2025-04-10",
-        receivedDate: "2025-04-15",
-        expirationDate: "2025-05-10"
-      }
-    ];
-    
-    const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
-    
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Gift Cards");
-    
-    XLSX.writeFile(workbook, "plantilla_gift_cards.xlsx");
-    
-    toast({
-      title: "Plantilla descargada",
-      description: "La plantilla de Excel para importar gift cards ha sido descargada"
-    });
+    try {
+      const workbook = XLSX.utils.book_new();
+      
+      const headers = [
+        "number", "type", "service", "branch", "issueDate", "receivedDate", "expirationDate"
+      ];
+      
+      const sampleData = [
+        {
+          number: "GC-SAMPLE-001",
+          type: "Física",
+          service: "Manicura Completa",
+          branch: "Fisherton",
+          issueDate: "2025-04-10",
+          receivedDate: "",
+          expirationDate: "2025-05-10"
+        },
+        {
+          number: "GC-SAMPLE-002",
+          type: "Virtual",
+          service: "Corte y Peinado",
+          branch: "Alto Rosario",
+          issueDate: "2025-04-10",
+          receivedDate: "2025-04-15",
+          expirationDate: "2025-05-10"
+        }
+      ];
+      
+      const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+      
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Gift Cards");
+      
+      XLSX.writeFile(workbook, "plantilla_gift_cards.xlsx");
+      
+      toast({
+        title: "Plantilla descargada",
+        description: "La plantilla de Excel para importar gift cards ha sido descargada"
+      });
+    } catch (error) {
+      console.error("Error al descargar plantilla:", error);
+      toast.error({
+        title: "Error",
+        description: "No se pudo descargar la plantilla. Intente nuevamente."
+      });
+    }
   };
 
   const resetImportState = () => {
-    setImportStatus("idle");
-    setImportProgress(0);
-    setImportErrors([]);
-    setImportResults({ total: 0, successful: 0, failed: 0 });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    try {
+      setImportStatus("idle");
+      setImportProgress(0);
+      setImportErrors([]);
+      setImportResults({ total: 0, successful: 0, failed: 0 });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error("Error al resetear estado de importación:", error);
     }
   };
 
@@ -792,7 +984,7 @@ export default function GiftCardsPage() {
         open={isDeleteDialogOpen} 
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedGiftCard(null);
+            setTimeout(() => setSelectedGiftCard(null), 100);
           }
           setIsDeleteDialogOpen(open);
         }}
@@ -818,7 +1010,7 @@ export default function GiftCardsPage() {
               variant="outline" 
               onClick={() => {
                 setIsDeleteDialogOpen(false);
-                setSelectedGiftCard(null);
+                setTimeout(() => setSelectedGiftCard(null), 100);
               }}
             >
               Cancelar
@@ -833,7 +1025,10 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isNewGiftCardDialogOpen} onOpenChange={setIsNewGiftCardDialogOpen}>
+      <Dialog 
+        open={isNewGiftCardDialogOpen} 
+        onOpenChange={(open) => setIsNewGiftCardDialogOpen(open)}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Nueva Gift Card</DialogTitle>
@@ -939,7 +1134,19 @@ export default function GiftCardsPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewGiftCardDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsNewGiftCardDialogOpen(false);
+                setTimeout(() => {
+                  setNewGiftCard({
+                    type: "Física",
+                    branch: "Fisherton",
+                    issueDate: new Date().toISOString().split('T')[0]
+                  });
+                }, 100);
+              }}
+            >
               Cancelar
             </Button>
             <Button 
@@ -952,7 +1159,15 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isViewDetailsDialogOpen} onOpenChange={setIsViewDetailsDialogOpen}>
+      <Dialog 
+        open={isViewDetailsDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setTimeout(() => setSelectedGiftCard(null), 100);
+          }
+          setIsViewDetailsDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Detalles de Gift Card</DialogTitle>
@@ -1019,7 +1234,18 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setTimeout(() => {
+              setSelectedGiftCard(null);
+              setEditGiftCard({});
+            }, 100);
+          }
+          setIsEditDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Editar Gift Card</DialogTitle>
@@ -1151,7 +1377,15 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isConfirmRedeemDialogOpen} onOpenChange={setIsConfirmRedeemDialogOpen}>
+      <Dialog 
+        open={isConfirmRedeemDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setTimeout(() => setSelectedGiftCard(null), 100);
+          }
+          setIsConfirmRedeemDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>Marcar como Canjeada</DialogTitle>
@@ -1183,7 +1417,15 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+      <Dialog 
+        open={isImportDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open && importStatus !== "processing") {
+            resetImportState();
+          }
+          setIsImportDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Importar Gift Cards</DialogTitle>
@@ -1276,9 +1518,11 @@ export default function GiftCardsPage() {
                   if (importStatus === "processing") {
                     return;
                   }
-                  resetImportState();
                   if (importStatus === "success") {
                     setIsImportDialogOpen(false);
+                    resetImportState();
+                  } else {
+                    resetImportState();
                   }
                 }}
               >

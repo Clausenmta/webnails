@@ -12,8 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 export function AppHeader() {
+  // Estado para manejar el menú de notificaciones
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <header className="border-b bg-white py-2 px-6">
       <div className="flex h-12 items-center justify-between">
@@ -29,7 +33,12 @@ export function AppHeader() {
           >
             <Bell className="h-5 w-5 text-muted-foreground" />
           </Button>
-          <DropdownMenu>
+          <DropdownMenu 
+            open={isMenuOpen} 
+            onOpenChange={(open) => {
+              setIsMenuOpen(open);
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="rounded-full" size="icon">
                 <Avatar className="h-8 w-8">
@@ -42,13 +51,30 @@ export function AppHeader() {
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/perfil">Perfil</Link>
+                <Link 
+                  to="/perfil"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Perfil
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/configuracion">Configuración</Link>
+                <Link 
+                  to="/configuracion"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Configuración
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  console.log("Cerrar sesión");
+                }}
+              >
+                Cerrar Sesión
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

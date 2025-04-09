@@ -657,39 +657,6 @@ export default function ResultadosPage() {
 
                 <div className="grid grid-cols-1 gap-6">
                   <Card className="shadow-sm border border-slate-200">
-                    <CardHeader>
-                      <CardTitle className="text-xl">Distribución de la Inversión Inicial</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-96">
-                      <ChartContainer config={{}}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart 
-                            data={initialExpensesByCategory} 
-                            layout="vertical"
-                            margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
-                          >
-                            <XAxis type="number" />
-                            <YAxis 
-                              dataKey="category" 
-                              type="category" 
-                              tick={{ fill: '#666' }}
-                              width={80}
-                            />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar 
-                              name="Monto" 
-                              dataKey="amount" 
-                              fill="#9b87f5" 
-                              radius={[0, 4, 4, 0]} 
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </ChartContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="shadow-sm border border-slate-200">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xl">Detalle de Gastos Iniciales</CardTitle>
                     </CardHeader>
@@ -701,38 +668,46 @@ export default function ResultadosPage() {
                             <TableHead className="max-w-[250px]">Descripción</TableHead>
                             <TableHead>Categoría</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
+                            <TableHead className="text-right">% del Total</TableHead>
                             <TableHead className="w-[100px] text-right">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {initialExpenses.map((expense) => (
-                            <TableRow key={expense.id}>
-                              <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                              <TableCell className="max-w-[250px] truncate">{expense.description}</TableCell>
-                              <TableCell>{expense.category}</TableCell>
-                              <TableCell className="text-right">$ {expense.amount.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => prepareEditExpense(expense)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Pencil className="h-4 w-4 text-slate-600" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => handleDeleteExpense(expense.id)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {initialExpenses.map((expense) => {
+                            const percentage = totalInitialInvestment > 0 
+                              ? ((expense.amount / totalInitialInvestment) * 100).toFixed(1) 
+                              : "0.0";
+                              
+                            return (
+                              <TableRow key={expense.id}>
+                                <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
+                                <TableCell className="max-w-[250px] truncate">{expense.description}</TableCell>
+                                <TableCell>{expense.category}</TableCell>
+                                <TableCell className="text-right">$ {expense.amount.toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{percentage}%</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => prepareEditExpense(expense)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Pencil className="h-4 w-4 text-slate-600" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDeleteExpense(expense.id)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </CardContent>

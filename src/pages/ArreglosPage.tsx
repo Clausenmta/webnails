@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Search, Edit, Trash, ArrowUpDown, ChevronDown, FileText, FileSpreadsheet, Calendar as CalendarIcon, CheckSquare } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // Mock data for repairs
 const initialArreglos = [

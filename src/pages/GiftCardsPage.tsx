@@ -290,17 +290,34 @@ export default function GiftCardsPage() {
   };
 
   const handleConfirmDelete = () => {
-    if (!selectedGiftCard) return;
-    
-    const updatedGiftCards = giftCards.filter(card => card.id !== selectedGiftCard.id);
-    setGiftCards(updatedGiftCards);
-    setIsDeleteDialogOpen(false);
-    setSelectedGiftCard(null);
-    
-    toast.success({
-      title: "Gift Card eliminada",
-      description: `La gift card ${selectedGiftCard.number} ha sido eliminada exitosamente.`
-    });
+    try {
+      if (!selectedGiftCard) return;
+      
+      const updatedGiftCards = giftCards.filter(card => card.id !== selectedGiftCard.id);
+      
+      setIsDeleteDialogOpen(false);
+      
+      const deletedCardNumber = selectedGiftCard.number;
+      
+      setSelectedGiftCard(null);
+      
+      setGiftCards(updatedGiftCards);
+      
+      setTimeout(() => {
+        toast.success({
+          title: "Gift Card eliminada",
+          description: `La gift card ${deletedCardNumber} ha sido eliminada exitosamente.`
+        });
+      }, 100);
+    } catch (error) {
+      console.error("Error al eliminar gift card:", error);
+      toast.error({
+        title: "Error",
+        description: "Ocurrió un error al eliminar la gift card. Intente nuevamente."
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedGiftCard(null);
+    }
   };
 
   const handleMarkAsRedeemed = (card: GiftCard) => {
@@ -771,6 +788,51 @@ export default function GiftCardsPage() {
         </CardContent>
       </Card>
 
+      <Dialog 
+        open={isDeleteDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedGiftCard(null);
+          }
+          setIsDeleteDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar Gift Card</DialogTitle>
+            <DialogDescription>
+              ¿Está seguro que desea eliminar esta gift card? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedGiftCard && (
+            <div className="py-4">
+              <div className="p-4 border rounded-md mb-4">
+                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
+                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
+                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedGiftCard(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <Dialog open={isNewGiftCardDialogOpen} onOpenChange={setIsNewGiftCardDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -1084,37 +1146,6 @@ export default function GiftCardsPage() {
               onClick={handleSaveEdit}
             >
               Guardar Cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Eliminar Gift Card</DialogTitle>
-            <DialogDescription>
-              ¿Está seguro que desea eliminar esta gift card? Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedGiftCard && (
-            <div className="py-4">
-              <div className="p-4 border rounded-md mb-4">
-                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
-                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
-                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              variant="destructive"
-              onClick={handleConfirmDelete}
-            >
-              Eliminar
             </Button>
           </DialogFooter>
         </DialogContent>

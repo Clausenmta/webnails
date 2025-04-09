@@ -22,7 +22,11 @@ export function AppHeader() {
           {/* Logo removed from header, only kept in sidebar */}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Notificaciones">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Notificaciones"
+          >
             <Bell className="h-5 w-5 text-muted-foreground" />
           </Button>
           <DropdownMenu>
@@ -37,8 +41,12 @@ export function AppHeader() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configuración</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/perfil">Perfil</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/configuracion">Configuración</Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem>
             </DropdownMenuContent>

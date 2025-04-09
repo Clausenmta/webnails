@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +30,13 @@ import {
 } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { jsPDF } from "jspdf";
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 // Tipo para los productos/servicios en la factura
 interface ProductoServicio {
@@ -645,7 +651,7 @@ export default function FacturacionPage() {
 
   // Gestionar status de conexión AFIP
   const generarFacturaAFIP = (factura: Factura) => {
-    // En un caso real, aquí se haría una conexión a AFIP/ARCA
+    // En un caso real, aquí se conectaría a AFIP/ARCA con certificados digitales
     setConectandoAFIP(true);
     
     // Simular tiempo de conexión
@@ -659,43 +665,321 @@ export default function FacturacionPage() {
       ));
       
       setConectandoAFIP(false);
-      toast.success("Factura enviada a AFIP correctamente. CAE generado.");
+      toast({
+        title: "Factura enviada a AFIP",
+        description: `Factura ${factura.numero} enviada y CAE generado con éxito.`,
+        variant: "default",
+      });
     }, 2000);
   };
 
-  // Función para descargar factura como PDF
+  // Función para generar y descargar factura como PDF
   const descargarFactura = (factura: Factura) => {
-    // En una implementación real, esto se conectaría a una API que genere el PDF
-    toast.success(`Factura ${factura.numero} descargada como PDF`);
+    const doc = new jsPDF();
     
-    // Aquí simularemos una descarga mostrando un mensaje
-    console.log(`Simulando descarga de factura ${factura.numero}`);
+    // Configurar información básica
+    doc.setFontSize(22);
+    doc.text("FACTURA", 105, 20, { align: 'center' });
     
-    // En una implementación real, esta función usaría una biblioteca como jsPDF
-    // para generar un PDF y luego lo descargaría automáticamente
+    // Tipo de factura
+    doc.setFillColor(220, 220, 220);
+    doc.rect(160, 15, 30, 30, 'F');
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text(factura.tipo, 175, 35, { align: 'center' });
+    
+    // Información del emisor
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Razón Social: ${factura.emisor.razonSocial}`, 20, 50);
+    doc.text(`Domicilio: ${factura.emisor.domicilioComercial}`, 20, 60);
+    doc.text(`CUIT: ${factura.emisor.cuit}`, 20, 70);
+    doc.text(`Cond. IVA: ${factura.emisor.condicionIVA}`, 20, 80);
+    
+    // Información de la factura
+    doc.text(`Factura Nro: ${factura.numero}`, 120, 50);
+    doc.text(`Fecha: ${factura.fecha}`, 120, 60);
+    doc.text(`Vencimiento: ${factura.fechaVencimiento}`, 120, 70);
+    doc.text(`CAE: ${factura.cae}`, 120, 80);
+    doc.text(`Vto. CAE: ${factura.fechaVtoCAE}`, 120, 90);
+    
+    // Línea separadora
+    doc.line(20, 100, 190, 100);
+    
+    // Información del receptor
+    doc.text(`Cliente: ${factura.receptor.razonSocial}`, 20, 110);
+    doc.text(`CUIT: ${factura.receptor.cuit}`, 20, 120);
+    doc.text(`Domicilio: ${factura.receptor.domicilioComercial}`, 20, 130);
+    doc.text(`Cond. IVA: ${factura.receptor.condicionIVA}`, 20, 140);
+    doc.text(`Cond. Venta: ${factura.receptor.condicionVenta}`, 120, 140);
+    
+    // Línea separadora
+    doc.line(20, 150, 190, 150);
+    
+    // Tabla de productos usando jspdf-autotable
+    const tableColumn = ["Código", "Descripción", "Cant.", "P.Unit", "% Bonif", "Subtotal", "IVA", "Total"];
+    const tableRows = factura.productos.map(producto => [
+      producto.codigo,
+      producto.descripcion,
+      producto.cantidad.toString(),
+      `$${producto.precioUnitario.toFixed(2)}`,
+      `${producto.porcentajeBonificacion}%`,
+      `$${producto.subtotal.toFixed(2)}`,
+      producto.alicuotaIVA,
+      `$${producto.subtotalConIVA.toFixed(2)}`
+    ]);
+    
+    (doc as any).autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 155,
+      theme: 'striped',
+      headStyles: { fillColor: [120, 144, 156] },
+      margin: { left: 20, right: 20 },
+    });
+    
+    // Calcular posición Y después de la tabla
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    // Totales de la factura
+    doc.line(120, finalY, 190, finalY);
+    doc.text("Importe Neto:", 120, finalY + 10);
+    doc.text(`$${factura.importeNeto.toFixed(2)}`, 190, finalY + 10, { align: 'right' });
+    
+    doc.text("IVA 21%:", 120, finalY + 20);
+    doc.text(`$${factura.importeIVA.iva21.toFixed(2)}`, 190, finalY + 20, { align: 'right' });
+    
+    doc.text("IVA 10.5%:", 120, finalY + 30);
+    doc.text(`$${factura.importeIVA.iva105.toFixed(2)}`, 190, finalY + 30, { align: 'right' });
+    
+    doc.text("Otros Tributos:", 120, finalY + 40);
+    doc.text(`$${factura.otrosTributos.toFixed(2)}`, 190, finalY + 40, { align: 'right' });
+    
+    doc.line(120, finalY + 45, 190, finalY + 45);
+    doc.setFont("helvetica", "bold");
+    doc.text("TOTAL:", 120, finalY + 55);
+    doc.text(`$${factura.importeTotal.toFixed(2)}`, 190, finalY + 55, { align: 'right' });
+    
+    // Información de pie de página
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Documento generado electrónicamente", 105, 280, { align: 'center' });
+    
+    // Guardar el PDF
+    doc.save(`Factura_${factura.numero}.pdf`);
+    
+    toast({
+      title: "Factura descargada",
+      description: `La factura ${factura.numero} ha sido descargada como PDF.`,
+      variant: "default",
+    });
   };
 
   // Función para imprimir factura
   const imprimirFactura = () => {
     if (facturaActual) {
-      // En una implementación real, esto abriría la ventana de impresión
-      window.print();
-      toast.success(`Preparando impresión de factura ${facturaActual.numero}`);
+      // Preparar impresión del iframe visible
+      const printContent = document.getElementById('factura-para-imprimir');
+      const originalContents = document.body.innerHTML;
+      
+      if (printContent) {
+        // Crear una ventana de impresión específica para la factura
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write('<html><head><title>Imprimir Factura</title>');
+          printWindow.document.write('<link rel="stylesheet" href="/src/index.css" type="text/css" />');
+          printWindow.document.write('</head><body>');
+          printWindow.document.write(printContent.innerHTML);
+          printWindow.document.write('</body></html>');
+          
+          printWindow.document.close();
+          printWindow.focus();
+          
+          // Esperar a que los estilos se carguen
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 1000);
+        }
+      } else {
+        // Fallback a window.print() si no encuentra el elemento
+        window.print();
+      }
+      
+      toast({
+        title: "Preparando impresión",
+        description: `Imprimiendo factura ${facturaActual.numero}`,
+        variant: "default",
+      });
     }
   };
 
-  // Función para exportar facturas filtradas
+  // Función para exportar facturas filtradas a Excel
   const exportarFacturasExcel = () => {
-    // En una implementación real, esto generaría un archivo Excel
-    toast.success(`Exportando ${facturasFiltradas.length} facturas a Excel`);
-    console.log(`Simulando exportación de ${facturasFiltradas.length} facturas a Excel`);
+    // Crear un nuevo libro de Excel
+    const workbook = XLSX.utils.book_new();
+    
+    // Crear los datos para la hoja de cálculo
+    const facturasMapeadas = facturasFiltradas.map(factura => ({
+      'Número': factura.numero,
+      'Tipo': factura.tipo,
+      'Fecha': factura.fecha,
+      'Cliente': factura.receptor.razonSocial,
+      'CUIT': factura.receptor.cuit,
+      'Monto Neto': factura.importeNeto,
+      'IVA': factura.importeIVA.iva21 + factura.importeIVA.iva105 + factura.importeIVA.iva27 + 
+             factura.importeIVA.iva5 + factura.importeIVA.iva25,
+      'Total': factura.importeTotal,
+      'Estado': factura.estado,
+      'CAE': factura.cae,
+      'Vto. CAE': factura.fechaVtoCAE
+    }));
+    
+    // Crear una hoja de cálculo a partir de los datos
+    const worksheet = XLSX.utils.json_to_sheet(facturasMapeadas);
+    
+    // Agregar la hoja al libro
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+    
+    // Generar el archivo Excel y guardarlo
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // Descargar el archivo
+    saveAs(data, `Facturas_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "Exportación completada",
+      description: `Se han exportado ${facturasFiltradas.length} facturas a Excel.`,
+      variant: "default",
+    });
   };
 
   // Función para exportar facturas en ZIP
-  const exportarFacturasZIP = () => {
-    // En una implementación real, esto generaría un archivo ZIP con PDFs
-    toast.success(`Exportando ${facturasFiltradas.length} facturas comprimidas en ZIP`);
-    console.log(`Simulando exportación de ${facturasFiltradas.length} facturas a ZIP`);
+  const exportarFacturasZIP = async () => {
+    // Crear una nueva instancia de JSZip
+    const zip = new JSZip();
+    
+    // Crear una carpeta para las facturas
+    const facturasFolder = zip.folder("Facturas");
+    
+    if (facturasFolder) {
+      // Para cada factura, generar un PDF y agregarlo al ZIP
+      for (const factura of facturasFiltradas) {
+        const doc = new jsPDF();
+        
+        // Configurar información básica (repetimos código de descargarFactura)
+        doc.setFontSize(22);
+        doc.text("FACTURA", 105, 20, { align: 'center' });
+        
+        // Tipo de factura
+        doc.setFillColor(220, 220, 220);
+        doc.rect(160, 15, 30, 30, 'F');
+        doc.setFontSize(24);
+        doc.setFont("helvetica", "bold");
+        doc.text(factura.tipo, 175, 35, { align: 'center' });
+        
+        // Información del emisor
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Razón Social: ${factura.emisor.razonSocial}`, 20, 50);
+        doc.text(`Domicilio: ${factura.emisor.domicilioComercial}`, 20, 60);
+        doc.text(`CUIT: ${factura.emisor.cuit}`, 20, 70);
+        doc.text(`Cond. IVA: ${factura.emisor.condicionIVA}`, 20, 80);
+        
+        // Información de la factura
+        doc.text(`Factura Nro: ${factura.numero}`, 120, 50);
+        doc.text(`Fecha: ${factura.fecha}`, 120, 60);
+        doc.text(`Vencimiento: ${factura.fechaVencimiento}`, 120, 70);
+        doc.text(`CAE: ${factura.cae}`, 120, 80);
+        doc.text(`Vto. CAE: ${factura.fechaVtoCAE}`, 120, 90);
+        
+        // Línea separadora
+        doc.line(20, 100, 190, 100);
+        
+        // Información del receptor
+        doc.text(`Cliente: ${factura.receptor.razonSocial}`, 20, 110);
+        doc.text(`CUIT: ${factura.receptor.cuit}`, 20, 120);
+        doc.text(`Domicilio: ${factura.receptor.domicilioComercial}`, 20, 130);
+        doc.text(`Cond. IVA: ${factura.receptor.condicionIVA}`, 20, 140);
+        doc.text(`Cond. Venta: ${factura.receptor.condicionVenta}`, 120, 140);
+        
+        // Línea separadora
+        doc.line(20, 150, 190, 150);
+        
+        // Tabla de productos usando jspdf-autotable
+        const tableColumn = ["Código", "Descripción", "Cant.", "P.Unit", "% Bonif", "Subtotal", "IVA", "Total"];
+        const tableRows = factura.productos.map(producto => [
+          producto.codigo,
+          producto.descripcion,
+          producto.cantidad.toString(),
+          `$${producto.precioUnitario.toFixed(2)}`,
+          `${producto.porcentajeBonificacion}%`,
+          `$${producto.subtotal.toFixed(2)}`,
+          producto.alicuotaIVA,
+          `$${producto.subtotalConIVA.toFixed(2)}`
+        ]);
+        
+        (doc as any).autoTable({
+          head: [tableColumn],
+          body: tableRows,
+          startY: 155,
+          theme: 'striped',
+          headStyles: { fillColor: [120, 144, 156] },
+          margin: { left: 20, right: 20 },
+        });
+        
+        // Calcular posición Y después de la tabla
+        const finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Totales de la factura
+        doc.line(120, finalY, 190, finalY);
+        doc.text("Importe Neto:", 120, finalY + 10);
+        doc.text(`$${factura.importeNeto.toFixed(2)}`, 190, finalY + 10, { align: 'right' });
+        
+        doc.text("IVA 21%:", 120, finalY + 20);
+        doc.text(`$${factura.importeIVA.iva21.toFixed(2)}`, 190, finalY + 20, { align: 'right' });
+        
+        doc.text("IVA 10.5%:", 120, finalY + 30);
+        doc.text(`$${factura.importeIVA.iva105.toFixed(2)}`, 190, finalY + 30, { align: 'right' });
+        
+        doc.text("Otros Tributos:", 120, finalY + 40);
+        doc.text(`$${factura.otrosTributos.toFixed(2)}`, 190, finalY + 40, { align: 'right' });
+        
+        doc.line(120, finalY + 45, 190, finalY + 45);
+        doc.setFont("helvetica", "bold");
+        doc.text("TOTAL:", 120, finalY + 55);
+        doc.text(`$${factura.importeTotal.toFixed(2)}`, 190, finalY + 55, { align: 'right' });
+        
+        // Información de pie de página
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text("Documento generado electrónicamente", 105, 280, { align: 'center' });
+        
+        // Agregar el PDF al ZIP
+        const pdfBlob = doc.output('blob');
+        facturasFolder.file(`Factura_${factura.numero}.pdf`, pdfBlob);
+      }
+    }
+    
+    // Generar el archivo ZIP y guardarlo
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `Facturas_${new Date().toISOString().split('T')[0]}.zip`);
+      
+      toast({
+        title: "Exportación completada",
+        description: `Se han exportado ${facturasFiltradas.length} facturas en formato ZIP.`,
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error en la exportación",
+        description: "Ocurrió un error al generar el archivo ZIP.",
+        variant: "destructive",
+      });
+      console.error("Error al generar ZIP:", error);
+    }
   };
 
   return (

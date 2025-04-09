@@ -145,7 +145,14 @@ export default function GiftCardsPage() {
     issueDate: new Date().toISOString().split('T')[0]
   });
 
+  // New state variables for dialog controls
   const [isNewGiftCardDialogOpen, setIsNewGiftCardDialogOpen] = useState(false);
+  const [isViewDetailsDialogOpen, setIsViewDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConfirmRedeemDialogOpen, setIsConfirmRedeemDialogOpen] = useState(false);
+  const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null);
+  const [editGiftCard, setEditGiftCard] = useState<Partial<GiftCard>>({});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
@@ -169,6 +176,13 @@ export default function GiftCardsPage() {
     });
   };
 
+  const handleEditGiftCardChange = (field: keyof GiftCard, value: any) => {
+    setEditGiftCard({
+      ...editGiftCard,
+      [field]: value
+    });
+  };
+
   const handleExportPDF = () => {
     toast.success({
       title: "Exportando a PDF...",
@@ -187,7 +201,10 @@ export default function GiftCardsPage() {
 
   const handleCreateGiftCard = () => {
     if (!newGiftCard.number || !newGiftCard.service) {
-      alert("Por favor complete todos los campos requeridos.");
+      toast.error({
+        title: "Error",
+        description: "Por favor complete todos los campos requeridos."
+      });
       return;
     }
 
@@ -220,6 +237,106 @@ export default function GiftCardsPage() {
       type: "Física",
       branch: "Fisherton",
       issueDate: new Date().toISOString().split('T')[0]
+    });
+    
+    toast.success({
+      title: "Gift Card creada",
+      description: `La gift card ${newCard.number} ha sido creada exitosamente.`
+    });
+  };
+
+  // Handle view details
+  const handleViewDetails = (card: GiftCard) => {
+    setSelectedGiftCard(card);
+    setIsViewDetailsDialogOpen(true);
+  };
+
+  // Handle edit
+  const handleEdit = (card: GiftCard) => {
+    setSelectedGiftCard(card);
+    setEditGiftCard({...card});
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle save edit
+  const handleSaveEdit = () => {
+    if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
+      toast.error({
+        title: "Error",
+        description: "Por favor complete todos los campos requeridos."
+      });
+      return;
+    }
+
+    const updatedGiftCards = giftCards.map(card => {
+      if (card.id === selectedGiftCard.id) {
+        return {
+          ...card,
+          ...editGiftCard,
+        } as GiftCard;
+      }
+      return card;
+    });
+
+    setGiftCards(updatedGiftCards);
+    setIsEditDialogOpen(false);
+    setSelectedGiftCard(null);
+    
+    toast.success({
+      title: "Gift Card actualizada",
+      description: `La gift card ${editGiftCard.number} ha sido actualizada exitosamente.`
+    });
+  };
+
+  // Handle delete
+  const handleDelete = (card: GiftCard) => {
+    setSelectedGiftCard(card);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm delete
+  const handleConfirmDelete = () => {
+    if (!selectedGiftCard) return;
+    
+    const updatedGiftCards = giftCards.filter(card => card.id !== selectedGiftCard.id);
+    setGiftCards(updatedGiftCards);
+    setIsDeleteDialogOpen(false);
+    setSelectedGiftCard(null);
+    
+    toast.success({
+      title: "Gift Card eliminada",
+      description: `La gift card ${selectedGiftCard.number} ha sido eliminada exitosamente.`
+    });
+  };
+
+  // Handle mark as redeemed
+  const handleMarkAsRedeemed = (card: GiftCard) => {
+    setSelectedGiftCard(card);
+    setIsConfirmRedeemDialogOpen(true);
+  };
+
+  // Confirm mark as redeemed
+  const handleConfirmRedeem = () => {
+    if (!selectedGiftCard) return;
+    
+    const updatedGiftCards = giftCards.map(card => {
+      if (card.id === selectedGiftCard.id) {
+        return {
+          ...card,
+          status: "Canjeada",
+          receivedDate: new Date().toISOString().split('T')[0]
+        };
+      }
+      return card;
+    });
+
+    setGiftCards(updatedGiftCards);
+    setIsConfirmRedeemDialogOpen(false);
+    setSelectedGiftCard(null);
+    
+    toast.success({
+      title: "Gift Card canjeada",
+      description: `La gift card ${selectedGiftCard.number} ha sido marcada como canjeada.`
     });
   };
 
@@ -628,20 +745,25 @@ export default function GiftCardsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewDetails(card)}>
                               <Eye className="mr-2 h-4 w-4" />
                               <span>Ver Detalles</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(card)}>
                               <Edit className="mr-2 h-4 w-4" />
                               <span>Editar</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Calendar className="mr-2 h-4 w-4" />
-                              <span>Marcar como Canjeada</span>
-                            </DropdownMenuItem>
+                            {card.status !== "Canjeada" && (
+                              <DropdownMenuItem onClick={() => handleMarkAsRedeemed(card)}>
+                                <Calendar className="mr-2 h-4 w-4" />
+                                <span>Marcar como Canjeada</span>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDelete(card)}
+                            >
                               <Trash className="mr-2 h-4 w-4" />
                               <span>Eliminar</span>
                             </DropdownMenuItem>
@@ -657,6 +779,7 @@ export default function GiftCardsPage() {
         </CardContent>
       </Card>
 
+      {/* New Gift Card Dialog */}
       <Dialog open={isNewGiftCardDialogOpen} onOpenChange={setIsNewGiftCardDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -776,143 +899,14 @@ export default function GiftCardsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
-        setIsImportDialogOpen(open);
-        if (!open) resetImportState();
-      }}>
+      {/* View Details Dialog */}
+      <Dialog open={isViewDetailsDialogOpen} onOpenChange={setIsViewDetailsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Importar Gift Cards</DialogTitle>
+            <DialogTitle>Detalles de Gift Card</DialogTitle>
             <DialogDescription>
-              Cargue un archivo Excel con la información de múltiples gift cards para crearlas en lote.
+              Información completa de la gift card seleccionada.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            {importStatus === "idle" && (
-              <>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="import-file">Archivo Excel</Label>
-                  <Input
-                    id="import-file"
-                    type="file"
-                    accept=".xlsx,.xls"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    El archivo debe tener las columnas: number, type, service, branch, issueDate, receivedDate, expirationDate
-                  </p>
-                </div>
-
-                <div className="border rounded-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileSpreadsheet className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-medium">¿No tiene una plantilla?</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Descargue nuestra plantilla de Excel con el formato correcto y ejemplos.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={downloadExcelTemplate}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Descargar Plantilla
-                  </Button>
-                </div>
-              </>
-            )}
-
-            {importStatus === "processing" && (
-              <div className="space-y-4 py-4">
-                <Label>Procesando archivo...</Label>
-                <Progress value={importProgress} className="h-2" />
-                <p className="text-sm text-muted-foreground">
-                  Por favor espere mientras se procesan las gift cards...
-                </p>
-              </div>
-            )}
-
-            {(importStatus === "success" || importStatus === "error") && (
-              <div className="space-y-4">
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      {importResults.successful > 0 ? (
-                        <BadgeCheck className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <BadgeAlert className="h-5 w-5 text-red-500" />
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">
-                        Resumen de la importación
-                      </h3>
-                      <div className="mt-2 text-sm text-green-700">
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>Total de registros: {importResults.total}</li>
-                          <li>Gift cards importadas: {importResults.successful}</li>
-                          <li>Registros con errores: {importResults.failed}</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {importErrors.length > 0 && (
-                  <div>
-                    <Label>Errores encontrados:</Label>
-                    <div className="max-h-40 overflow-y-auto border rounded-md mt-2">
-                      <ul className="px-4 py-3 space-y-1">
-                        {importErrors.map((error, index) => (
-                          <li key={index} className="text-sm text-red-600">{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between">
-                  <Button
-                    variant="outline"
-                    onClick={() => resetImportState()}
-                  >
-                    Importar otro archivo
-                  </Button>
-                  
-                  <Button
-                    variant="default"
-                    onClick={() => setIsImportDialogOpen(false)}
-                  >
-                    {importResults.successful > 0 ? "Finalizar" : "Cerrar"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {importStatus === "idle" && (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                disabled={!fileInputRef.current?.files?.length}
-                onClick={() => {
-                  if (fileInputRef.current?.files?.length) {
-                    processExcelFile(fileInputRef.current.files[0]);
-                  }
-                }}
-              >
-                Importar
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+          {selectedGiftCard && (
+            <div className="grid gap-4 py-4">

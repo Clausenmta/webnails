@@ -3,6 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,13 @@ export function AppHeader() {
       <div className="flex h-12 items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger />
+          <Link to="/" className="flex items-center">
+            <img 
+              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+              alt="Nails&Co Logo" 
+              className="h-8 w-auto cursor-pointer"
+            />
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" aria-label="Notificaciones">

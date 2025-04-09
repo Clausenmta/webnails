@@ -76,14 +76,15 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-auto">
-            <img 
-              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
-              alt="Nails&Co Logo" 
-              className="h-full w-auto object-contain"
-            />
-          </div>
-          {/* Removed "Central" text that was here */}
+          <Link to="/" className="flex items-center">
+            <div className="h-8 w-auto">
+              <img 
+                src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+                alt="Nails&Co Logo" 
+                className="h-full w-auto object-contain cursor-pointer"
+              />
+            </div>
+          </Link>
         </div>
         <SidebarTrigger className="md:hidden" />
       </SidebarHeader>

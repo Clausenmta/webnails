@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -62,7 +61,6 @@ import {
   ToggleGroupItem 
 } from "@/components/ui/toggle-group";
 
-// Definición de tipos para productos
 type Product = {
   id: string;
   name: string;
@@ -72,11 +70,10 @@ type Product = {
   location: string;
 };
 
-// Opciones para los desplegables
 const CATEGORY_OPTIONS = ["SEMI OPI", "SEMI NAILS", "SHINE", "TRADICIONAL", "VARIOS"];
 const LOCATION_OPTIONS = ["Stock Casa", "Stock Local", "Stock en Uso"];
+const KEY_PRODUCTS = ["Top", "Base", "Fortalecedor", "Kapping Nails", "Base Mode Repair", "Top Mode Repair"];
 
-// Datos de ejemplo
 const initialProducts: Product[] = [
   {
     id: "1",
@@ -118,6 +115,54 @@ const initialProducts: Product[] = [
     stock: 15,
     location: "Stock Casa",
   },
+  {
+    id: "6",
+    name: "Top",
+    category: "SEMI OPI",
+    price: 4200,
+    stock: 10,
+    location: "Stock Local",
+  },
+  {
+    id: "7",
+    name: "Base",
+    category: "SEMI OPI",
+    price: 3800,
+    stock: 8,
+    location: "Stock Local",
+  },
+  {
+    id: "8",
+    name: "Fortalecedor",
+    category: "SHINE",
+    price: 2500,
+    stock: 6,
+    location: "Stock Casa",
+  },
+  {
+    id: "9",
+    name: "Kapping Nails",
+    category: "TRADICIONAL",
+    price: 7000,
+    stock: 3,
+    location: "Stock en Uso",
+  },
+  {
+    id: "10",
+    name: "Base Mode Repair",
+    category: "SEMI NAILS",
+    price: 4500,
+    stock: 7,
+    location: "Stock Casa",
+  },
+  {
+    id: "11",
+    name: "Top Mode Repair",
+    category: "SEMI NAILS",
+    price: 5000,
+    stock: 4,
+    location: "Stock Local",
+  },
 ];
 
 export default function StockPage() {
@@ -133,7 +178,6 @@ export default function StockPage() {
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
-  // Estado para filtros
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
@@ -142,49 +186,52 @@ export default function StockPage() {
   });
   const [stockView, setStockView] = useState<string>("all");
 
-  // Dashboard data
   const stockByLocation = useMemo(() => {
-    const result: Record<string, { totalItems: number; totalValue: number }> = {};
+    const result: Record<string, { totalItems: number; keyProducts: Record<string, number> }> = {};
     
     LOCATION_OPTIONS.forEach(location => {
-      result[location] = { totalItems: 0, totalValue: 0 };
+      result[location] = { 
+        totalItems: 0, 
+        keyProducts: {}
+      };
+      
+      KEY_PRODUCTS.forEach(prod => {
+        result[location].keyProducts[prod] = 0;
+      });
     });
     
     products.forEach(product => {
       if (result[product.location]) {
         result[product.location].totalItems += product.stock;
-        result[product.location].totalValue += product.price * product.stock;
+        
+        if (KEY_PRODUCTS.includes(product.name)) {
+          result[product.location].keyProducts[product.name] = product.stock;
+        }
       }
     });
     
     return result;
   }, [products]);
 
-  // Filtrar productos
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      // Filtro de búsqueda
       const matchesSearch = 
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Filtro de categorías
       const matchesCategory = 
         selectedCategories.length === 0 || 
         selectedCategories.includes(product.category);
       
-      // Filtro de ubicaciones
       const matchesLocation = 
         selectedLocations.length === 0 || 
         selectedLocations.includes(product.location);
       
-      // Filtro de rango de precios
       const matchesPrice = 
         product.price >= priceRange.min && 
         product.price <= priceRange.max;
       
-      // Filtro de vista de stock
       let matchesStockView = true;
       if (stockView === "low") {
         matchesStockView = product.stock < 10;
@@ -226,7 +273,6 @@ export default function StockPage() {
     setStockView("all");
   };
 
-  // Crear producto
   const handleCreateProduct = () => {
     if (!newProduct.name || !newProduct.category) {
       toast.error("Por favor completa los campos requeridos");
@@ -250,7 +296,6 @@ export default function StockPage() {
     toast.success("Producto creado exitosamente");
   };
 
-  // Editar producto
   const handleUpdateProduct = () => {
     if (!editingProduct || !editingProduct.name || !editingProduct.category) {
       toast.error("Por favor completa los campos requeridos");
@@ -266,13 +311,11 @@ export default function StockPage() {
     toast.success("Producto actualizado exitosamente");
   };
 
-  // Eliminar producto
   const handleDeleteProduct = (id: string) => {
     setProducts(products.filter((product) => product.id !== id));
     toast.success("Producto eliminado exitosamente");
   };
 
-  // Export functions
   const handleExportPDF = () => {
     toast.success("Exportando a PDF...", {
       description: "El archivo se descargará en breve.",
@@ -432,7 +475,6 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* Dashboard por ubicación */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {Object.entries(stockByLocation).map(([location, data]) => (
           <Card key={location}>
@@ -441,14 +483,30 @@ export default function StockPage() {
               <CardDescription>Resumen de inventario</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-2xl font-bold">{data.totalItems}</p>
-                  <p className="text-sm text-muted-foreground">Items en stock</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">${data.totalValue.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground">Valor total</p>
+              <div className="mb-4">
+                <p className="text-2xl font-bold">{data.totalItems}</p>
+                <p className="text-sm text-muted-foreground">Items en stock</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Productos principales</p>
+                <div className="max-h-[150px] overflow-y-auto">
+                  {Object.entries(data.keyProducts)
+                    .filter(([_, qty]) => qty > 0)
+                    .map(([product, quantity]) => (
+                      <div key={product} className="flex justify-between items-center py-1 border-b last:border-0">
+                        <span className="text-sm">{product}</span>
+                        <span className={`text-sm font-medium ${
+                          quantity < 5 ? 'text-amber-500' : ''
+                        }`}>
+                          {quantity}
+                        </span>
+                      </div>
+                    ))}
+                  {!Object.entries(data.keyProducts).some(([_, qty]) => qty > 0) && (
+                    <div className="text-sm text-muted-foreground italic">
+                      No hay productos principales en esta ubicación
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -651,7 +709,6 @@ export default function StockPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Product Dialog */}
       <Dialog
         open={!!editingProduct}
         onOpenChange={(open) => !open && setEditingProduct(null)}

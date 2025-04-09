@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Trash2, Edit, Eye, FileCheck, Download, Printer } from "lucide-react";
+import { Plus, Search, FileText, Trash2, Edit, Eye, FileCheck, Download, Printer, FileDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -352,6 +351,7 @@ export default function FacturacionPage() {
   const [productosFactura, setProductosFactura] = useState<ProductoServicio[]>([]);
   const [editandoProducto, setEditandoProducto] = useState<ProductoServicio | null>(null);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [conectandoAFIP, setConectandoAFIP] = useState(false);
 
   // Formulario para el producto
   const productoForm = useForm<ProductoServicio>({
@@ -645,9 +645,57 @@ export default function FacturacionPage() {
 
   // Gestionar status de conexión AFIP
   const generarFacturaAFIP = (factura: Factura) => {
-    // Esta función simularía la conexión con AFIP/ARCA
-    // En un caso real, aquí se haría una llamada a una API
-    toast.success("Factura enviada a AFIP correctamente");
+    // En un caso real, aquí se haría una conexión a AFIP/ARCA
+    setConectandoAFIP(true);
+    
+    // Simular tiempo de conexión
+    setTimeout(() => {
+      // Simular generación de CAE real
+      const nuevoCAE = generarNumeroAleatorio(14);
+      
+      // Actualizar la factura con el nuevo CAE
+      setFacturas(facturas.map(f => 
+        f.id === factura.id ? { ...f, cae: nuevoCAE } : f
+      ));
+      
+      setConectandoAFIP(false);
+      toast.success("Factura enviada a AFIP correctamente. CAE generado.");
+    }, 2000);
+  };
+
+  // Función para descargar factura como PDF
+  const descargarFactura = (factura: Factura) => {
+    // En una implementación real, esto se conectaría a una API que genere el PDF
+    toast.success(`Factura ${factura.numero} descargada como PDF`);
+    
+    // Aquí simularemos una descarga mostrando un mensaje
+    console.log(`Simulando descarga de factura ${factura.numero}`);
+    
+    // En una implementación real, esta función usaría una biblioteca como jsPDF
+    // para generar un PDF y luego lo descargaría automáticamente
+  };
+
+  // Función para imprimir factura
+  const imprimirFactura = () => {
+    if (facturaActual) {
+      // En una implementación real, esto abriría la ventana de impresión
+      window.print();
+      toast.success(`Preparando impresión de factura ${facturaActual.numero}`);
+    }
+  };
+
+  // Función para exportar facturas filtradas
+  const exportarFacturasExcel = () => {
+    // En una implementación real, esto generaría un archivo Excel
+    toast.success(`Exportando ${facturasFiltradas.length} facturas a Excel`);
+    console.log(`Simulando exportación de ${facturasFiltradas.length} facturas a Excel`);
+  };
+
+  // Función para exportar facturas en ZIP
+  const exportarFacturasZIP = () => {
+    // En una implementación real, esto generaría un archivo ZIP con PDFs
+    toast.success(`Exportando ${facturasFiltradas.length} facturas comprimidas en ZIP`);
+    console.log(`Simulando exportación de ${facturasFiltradas.length} facturas a ZIP`);
   };
 
   return (
@@ -666,7 +714,7 @@ export default function FacturacionPage() {
         </Button>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y Exportación */}
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -691,6 +739,34 @@ export default function FacturacionPage() {
             <SelectItem value="Cancelada">Cancelada</SelectItem>
           </SelectContent>
         </Select>
+        
+        {/* Botones de exportación */}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportarFacturasExcel}>
+            <FileText className="mr-2 h-4 w-4" />
+            Excel
+          </Button>
+          <Button variant="outline" onClick={exportarFacturasZIP}>
+            <FileDown className="mr-2 h-4 w-4" />
+            ZIP
+          </Button>
+        </div>
+      </div>
+
+      {/* Aviso sobre la integración con AFIP */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>Modo Simulación:</strong> Actualmente el sistema funciona en modo simulación. La integración real con AFIP/ARCA requiere certificados digitales y configuración adicional.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tabla de facturas */}
@@ -737,6 +813,7 @@ export default function FacturacionPage() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => verFactura(factura)}
+                        title="Ver factura"
                       >
                         <Eye className="h-4 w-4 text-blue-500" />
                       </Button>
@@ -744,6 +821,7 @@ export default function FacturacionPage() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => editarFactura(factura)}
+                        title="Editar factura"
                       >
                         <Edit className="h-4 w-4 text-slate-500" />
                       </Button>
@@ -751,6 +829,7 @@ export default function FacturacionPage() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => eliminarFactura(factura.id)}
+                        title="Eliminar factura"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -758,8 +837,18 @@ export default function FacturacionPage() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => generarFacturaAFIP(factura)}
+                        title="Enviar a AFIP"
+                        disabled={conectandoAFIP}
                       >
                         <FileCheck className="h-4 w-4 text-green-500" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => descargarFactura(factura)}
+                        title="Descargar PDF"
+                      >
+                        <Download className="h-4 w-4 text-purple-500" />
                       </Button>
                     </div>
                   </TableCell>
@@ -1225,10 +1314,13 @@ export default function FacturacionPage() {
             <DialogTitle>
               Vista previa de Factura
             </DialogTitle>
+            <DialogDescription>
+              Previsualización del comprobante para impresión o descarga
+            </DialogDescription>
           </DialogHeader>
           
           {facturaActual && (
-            <div className="space-y-6 p-4 border rounded-md">
+            <div className="space-y-6 p-4 border rounded-md" id="factura-para-imprimir">
               {/* Encabezado de factura */}
               <div className="grid grid-cols-12 gap-4 border-b pb-4">
                 <div className="col-span-6">
@@ -1377,11 +1469,14 @@ export default function FacturacionPage() {
           
           <DialogFooter className="mt-4">
             <div className="flex gap-2">
-              <Button variant="outline">
+              <Button variant="outline" onClick={imprimirFactura}>
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimir
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline" 
+                onClick={() => facturaActual && descargarFactura(facturaActual)}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Descargar PDF
               </Button>

@@ -12,11 +12,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export function AppHeader() {
-  // Estado para manejar el menú de notificaciones
+  // Estado para manejar el menú de notificaciones con useCallback para evitar re-renders
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Uso de useCallback para mejorar el rendimiento y evitar re-renders innecesarios
+  const handleMenuOpenChange = useCallback((open: boolean) => {
+    setIsMenuOpen(open);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    setIsMenuOpen(false);
+    
+    // Notificación para el usuario
+    toast({
+      title: "Sesión cerrada",
+      description: "Has cerrado sesión correctamente."
+    });
+    
+    console.log("Cerrar sesión");
+  }, []);
+
+  const handleNavigation = useCallback(() => {
+    setIsMenuOpen(false);
+  }, []);
 
   return (
     <header className="border-b bg-white py-2 px-6">
@@ -35,9 +57,7 @@ export function AppHeader() {
           </Button>
           <DropdownMenu 
             open={isMenuOpen} 
-            onOpenChange={(open) => {
-              setIsMenuOpen(open);
-            }}
+            onOpenChange={handleMenuOpenChange}
           >
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="rounded-full" size="icon">
@@ -47,13 +67,13 @@ export function AppHeader() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50 bg-white">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link 
                   to="/perfil"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={handleNavigation}
                 >
                   Perfil
                 </Link>
@@ -61,18 +81,13 @@ export function AppHeader() {
               <DropdownMenuItem asChild>
                 <Link 
                   to="/configuracion"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={handleNavigation}
                 >
                   Configuración
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  console.log("Cerrar sesión");
-                }}
-              >
+              <DropdownMenuItem onClick={handleLogout}>
                 Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>

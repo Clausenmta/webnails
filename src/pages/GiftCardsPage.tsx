@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -151,6 +151,7 @@ export default function GiftCardsPage() {
   const [isConfirmRedeemDialogOpen, setIsConfirmRedeemDialogOpen] = useState(false);
   const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null);
   const [editGiftCard, setEditGiftCard] = useState<Partial<GiftCard>>({});
+  const [dialogsEnabled, setDialogsEnabled] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
@@ -176,7 +177,24 @@ export default function GiftCardsPage() {
     };
   }, []);
 
-  const closeAllDialogs = () => {
+  // Función para proteger contra acciones repetidas o superpuestas
+  const safeAction = useCallback((action: () => void) => {
+    if (!dialogsEnabled) return;
+    
+    setDialogsEnabled(false);
+    
+    try {
+      action();
+    } finally {
+      // Re-habilitar acciones después de un breve tiempo
+      setTimeout(() => {
+        setDialogsEnabled(true);
+      }, 300);
+    }
+  }, [dialogsEnabled]);
+
+  const closeAllDialogs = useCallback(() => {
+    // Primero cerramos todos los diálogos
     setIsNewGiftCardDialogOpen(false);
     setIsViewDetailsDialogOpen(false);
     setIsEditDialogOpen(false);
@@ -184,65 +202,70 @@ export default function GiftCardsPage() {
     setIsConfirmRedeemDialogOpen(false);
     setIsImportDialogOpen(false);
     
-    // Pequeño tiempo de espera antes de limpiar los estados
+    // Limpiamos los datos después de cerrar los diálogos
     setTimeout(() => {
       setSelectedGiftCard(null);
       setEditGiftCard({});
-    }, 100);
-  };
+    }, 200);
+  }, []);
 
-  const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
-    setNewGiftCard({
-      ...newGiftCard,
+  const handleNewGiftCardChange = useCallback((field: keyof GiftCard, value: any) => {
+    setNewGiftCard(prev => ({
+      ...prev,
       [field]: value
-    });
-  };
+    }));
+  }, []);
 
-  const handleEditGiftCardChange = (field: keyof GiftCard, value: any) => {
-    setEditGiftCard({
-      ...editGiftCard,
+  const handleEditGiftCardChange = useCallback((field: keyof GiftCard, value: any) => {
+    setEditGiftCard(prev => ({
+      ...prev,
       [field]: value
-    });
-  };
+    }));
+  }, []);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = useCallback(() => {
     try {
-      toast.success({
+      toast({
         title: "Exportando a PDF...",
         description: "El archivo se descargará en breve."
       });
       console.log("Exporting to PDF...");
     } catch (error) {
       console.error("Error al exportar a PDF:", error);
-      toast.error({
+      toast({
         title: "Error",
-        description: "No se pudo exportar a PDF. Intente nuevamente."
+        description: "No se pudo exportar a PDF. Intente nuevamente.",
+        variant: "destructive"
       });
     }
-  };
+  }, []);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = useCallback(() => {
     try {
-      toast.success({
+      toast({
         title: "Exportando a Excel...",
         description: "El archivo se descargará en breve."
       });
       console.log("Exporting to Excel...");
     } catch (error) {
       console.error("Error al exportar a Excel:", error);
-      toast.error({
+      toast({
         title: "Error",
-        description: "No se pudo exportar a Excel. Intente nuevamente."
+        description: "No se pudo exportar a Excel. Intente nuevamente.",
+        variant: "destructive"
       });
     }
-  };
+  }, []);
 
-  const handleCreateGiftCard = () => {
+  const handleCreateGiftCard = useCallback(() => {
+    if (!dialogsEnabled) return;
+    
     try {
       if (!newGiftCard.number || !newGiftCard.service) {
-        toast.error({
+        toast({
           title: "Error",
-          description: "Por favor complete todos los campos requeridos."
+          description: "Por favor complete todos los campos requeridos.",
+          variant: "destructive"
         });
         return;
       }
@@ -283,57 +306,68 @@ export default function GiftCardsPage() {
           issueDate: new Date().toISOString().split('T')[0]
         });
         
-        toast.success({
+        toast({
           title: "Gift Card creada",
           description: `La gift card ${newCard.number} ha sido creada exitosamente.`
         });
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error("Error al crear gift card:", error);
       setIsNewGiftCardDialogOpen(false);
       
       setTimeout(() => {
-        toast.error({
+        toast({
           title: "Error",
-          description: "Ocurrió un error al crear la gift card. Intente nuevamente."
+          description: "Ocurrió un error al crear la gift card. Intente nuevamente.",
+          variant: "destructive"
         });
-      }, 100);
+      }, 200);
     }
-  };
+  }, [newGiftCard, giftCards, dialogsEnabled]);
 
-  const handleViewDetails = (card: GiftCard) => {
-    try {
-      setSelectedGiftCard(card);
-      setIsViewDetailsDialogOpen(true);
-    } catch (error) {
-      console.error("Error al ver detalles:", error);
-      toast.error({
-        title: "Error",
-        description: "No se pudieron cargar los detalles. Intente nuevamente."
-      });
-    }
-  };
+  const handleViewDetails = useCallback((card: GiftCard) => {
+    safeAction(() => {
+      try {
+        setSelectedGiftCard(card);
+        setIsViewDetailsDialogOpen(true);
+      } catch (error) {
+        console.error("Error al ver detalles:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los detalles. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+    });
+  }, [safeAction]);
 
-  const handleEdit = (card: GiftCard) => {
-    try {
-      setSelectedGiftCard(card);
-      setEditGiftCard({...card});
-      setIsEditDialogOpen(true);
-    } catch (error) {
-      console.error("Error al editar:", error);
-      toast.error({
-        title: "Error",
-        description: "No se pudo abrir el editor. Intente nuevamente."
-      });
-    }
-  };
+  const handleEdit = useCallback((card: GiftCard) => {
+    safeAction(() => {
+      try {
+        // Crear una copia profunda para evitar problemas de referencia
+        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setEditGiftCard(JSON.parse(JSON.stringify(card)));
+        setIsEditDialogOpen(true);
+      } catch (error) {
+        console.error("Error al editar:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo abrir el editor. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+    });
+  }, [safeAction]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
+    if (!dialogsEnabled) return;
+    
     try {
       if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
-        toast.error({
+        toast({
           title: "Error",
-          description: "Por favor complete todos los campos requeridos."
+          description: "Por favor complete todos los campos requeridos.",
+          variant: "destructive"
         });
         return;
       }
@@ -346,10 +380,12 @@ export default function GiftCardsPage() {
       
       // Limpiar referencias
       const currentSelectedGiftCard = {...selectedGiftCard};
-      setSelectedGiftCard(null);
-
+      
       // Pequeño retraso para asegurar que la interfaz responda
       setTimeout(() => {
+        setSelectedGiftCard(null);
+        setEditGiftCard({});
+        
         setGiftCards(prevCards => prevCards.map(card => {
           if (card.id === cardId) {
             return {
@@ -361,100 +397,125 @@ export default function GiftCardsPage() {
           return card;
         }));
         
-        toast.success({
+        toast({
           title: "Gift Card actualizada",
           description: `La gift card ${updatedCardNumber} ha sido actualizada exitosamente.`
         });
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error("Error al guardar edición:", error);
       setIsEditDialogOpen(false);
-      setSelectedGiftCard(null);
       
       setTimeout(() => {
-        toast.error({
+        setSelectedGiftCard(null);
+        setEditGiftCard({});
+        
+        toast({
           title: "Error",
-          description: "Ocurrió un error al actualizar la gift card. Intente nuevamente."
+          description: "Ocurrió un error al actualizar la gift card. Intente nuevamente.",
+          variant: "destructive"
         });
-      }, 100);
+      }, 200);
     }
-  };
+  }, [editGiftCard, selectedGiftCard, dialogsEnabled]);
 
-  const handleDelete = (card: GiftCard) => {
-    try {
-      setSelectedGiftCard(card);
-      setIsDeleteDialogOpen(true);
-    } catch (error) {
-      console.error("Error al preparar eliminación:", error);
-      toast.error({
-        title: "Error",
-        description: "No se pudo preparar la eliminación. Intente nuevamente."
-      });
-    }
-  };
+  const handleDelete = useCallback((card: GiftCard) => {
+    safeAction(() => {
+      try {
+        // Crear una copia para evitar problemas de referencia
+        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setIsDeleteDialogOpen(true);
+      } catch (error) {
+        console.error("Error al preparar eliminación:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo preparar la eliminación. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+    });
+  }, [safeAction]);
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = useCallback(() => {
+    if (!dialogsEnabled) return;
+    
     try {
       if (!selectedGiftCard) return;
       
-      // Primero cerrar el diálogo y guardar los datos que necesitamos
+      // Guardar los datos que necesitamos en variables locales
       const cardToDelete = {...selectedGiftCard};
+      
+      // Primero cerrar el diálogo
       setIsDeleteDialogOpen(false);
       
-      // Limpiar la referencia al card seleccionado
-      setSelectedGiftCard(null);
-      
-      // Pequeño retraso para asegurar que la interfaz responda
+      // Pequeño retraso para actualizar el estado después de cerrar el diálogo
       setTimeout(() => {
+        // Limpiar la referencia al card seleccionado
+        setSelectedGiftCard(null);
+        
+        // Actualizar la lista de gift cards
         setGiftCards(prevCards => prevCards.filter(card => card.id !== cardToDelete.id));
         
-        toast.success({
+        // Mostrar mensaje de confirmación
+        toast({
           title: "Gift Card eliminada",
           description: `La gift card ${cardToDelete.number} ha sido eliminada exitosamente.`
         });
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
       
-      // Cerrar el diálogo y limpiar la selección en caso de error
+      // Cerrar el diálogo en caso de error
       setIsDeleteDialogOpen(false);
-      setSelectedGiftCard(null);
       
       setTimeout(() => {
-        toast.error({
+        // Limpiar la selección
+        setSelectedGiftCard(null);
+        
+        toast({
           title: "Error",
-          description: "Ocurrió un error al eliminar la gift card. Intente nuevamente."
+          description: "Ocurrió un error al eliminar la gift card. Intente nuevamente.",
+          variant: "destructive"
         });
-      }, 100);
+      }, 200);
     }
-  };
+  }, [selectedGiftCard, dialogsEnabled]);
 
-  const handleMarkAsRedeemed = (card: GiftCard) => {
-    try {
-      setSelectedGiftCard(card);
-      setIsConfirmRedeemDialogOpen(true);
-    } catch (error) {
-      console.error("Error al preparar canje:", error);
-      toast.error({
-        title: "Error",
-        description: "No se pudo preparar el canje. Intente nuevamente."
-      });
-    }
-  };
+  const handleMarkAsRedeemed = useCallback((card: GiftCard) => {
+    safeAction(() => {
+      try {
+        // Crear una copia para evitar problemas de referencia
+        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setIsConfirmRedeemDialogOpen(true);
+      } catch (error) {
+        console.error("Error al preparar canje:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo preparar el canje. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+    });
+  }, [safeAction]);
 
-  const handleConfirmRedeem = () => {
+  const handleConfirmRedeem = useCallback(() => {
+    if (!dialogsEnabled) return;
+    
     try {
       if (!selectedGiftCard) return;
       
-      // Primero cerrar el diálogo y guardar los datos que necesitamos
+      // Guardar los datos que necesitamos en variables locales
       const cardToRedeem = {...selectedGiftCard};
+      
+      // Primero cerrar el diálogo
       setIsConfirmRedeemDialogOpen(false);
       
-      // Limpiar la referencia al card seleccionado
-      setSelectedGiftCard(null);
-      
-      // Pequeño retraso para asegurar que la interfaz responda
+      // Pequeño retraso para actualizar el estado después de cerrar el diálogo
       setTimeout(() => {
+        // Limpiar la referencia al card seleccionado
+        setSelectedGiftCard(null);
+        
+        // Actualizar la lista de gift cards
         setGiftCards(prevCards => prevCards.map(card => {
           if (card.id === cardToRedeem.id) {
             return {
@@ -466,27 +527,32 @@ export default function GiftCardsPage() {
           return card;
         }));
         
-        toast.success({
+        // Mostrar mensaje de confirmación
+        toast({
           title: "Gift Card canjeada",
           description: `La gift card ${cardToRedeem.number} ha sido marcada como canjeada.`
         });
-      }, 100);
+      }, 200);
     } catch (error) {
       console.error("Error al canjear gift card:", error);
       
-      // Cerrar el diálogo y limpiar la selección en caso de error
+      // Cerrar el diálogo en caso de error
       setIsConfirmRedeemDialogOpen(false);
-      setSelectedGiftCard(null);
       
       setTimeout(() => {
-        toast.error({
+        // Limpiar la selección
+        setSelectedGiftCard(null);
+        
+        toast({
           title: "Error",
-          description: "Ocurrió un error al canjear la gift card. Intente nuevamente."
+          description: "Ocurrió un error al canjear la gift card. Intente nuevamente.",
+          variant: "destructive"
         });
-      }, 100);
+      }, 200);
     }
-  };
+  }, [selectedGiftCard, dialogsEnabled]);
 
+  // Filtros y renderizado
   const filteredGiftCards = giftCards.filter(card => {
     const matchesSearch = card.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          card.service.toLowerCase().includes(searchTerm.toLowerCase());
@@ -498,7 +564,7 @@ export default function GiftCardsPage() {
     return matchesSearch && matchesStatus && matchesBranch;
   });
 
-  const renderStatusBadge = (status: GiftCardStatus) => {
+  const renderStatusBadge = useCallback((status: GiftCardStatus) => {
     switch (status) {
       case "Pendiente":
         return (
@@ -524,9 +590,9 @@ export default function GiftCardsPage() {
       default:
         return null;
     }
-  };
+  }, []);
 
-  const validateGiftCardData = (data: any): { isValid: boolean; errors: string[] } => {
+  const validateGiftCardData = useCallback((data: any): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
     if (!data.number) errors.push(`Falta el número de gift card en la fila ${data.__rowNum__ + 1}`);
@@ -555,9 +621,9 @@ export default function GiftCardsPage() {
       isValid: errors.length === 0,
       errors
     };
-  };
+  }, []);
 
-  const processExcelFile = (file: File) => {
+  const processExcelFile = useCallback((file: File) => {
     try {
       setImportStatus("processing");
       setImportProgress(10);
@@ -642,7 +708,7 @@ export default function GiftCardsPage() {
               setTimeout(() => {
                 setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
                 
-                toast.success({
+                toast({
                   title: "Importación completada",
                   description: `Se importaron ${newGiftCards.length} gift cards correctamente`
                 });
@@ -666,9 +732,10 @@ export default function GiftCardsPage() {
             setImportStatus("error");
             setImportProgress(100);
             
-            toast.error({
+            toast({
               title: "Error en la importación",
-              description: "No se pudo importar ninguna gift card. Revise los errores."
+              description: "No se pudo importar ninguna gift card. Revise los errores.",
+              variant: "destructive"
             });
           }
         } catch (error) {
@@ -676,9 +743,10 @@ export default function GiftCardsPage() {
           setImportStatus("error");
           setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
           
-          toast.error({
+          toast({
             title: "Error en la importación",
-            description: "No se pudo procesar el archivo Excel. Verifique el formato."
+            description: "No se pudo procesar el archivo Excel. Verifique el formato.",
+            variant: "destructive"
           });
         }
       };
@@ -687,9 +755,10 @@ export default function GiftCardsPage() {
         setImportStatus("error");
         setImportErrors(["Error al leer el archivo"]);
         
-        toast.error({
+        toast({
           title: "Error en la importación",
-          description: "No se pudo leer el archivo."
+          description: "No se pudo leer el archivo.",
+          variant: "destructive"
         });
       };
       
@@ -700,14 +769,15 @@ export default function GiftCardsPage() {
       setImportProgress(0);
       setImportErrors(["Error inesperado al procesar el archivo"]);
       
-      toast.error({
+      toast({
         title: "Error",
-        description: "Error inesperado al procesar el archivo."
+        description: "Error inesperado al procesar el archivo.",
+        variant: "destructive"
       });
     }
-  };
+  }, [giftCards, validateGiftCardData]);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const file = event.target.files?.[0];
       if (file) {
@@ -715,14 +785,15 @@ export default function GiftCardsPage() {
       }
     } catch (error) {
       console.error("Error al seleccionar archivo:", error);
-      toast.error({
+      toast({
         title: "Error",
-        description: "No se pudo seleccionar el archivo. Intente nuevamente."
+        description: "No se pudo seleccionar el archivo. Intente nuevamente.",
+        variant: "destructive"
       });
     }
-  };
+  }, [processExcelFile]);
 
-  const downloadExcelTemplate = () => {
+  const downloadExcelTemplate = useCallback(() => {
     try {
       const workbook = XLSX.utils.book_new();
       
@@ -763,14 +834,15 @@ export default function GiftCardsPage() {
       });
     } catch (error) {
       console.error("Error al descargar plantilla:", error);
-      toast.error({
+      toast({
         title: "Error",
-        description: "No se pudo descargar la plantilla. Intente nuevamente."
+        description: "No se pudo descargar la plantilla. Intente nuevamente.",
+        variant: "destructive"
       });
     }
-  };
+  }, []);
 
-  const resetImportState = () => {
+  const resetImportState = useCallback(() => {
     try {
       setImportStatus("idle");
       setImportProgress(0);
@@ -782,7 +854,17 @@ export default function GiftCardsPage() {
     } catch (error) {
       console.error("Error al resetear estado de importación:", error);
     }
-  };
+  }, []);
+
+  // Control de cierre de diálogos para evitar congelamiento de la interfaz
+  const handleDialogOpenChange = useCallback((open: boolean, setOpenFn: React.Dispatch<React.SetStateAction<boolean>>, cleanup?: () => void) => {
+    if (!open && cleanup) {
+      setOpenFn(false);
+      setTimeout(cleanup, 200);
+    } else {
+      setOpenFn(open);
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -796,7 +878,12 @@ export default function GiftCardsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button 
             className="bg-salon-400 hover:bg-salon-500"
-            onClick={() => setIsNewGiftCardDialogOpen(true)}
+            onClick={() => {
+              if (dialogsEnabled) {
+                setIsNewGiftCardDialogOpen(true);
+              }
+            }}
+            disabled={!dialogsEnabled}
           >
             <Plus className="mr-2 h-4 w-4" />
             Nueva Gift Card
@@ -804,12 +891,12 @@ export default function GiftCardsPage() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" disabled={!dialogsEnabled}>
                 <Download className="mr-2 h-4 w-4" />
                 Exportar
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-50 bg-white">
               <DropdownMenuLabel>Formato de exportación</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleExportPDF}>
@@ -825,7 +912,12 @@ export default function GiftCardsPage() {
           
           <Button
             variant="outline"
-            onClick={() => setIsImportDialogOpen(true)}
+            onClick={() => {
+              if (dialogsEnabled) {
+                setIsImportDialogOpen(true);
+              }
+            }}
+            disabled={!dialogsEnabled}
           >
             <Upload className="mr-2 h-4 w-4" />
             Importar
@@ -858,7 +950,7 @@ export default function GiftCardsPage() {
                     <Filter className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 z-50 bg-white">
                   <DropdownMenuLabel>Filtros</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="p-2">
@@ -871,7 +963,7 @@ export default function GiftCardsPage() {
                         <SelectTrigger>
                           <SelectValue placeholder="Todos los estados" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="all">Todos los estados</SelectItem>
                           <SelectItem value="Pendiente">Pendiente</SelectItem>
                           <SelectItem value="Canjeada">Canjeada</SelectItem>
@@ -888,7 +980,7 @@ export default function GiftCardsPage() {
                         <SelectTrigger>
                           <SelectValue placeholder="Todas las sucursales" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           <SelectItem value="all">Todas las sucursales</SelectItem>
                           <SelectItem value="Fisherton">Fisherton</SelectItem>
                           <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
@@ -941,11 +1033,11 @@ export default function GiftCardsPage() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" disabled={!dialogsEnabled}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="z-50 bg-white">
                             <DropdownMenuItem onClick={() => handleViewDetails(card)}>
                               <Eye className="mr-2 h-4 w-4" />
                               <span>Ver Detalles</span>
@@ -980,16 +1072,12 @@ export default function GiftCardsPage() {
         </CardContent>
       </Card>
 
+      {/* Diálogos con gestión mejorada para evitar congelamiento */}
       <Dialog 
         open={isDeleteDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setTimeout(() => setSelectedGiftCard(null), 100);
-          }
-          setIsDeleteDialogOpen(open);
-        }}
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsDeleteDialogOpen, () => setSelectedGiftCard(null))}
       >
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] bg-white">
           <DialogHeader>
             <DialogTitle>Eliminar Gift Card</DialogTitle>
             <DialogDescription>
@@ -1008,16 +1096,14 @@ export default function GiftCardsPage() {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setIsDeleteDialogOpen(false);
-                setTimeout(() => setSelectedGiftCard(null), 100);
-              }}
+              onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancelar
             </Button>
             <Button 
               variant="destructive"
               onClick={handleConfirmDelete}
+              disabled={!dialogsEnabled}
             >
               Eliminar
             </Button>
@@ -1027,9 +1113,9 @@ export default function GiftCardsPage() {
       
       <Dialog 
         open={isNewGiftCardDialogOpen} 
-        onOpenChange={(open) => setIsNewGiftCardDialogOpen(open)}
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsNewGiftCardDialogOpen)}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] bg-white">
           <DialogHeader>
             <DialogTitle>Nueva Gift Card</DialogTitle>
             <DialogDescription>
@@ -1136,22 +1222,14 @@ export default function GiftCardsPage() {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => {
-                setIsNewGiftCardDialogOpen(false);
-                setTimeout(() => {
-                  setNewGiftCard({
-                    type: "Física",
-                    branch: "Fisherton",
-                    issueDate: new Date().toISOString().split('T')[0]
-                  });
-                }, 100);
-              }}
+              onClick={() => setIsNewGiftCardDialogOpen(false)}
             >
               Cancelar
             </Button>
             <Button 
               className="bg-salon-400 hover:bg-salon-500"
               onClick={handleCreateGiftCard}
+              disabled={!dialogsEnabled}
             >
               Crear Gift Card
             </Button>
@@ -1161,14 +1239,9 @@ export default function GiftCardsPage() {
 
       <Dialog 
         open={isViewDetailsDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setTimeout(() => setSelectedGiftCard(null), 100);
-          }
-          setIsViewDetailsDialogOpen(open);
-        }}
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsViewDetailsDialogOpen, () => setSelectedGiftCard(null))}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] bg-white">
           <DialogHeader>
             <DialogTitle>Detalles de Gift Card</DialogTitle>
             <DialogDescription>
@@ -1236,17 +1309,12 @@ export default function GiftCardsPage() {
       
       <Dialog 
         open={isEditDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setTimeout(() => {
-              setSelectedGiftCard(null);
-              setEditGiftCard({});
-            }, 100);
-          }
-          setIsEditDialogOpen(open);
-        }}
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsEditDialogOpen, () => {
+          setSelectedGiftCard(null);
+          setEditGiftCard({});
+        })}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] bg-white">
           <DialogHeader>
             <DialogTitle>Editar Gift Card</DialogTitle>
             <DialogDescription>
@@ -1370,6 +1438,7 @@ export default function GiftCardsPage() {
             <Button 
               className="bg-salon-400 hover:bg-salon-500"
               onClick={handleSaveEdit}
+              disabled={!dialogsEnabled}
             >
               Guardar Cambios
             </Button>
@@ -1379,14 +1448,9 @@ export default function GiftCardsPage() {
       
       <Dialog 
         open={isConfirmRedeemDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setTimeout(() => setSelectedGiftCard(null), 100);
-          }
-          setIsConfirmRedeemDialogOpen(open);
-        }}
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsConfirmRedeemDialogOpen, () => setSelectedGiftCard(null))}
       >
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] bg-white">
           <DialogHeader>
             <DialogTitle>Marcar como Canjeada</DialogTitle>
             <DialogDescription>
@@ -1410,6 +1474,7 @@ export default function GiftCardsPage() {
             <Button 
               className="bg-salon-400 hover:bg-salon-500"
               onClick={handleConfirmRedeem}
+              disabled={!dialogsEnabled}
             >
               Confirmar
             </Button>
@@ -1419,14 +1484,13 @@ export default function GiftCardsPage() {
       
       <Dialog 
         open={isImportDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && importStatus !== "processing") {
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsImportDialogOpen, () => {
+          if (importStatus !== "processing") {
             resetImportState();
           }
-          setIsImportDialogOpen(open);
-        }}
+        })}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] bg-white">
           <DialogHeader>
             <DialogTitle>Importar Gift Cards</DialogTitle>
             <DialogDescription>
@@ -1525,6 +1589,7 @@ export default function GiftCardsPage() {
                     resetImportState();
                   }
                 }}
+                disabled={importStatus === "processing" || !dialogsEnabled}
               >
                 {importStatus === "success" ? "Cerrar" : "Volver"}
               </Button>

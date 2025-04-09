@@ -5,23 +5,68 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Scissors } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const validateForm = () => {
+    const newErrors: {email?: string; password?: string} = {};
+    let isValid = true;
+
+    if (!email) {
+      newErrors.email = "El email es requerido";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Email inválido";
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = "La contraseña es requerida";
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast({
+        title: "Error de validación",
+        description: "Por favor corrija los errores en el formulario",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     // Simulando autenticación
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Mostrar toast de éxito
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Bienvenido/a al sistema de gestión",
+        className: "bg-green-100 border-green-300 text-green-800"
+      });
+      
       navigate("/");
     }, 1500);
   };
@@ -63,7 +108,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className={errors.email ? "border-red-500" : ""}
                 />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
@@ -75,6 +124,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className={errors.password ? "border-red-500" : ""}
                   />
                   <Button 
                     type="button"
@@ -90,6 +140,9 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-red-500">{errors.password}</p>
+                )}
               </div>
             </CardContent>
             <CardFooter>

@@ -414,10 +414,7 @@ export default function GastosPage() {
     }));
 
     setGastos(prev => [...prev, ...newGastos]);
-    toast.success({
-      title: "Importación exitosa",
-      description: `Se importaron ${data.length} gastos correctamente`
-    });
+    toast.success(`Se importaron ${data.length} gastos correctamente`);
     setIsImportDialogOpen(false);
   };
 

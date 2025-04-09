@@ -19,13 +19,7 @@ export function AppHeader() {
       <div className="flex h-12 items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger />
-          <Link to="/" className="flex items-center">
-            <img 
-              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
-              alt="Nails&Co Logo" 
-              className="h-8 w-auto cursor-pointer"
-            />
-          </Link>
+          {/* Logo removed from header, only kept in sidebar */}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" aria-label="Notificaciones">

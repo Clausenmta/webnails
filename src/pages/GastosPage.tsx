@@ -51,8 +51,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import ExcelImportDialog from "@/components/common/ExcelImportDialog";
 
-// Tipos de gastos disponibles
 const TIPOS_GASTOS = [
   "Alquiler",
   "Servicios",
@@ -64,7 +64,6 @@ const TIPOS_GASTOS = [
   "Otros"
 ];
 
-// Datos iniciales de ejemplo
 const initialGastos = [
   {
     id: 1,
@@ -99,10 +98,7 @@ const initialGastos = [
 ];
 
 export default function GastosPage() {
-  // Estado para la lista de gastos
   const [gastos, setGastos] = useState(initialGastos);
-  
-  // Estado para el gasto actual (nuevo o edición)
   const [currentGasto, setCurrentGasto] = useState({
     id: 0,
     fecha: "",
@@ -113,23 +109,16 @@ export default function GastosPage() {
     comprobanteFile: null as File | null,
     observaciones: ""
   });
-  
-  // Estado para el manejo de la fecha con el calendario
   const [fechaGasto, setFechaGasto] = useState<Date | undefined>(undefined);
-  
-  // Estados para los diálogos
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  
-  // Estado para la ordenación
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "fecha",
     direction: "desc" as "asc" | "desc"
   });
-
-  // Estados para la búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filtros, setFiltros] = useState({
     tipos: [] as string[],
@@ -138,18 +127,11 @@ export default function GastosPage() {
     montoMinimo: "" as string,
     montoMaximo: "" as string
   });
-  
-  // Estado para los filtros aplicados
   const [filtrosAplicados, setFiltrosAplicados] = useState(filtros);
-  
-  // Estado para las fechas del filtro
   const [fechaDesdeFilter, setFechaDesdeFilter] = useState<Date | undefined>(undefined);
   const [fechaHastaFilter, setFechaHastaFilter] = useState<Date | undefined>(undefined);
-  
-  // Contador de filtros aplicados
   const [cantidadFiltrosAplicados, setCantidadFiltrosAplicados] = useState(0);
 
-  // Función para resetear el formulario
   const resetForm = () => {
     setCurrentGasto({
       id: 0,
@@ -164,26 +146,22 @@ export default function GastosPage() {
     setFechaGasto(undefined);
   };
 
-  // Función para abrir el diálogo de agregar
   const handleAddOpen = () => {
     resetForm();
     setIsAddDialogOpen(true);
   };
 
-  // Función para abrir el diálogo de edición
   const handleEditOpen = (gasto) => {
     setCurrentGasto(gasto);
     setFechaGasto(gasto.fecha ? new Date(gasto.fecha) : undefined);
     setIsEditDialogOpen(true);
   };
 
-  // Función para abrir el diálogo de eliminación
   const handleDeleteOpen = (gasto) => {
     setCurrentGasto(gasto);
     setIsDeleteDialogOpen(true);
   };
 
-  // Función para manejar los cambios en los campos del formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCurrentGasto(prev => ({
@@ -192,7 +170,6 @@ export default function GastosPage() {
     }));
   };
 
-  // Función para manejar cambios en campos de tipo Select
   const handleSelectChange = (name, value) => {
     setCurrentGasto(prev => ({
       ...prev,
@@ -200,7 +177,6 @@ export default function GastosPage() {
     }));
   };
 
-  // Función para manejar cambios en la fecha
   const handleDateChange = (date) => {
     setFechaGasto(date);
     setCurrentGasto(prev => ({
@@ -209,7 +185,6 @@ export default function GastosPage() {
     }));
   };
 
-  // Función para manejar el cambio en el archivo de comprobante
   const handleFileChange = (e) => {
     const file = e.target.files?.[0] || null;
     if (file) {
@@ -221,9 +196,7 @@ export default function GastosPage() {
     }
   };
 
-  // Función para agregar un nuevo gasto
   const handleAddGasto = () => {
-    // Validar campos requeridos
     if (!currentGasto.fecha || !currentGasto.concepto || !currentGasto.monto || !currentGasto.tipo) {
       toast.error("Por favor complete todos los campos obligatorios");
       return;
@@ -240,9 +213,7 @@ export default function GastosPage() {
     resetForm();
   };
 
-  // Función para editar un gasto
   const handleEditGasto = () => {
-    // Validar campos requeridos
     if (!currentGasto.fecha || !currentGasto.concepto || !currentGasto.monto || !currentGasto.tipo) {
       toast.error("Por favor complete todos los campos obligatorios");
       return;
@@ -258,7 +229,6 @@ export default function GastosPage() {
     resetForm();
   };
 
-  // Función para eliminar un gasto
   const handleDeleteGasto = () => {
     setGastos(prev => prev.filter(gasto => gasto.id !== currentGasto.id));
     setIsDeleteDialogOpen(false);
@@ -266,7 +236,6 @@ export default function GastosPage() {
     resetForm();
   };
 
-  // Función para manejar cambios en los filtros
   const handleFilterChange = (name, value) => {
     setFiltros(prev => ({
       ...prev,
@@ -274,7 +243,6 @@ export default function GastosPage() {
     }));
   };
 
-  // Función para manejar cambios en los filtros de tipo (multiple select)
   const handleTipoFilterToggle = (tipo) => {
     setFiltros(prev => {
       const tiposActuales = [...prev.tipos];
@@ -293,7 +261,6 @@ export default function GastosPage() {
     });
   };
 
-  // Función para manejar cambios en las fechas de filtro
   const handleFilterDateChange = (name, date) => {
     if (name === "fechaDesde") {
       setFechaDesdeFilter(date);
@@ -310,11 +277,9 @@ export default function GastosPage() {
     }
   };
 
-  // Función para aplicar los filtros
   const handleApplyFilters = () => {
     setFiltrosAplicados({...filtros});
     
-    // Calcular la cantidad de filtros aplicados
     let count = 0;
     if (filtros.tipos.length > 0) count++;
     if (filtros.fechaDesde) count++;
@@ -327,7 +292,6 @@ export default function GastosPage() {
     toast.success("Filtros aplicados");
   };
 
-  // Función para resetear los filtros
   const handleResetFilters = () => {
     setFiltros({
       tipos: [],
@@ -349,9 +313,7 @@ export default function GastosPage() {
     toast.success("Filtros reseteados");
   };
 
-  // Filtrar los gastos según el término de búsqueda y los filtros aplicados
   const filteredGastos = gastos.filter(gasto => {
-    // Filtrar por término de búsqueda
     if (searchTerm && !gasto.concepto.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !gasto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !gasto.comprobante.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -359,31 +321,26 @@ export default function GastosPage() {
       return false;
     }
     
-    // Filtrar por tipo de gasto
     if (filtrosAplicados.tipos.length > 0 && !filtrosAplicados.tipos.includes(gasto.tipo)) {
       return false;
     }
     
-    // Filtrar por fecha desde
     if (filtrosAplicados.fechaDesde) {
       const fechaGasto = new Date(gasto.fecha);
       const fechaDesde = new Date(filtrosAplicados.fechaDesde);
       if (fechaGasto < fechaDesde) return false;
     }
     
-    // Filtrar por fecha hasta
     if (filtrosAplicados.fechaHasta) {
       const fechaGasto = new Date(gasto.fecha);
       const fechaHasta = new Date(filtrosAplicados.fechaHasta);
       if (fechaGasto > fechaHasta) return false;
     }
     
-    // Filtrar por monto mínimo
     if (filtrosAplicados.montoMinimo && gasto.monto < parseFloat(filtrosAplicados.montoMinimo)) {
       return false;
     }
     
-    // Filtrar por monto máximo
     if (filtrosAplicados.montoMaximo && gasto.monto > parseFloat(filtrosAplicados.montoMaximo)) {
       return false;
     }
@@ -391,7 +348,6 @@ export default function GastosPage() {
     return true;
   });
 
-  // Ordenar los gastos según la configuración actual
   const sortedGastos = [...filteredGastos].sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) {
       return sortConfig.direction === "asc" ? -1 : 1;
@@ -402,7 +358,6 @@ export default function GastosPage() {
     return 0;
   });
 
-  // Función para ordenar la tabla
   const handleSort = (key) => {
     let direction: "asc" | "desc" = "asc";
     
@@ -413,15 +368,57 @@ export default function GastosPage() {
     setSortConfig({ key, direction });
   };
 
-  // Cálculo del total de gastos
   const totalGastos = filteredGastos.reduce((sum, gasto) => sum + gasto.monto, 0);
-  
-  // Formatear montos como pesos argentinos
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: 'ARS'
     }).format(value);
+  };
+
+  const templateData = [
+    {
+      fecha: "2025-04-01",
+      concepto: "Ejemplo Gasto",
+      tipo: "Alquiler",
+      monto: 1000,
+      comprobante: "Factura #123",
+      observaciones: "Observación de ejemplo"
+    }
+  ];
+
+  const validateGastoRow = (row: any) => {
+    if (!row.fecha || !row.concepto || !row.tipo || !row.monto) {
+      return { 
+        isValid: false, 
+        error: "Faltan campos requeridos (fecha, concepto, tipo, monto)" 
+      };
+    }
+
+    if (!TIPOS_GASTOS.includes(row.tipo)) {
+      return { 
+        isValid: false, 
+        error: `Tipo de gasto inválido: ${row.tipo}` 
+      };
+    }
+
+    return { isValid: true };
+  };
+
+  const handleImportGastos = (data: any[]) => {
+    const newGastos = data.map(row => ({
+      ...row,
+      id: Math.max(0, ...gastos.map(g => g.id)) + 1,
+      monto: Number(row.monto)
+    }));
+
+    setGastos(prev => [...prev, ...newGastos]);
+    toast.success({
+      title: "Importación exitosa",
+      description: `Se importaron ${data.length} gastos correctamente`
+    });
+    setIsImportDialogOpen(false);
   };
 
   return (
@@ -433,13 +430,21 @@ export default function GastosPage() {
             Gestiona y visualiza los gastos del negocio
           </p>
         </div>
-        <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleAddOpen}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Gasto
-        </Button>
+        <div className="flex gap-2">
+          <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleAddOpen}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Gasto
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importar
+          </Button>
+        </div>
       </div>
       
-      {/* Resumen de gastos */}
       <div className="stats-card">
         <div className="flex items-center justify-between">
           <div>
@@ -453,7 +458,6 @@ export default function GastosPage() {
         </div>
       </div>
       
-      {/* Barra de búsqueda y filtros */}
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -479,7 +483,6 @@ export default function GastosPage() {
         </Button>
       </div>
       
-      {/* Tabla de gastos */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -579,7 +582,6 @@ export default function GastosPage() {
         </Table>
       </div>
       
-      {/* Diálogo para agregar gasto */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -714,7 +716,6 @@ export default function GastosPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo para editar gasto */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -849,7 +850,6 @@ export default function GastosPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo para confirmar eliminación */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -874,7 +874,6 @@ export default function GastosPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo para filtros */}
       <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1018,6 +1017,15 @@ export default function GastosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <ExcelImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImport={handleImportGastos}
+        templateData={templateData}
+        templateFilename="plantilla-gastos.xlsx"
+        validationFunction={validateGastoRow}
+      />
     </div>
   );
 }

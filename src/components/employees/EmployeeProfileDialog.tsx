@@ -76,7 +76,13 @@ export default function EmployeeProfileDialog({
   setNewEmployeeData,
 }: EmployeeProfileDialogProps) {
   const [activeTab, setActiveTab] = useState("personal");
-  const [documents, setDocuments] = useState<{ id: number; name: string; type: string }[]>(
+  const [documents, setDocuments] = useState<{
+    id: number;
+    name: string;
+    date: string;
+    type: "salary" | "contract" | "other";
+    url: string;
+  }[]>(
     employee?.documents || []
   );
   const [fileUpload, setFileUpload] = useState<{

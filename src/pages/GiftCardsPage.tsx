@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -910,3 +911,367 @@ export default function GiftCardsPage() {
           </DialogHeader>
           {selectedGiftCard && (
             <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Nro. Gift Card:</p>
+                  <p className="text-lg font-bold">{selectedGiftCard.number}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Tipo:</p>
+                  <p className="text-lg">{selectedGiftCard.type}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium mb-1">Servicio:</p>
+                <p className="text-lg">{selectedGiftCard.service}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Sucursal:</p>
+                  <p className="text-lg">{selectedGiftCard.branch}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Estado:</p>
+                  <div className="text-lg">{renderStatusBadge(selectedGiftCard.status)}</div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Fecha de emisión:</p>
+                  <p className="text-lg">{new Date(selectedGiftCard.issueDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Fecha de vencimiento:</p>
+                  <p className="text-lg">{new Date(selectedGiftCard.expirationDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+              
+              {selectedGiftCard.receivedDate && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Fecha de recepción:</p>
+                  <p className="text-lg">{new Date(selectedGiftCard.receivedDate).toLocaleDateString()}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsViewDetailsDialogOpen(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Gift Card Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Editar Gift Card</DialogTitle>
+            <DialogDescription>
+              Modifique la información de la gift card seleccionada.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedGiftCard && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editGiftCardNumber">Nro. Gift Card</Label>
+                  <Input
+                    id="editGiftCardNumber"
+                    placeholder="GC-001"
+                    value={editGiftCard.number || ""}
+                    onChange={(e) => handleEditGiftCardChange("number", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editGiftCardType">Tipo</Label>
+                  <Select
+                    value={editGiftCard.type}
+                    onValueChange={(value) => handleEditGiftCardChange("type", value as GiftCardType)}
+                  >
+                    <SelectTrigger id="editGiftCardType">
+                      <SelectValue placeholder="Seleccione un tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Física">Física</SelectItem>
+                      <SelectItem value="Virtual">Virtual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editGiftCardService">Servicio</Label>
+                <Input
+                  id="editGiftCardService"
+                  placeholder="Manicura completa"
+                  value={editGiftCard.service || ""}
+                  onChange={(e) => handleEditGiftCardChange("service", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editGiftCardBranch">Sucursal</Label>
+                  <Select
+                    value={editGiftCard.branch}
+                    onValueChange={(value) => handleEditGiftCardChange("branch", value as Branch)}
+                  >
+                    <SelectTrigger id="editGiftCardBranch">
+                      <SelectValue placeholder="Seleccione una sucursal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Fisherton">Fisherton</SelectItem>
+                      <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
+                      <SelectItem value="Moreno">Moreno</SelectItem>
+                      <SelectItem value="Tucumán">Tucumán</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editGiftCardIssueDate">Fecha de Emisión</Label>
+                  <Input
+                    id="editGiftCardIssueDate"
+                    type="date"
+                    value={editGiftCard.issueDate || ""}
+                    onChange={(e) => handleEditGiftCardChange("issueDate", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="editHasBeenReceived" 
+                    checked={!!editGiftCard.receivedDate}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        handleEditGiftCardChange("receivedDate", new Date().toISOString().split('T')[0]);
+                        handleEditGiftCardChange("status", "Canjeada");
+                      } else {
+                        handleEditGiftCardChange("receivedDate", null);
+                        handleEditGiftCardChange("status", "Pendiente");
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="editHasBeenReceived"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Ya ha sido canjeada
+                  </label>
+                </div>
+              </div>
+              {editGiftCard.receivedDate && (
+                <div className="space-y-2">
+                  <Label htmlFor="editGiftCardReceivedDate">Fecha de Recepción</Label>
+                  <Input
+                    id="editGiftCardReceivedDate"
+                    type="date"
+                    value={editGiftCard.receivedDate || ""}
+                    onChange={(e) => handleEditGiftCardChange("receivedDate", e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="editGiftCardExpirationDate">Fecha de Vencimiento</Label>
+                <Input
+                  id="editGiftCardExpirationDate"
+                  type="date"
+                  value={editGiftCard.expirationDate || ""}
+                  onChange={(e) => handleEditGiftCardChange("expirationDate", e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-salon-400 hover:bg-salon-500"
+              onClick={handleSaveEdit}
+            >
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar Gift Card</DialogTitle>
+            <DialogDescription>
+              ¿Está seguro que desea eliminar esta gift card? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedGiftCard && (
+            <div className="py-4">
+              <div className="p-4 border rounded-md mb-4">
+                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
+                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
+                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Redeem Confirmation Dialog */}
+      <Dialog open={isConfirmRedeemDialogOpen} onOpenChange={setIsConfirmRedeemDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Marcar como Canjeada</DialogTitle>
+            <DialogDescription>
+              ¿Está seguro que desea marcar esta gift card como canjeada?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedGiftCard && (
+            <div className="py-4">
+              <div className="p-4 border rounded-md mb-4">
+                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
+                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
+                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
+                <p><span className="font-medium">Fecha actual:</span> {new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmRedeemDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-salon-400 hover:bg-salon-500"
+              onClick={handleConfirmRedeem}
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Importar Gift Cards</DialogTitle>
+            <DialogDescription>
+              Importe gift cards desde un archivo Excel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {importStatus === "idle" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="importFile">Archivo Excel</Label>
+                  <Input
+                    id="importFile"
+                    type="file"
+                    accept=".xlsx, .xls"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                  />
+                </div>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={downloadExcelTemplate}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar plantilla
+                  </Button>
+                </div>
+              </>
+            )}
+            
+            {importStatus === "processing" && (
+              <div className="space-y-4">
+                <p className="text-center">Procesando archivo...</p>
+                <Progress value={importProgress} className="w-full" />
+              </div>
+            )}
+            
+            {importStatus === "success" && (
+              <div className="space-y-4">
+                <Alert className="bg-green-50 border-green-300">
+                  <BadgeCheck className="h-4 w-4 text-green-700" />
+                  <AlertDescription className="text-green-700">
+                    Se importaron <strong>{importResults.successful}</strong> gift cards correctamente.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="p-4 border rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Resumen de importación</h4>
+                  <p>Total: {importResults.total}</p>
+                  <p>Importadas: {importResults.successful}</p>
+                  <p>Errores: {importResults.failed}</p>
+                </div>
+              </div>
+            )}
+            
+            {importStatus === "error" && (
+              <div className="space-y-4">
+                <Alert className="bg-red-50 border-red-300">
+                  <BadgeAlert className="h-4 w-4 text-red-700" />
+                  <AlertDescription className="text-red-700">
+                    Ocurrieron errores durante la importación.
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
+                    <h4 className="text-sm font-medium mb-2">Errores encontrados:</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {importErrors.map((error, index) => (
+                        <li key={index} className="text-sm text-red-600">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            {importStatus === "idle" ? (
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                Cancelar
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (importStatus === "processing") {
+                    return;
+                  }
+                  resetImportState();
+                  if (importStatus === "success") {
+                    setIsImportDialogOpen(false);
+                  }
+                }}
+              >
+                {importStatus === "success" ? "Cerrar" : "Volver"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

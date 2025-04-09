@@ -53,10 +53,13 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  Trash
+  Trash,
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
 import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 // Definición de tipos para las gift cards
 type GiftCardStatus = "Pendiente" | "Canjeada" | "Vencida";
@@ -156,6 +159,25 @@ export default function GiftCardsPage() {
       ...newGiftCard,
       [field]: value
     });
+  };
+
+  // Export functions
+  const handleExportPDF = () => {
+    // Mock implementation - would connect to a PDF generation library in production
+    toast.success("Exportando a PDF...", {
+      description: "El archivo se descargará en breve."
+    });
+    console.log("Exporting to PDF...");
+    // In a real implementation, would use a library like jsPDF or call a backend endpoint
+  };
+
+  const handleExportExcel = () => {
+    // Mock implementation - would connect to an Excel generation library in production
+    toast.success("Exportando a Excel...", {
+      description: "El archivo se descargará en breve."
+    });
+    console.log("Exporting to Excel...");
+    // In a real implementation, would use a library like xlsx or call a backend endpoint
   };
 
   // Crear nueva gift card
@@ -260,10 +282,27 @@ export default function GiftCardsPage() {
             <Plus className="mr-2 h-4 w-4" />
             Nueva Gift Card
           </Button>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Formato de exportación</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Exportar como PDF</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <span>Exportar como Excel</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

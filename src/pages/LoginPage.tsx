@@ -32,7 +32,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center space-y-2 text-center">
           <div className="w-40 h-auto mb-2">
             <img 
-              src="/lovable-uploads/d70ebe3b-1305-4b43-b7ef-b7e92d81eddf.png" 
+              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
               alt="Nails&Co Logo" 
               className="w-full h-auto"
             />

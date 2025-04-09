@@ -205,7 +205,7 @@ export default function EmpleadosPage() {
 
   // Handle employee status change
   const toggleEmployeeStatus = (employee: Employee) => {
-    const newStatus = employee.status === "active" ? "inactive" : "active";
+    const newStatus: "active" | "inactive" = employee.status === "active" ? "inactive" : "active";
     const updatedEmployees = employees.map(emp => 
       emp.id === employee.id ? { ...emp, status: newStatus } : emp
     );
@@ -224,13 +224,13 @@ export default function EmpleadosPage() {
       position: employeeData.position || "Estilista",
       startDate: new Date().toLocaleDateString("es-AR"),
       phone: employeeData.phone || "",
-      status: "active",
+      status: "active", // Explicitly set as a literal type
       email: employeeData.email,
       address: employeeData.address,
       documentId: employeeData.documentId,
       birthday: employeeData.birthday,
       bankAccount: employeeData.bankAccount,
-      documents: []
+      documents: employeeData.documents || []
     };
     
     const updatedEmployees = [...employees, newEmployeeData];

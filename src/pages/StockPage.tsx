@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+
+import { useState, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -52,6 +53,7 @@ import {
   FileText,
   FileSpreadsheet,
   Filter,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,6 +62,10 @@ import {
   ToggleGroup, 
   ToggleGroupItem 
 } from "@/components/ui/toggle-group";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 type Product = {
   id: string;
@@ -185,6 +191,18 @@ export default function StockPage() {
     max: 10000,
   });
   const [stockView, setStockView] = useState<string>("all");
+
+  // New state for import functionality
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
+  const [importResults, setImportResults] = useState<{ total: number; successful: number; failed: number }>({
+    total: 0,
+    successful: 0,
+    failed: 0
+  });
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stockByLocation = useMemo(() => {
     const result: Record<string, { totalItems: number; keyProducts: Record<string, number> }> = {};
@@ -330,6 +348,186 @@ export default function StockPage() {
     console.log("Exporting to Excel...");
   };
 
+  // New functions for import functionality
+  const validateProductData = (data: any): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (!data.name) errors.push(`Falta el nombre del producto en la fila ${data.__rowNum__ + 1}`);
+    if (!data.category) errors.push(`Falta la categoría en la fila ${data.__rowNum__ + 1}`);
+    if (!data.location) errors.push(`Falta la ubicación en la fila ${data.__rowNum__ + 1}`);
+    
+    if (data.category && !CATEGORY_OPTIONS.includes(data.category)) {
+      errors.push(`Categoría inválida "${data.category}" en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    if (data.location && !LOCATION_OPTIONS.includes(data.location)) {
+      errors.push(`Ubicación inválida "${data.location}" en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    if (data.price && isNaN(Number(data.price))) {
+      errors.push(`Precio inválido en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    if (data.stock && isNaN(Number(data.stock))) {
+      errors.push(`Stock inválido en la fila ${data.__rowNum__ + 1}`);
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const processExcelFile = (file: File) => {
+    setImportStatus("processing");
+    setImportProgress(10);
+    setImportErrors([]);
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        setImportProgress(30);
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+        
+        setImportProgress(50);
+        
+        if (jsonData.length === 0) {
+          setImportStatus("error");
+          setImportErrors(["El archivo no contiene datos"]);
+          return;
+        }
+        
+        const newProducts: Product[] = [];
+        const errors: string[] = [];
+        
+        jsonData.forEach((row, index) => {
+          setImportProgress(50 + Math.floor((index / jsonData.length) * 40));
+          
+          const { isValid, errors: rowErrors } = validateProductData(row);
+          
+          if (isValid) {
+            const newProduct: Product = {
+              id: (products.length + newProducts.length + 1).toString(),
+              name: row.name,
+              category: row.category,
+              price: Number(row.price) || 0,
+              stock: Number(row.stock) || 0,
+              location: row.location
+            };
+            
+            newProducts.push(newProduct);
+          } else {
+            errors.push(...rowErrors);
+          }
+        });
+        
+        setImportProgress(95);
+        
+        if (newProducts.length > 0) {
+          setProducts([...products, ...newProducts]);
+        }
+        
+        setImportResults({
+          total: jsonData.length,
+          successful: newProducts.length,
+          failed: jsonData.length - newProducts.length
+        });
+        
+        setImportErrors(errors);
+        setImportStatus(errors.length > 0 ? "error" : "success");
+        setImportProgress(100);
+        
+        if (newProducts.length > 0) {
+          toast.success("Importación completada", {
+            description: `Se importaron ${newProducts.length} productos correctamente`
+          });
+        } else {
+          toast.error("Error en la importación", {
+            description: "No se pudo importar ningún producto. Revise los errores."
+          });
+        }
+      } catch (error) {
+        console.error("Error al procesar el archivo Excel:", error);
+        setImportStatus("error");
+        setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
+        
+        toast.error("Error en la importación", {
+          description: "No se pudo procesar el archivo Excel. Verifique el formato."
+        });
+      }
+    };
+    
+    reader.onerror = () => {
+      setImportStatus("error");
+      setImportErrors(["Error al leer el archivo"]);
+      
+      toast.error("Error en la importación", {
+        description: "No se pudo leer el archivo."
+      });
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      processExcelFile(file);
+    }
+  };
+
+  const downloadExcelTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    const headers = [
+      "name", "category", "price", "stock", "location"
+    ];
+    
+    const sampleData = [
+      {
+        name: "Esmalte OPI",
+        category: "SEMI OPI",
+        price: 3500,
+        stock: 12,
+        location: "Stock Local"
+      },
+      {
+        name: "Removedor de esmalte",
+        category: "VARIOS",
+        price: 1800,
+        stock: 8,
+        location: "Stock Casa"
+      }
+    ];
+    
+    const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+    
+    XLSX.writeFile(workbook, "plantilla_productos.xlsx");
+    
+    toast.success("Plantilla descargada", {
+      description: "La plantilla de Excel para importar productos ha sido descargada"
+    });
+  };
+
+  const resetImportState = () => {
+    setImportStatus("idle");
+    setImportProgress(0);
+    setImportErrors([]);
+    setImportResults({ total: 0, successful: 0, failed: 0 });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -360,6 +558,15 @@ export default function StockPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          {/* Add import button */}
+          <Button
+            variant="outline"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importar
+          </Button>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -817,6 +1024,145 @@ export default function StockPage() {
             </Button>
             <Button onClick={handleUpdateProduct}>Guardar Cambios</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add import dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
+        setIsImportDialogOpen(open);
+        if (!open) resetImportState();
+      }}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Importar Productos</DialogTitle>
+            <DialogDescription>
+              Cargue un archivo Excel con la información de múltiples productos para crearlos en lote.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {importStatus === "idle" && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="import-file">Archivo Excel</Label>
+                  <Input
+                    id="import-file"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    El archivo debe tener las columnas: name, category, price, stock, location
+                  </p>
+                </div>
+
+                <div className="border rounded-md p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileSpreadsheet className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-medium">¿No tiene una plantilla?</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Descargue nuestra plantilla de Excel con el formato correcto y ejemplos.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadExcelTemplate}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar Plantilla
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {importStatus === "processing" && (
+              <div className="space-y-4 py-4">
+                <Label>Procesando archivo...</Label>
+                <Progress value={importProgress} className="h-2" />
+                <p className="text-sm text-muted-foreground">
+                  Por favor espere mientras se procesan los productos...
+                </p>
+              </div>
+            )}
+
+            {(importStatus === "success" || importStatus === "error") && (
+              <div className="space-y-4">
+                <div className="rounded-md bg-green-50 p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      {importResults.successful > 0 ? (
+                        <BadgeCheck className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <BadgeAlert className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">
+                        Resumen de la importación
+                      </h3>
+                      <div className="mt-2 text-sm text-green-700">
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Total de registros: {importResults.total}</li>
+                          <li>Productos importados: {importResults.successful}</li>
+                          <li>Registros con errores: {importResults.failed}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {importErrors.length > 0 && (
+                  <div>
+                    <Label>Errores encontrados:</Label>
+                    <div className="max-h-40 overflow-y-auto border rounded-md mt-2">
+                      <ul className="px-4 py-3 space-y-1">
+                        {importErrors.map((error, index) => (
+                          <li key={index} className="text-sm text-red-600">{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => resetImportState()}
+                  >
+                    Importar otro archivo
+                  </Button>
+                  
+                  <Button
+                    variant="default"
+                    onClick={() => setIsImportDialogOpen(false)}
+                  >
+                    {importResults.successful > 0 ? "Finalizar" : "Cerrar"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {importStatus === "idle" && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                disabled={!fileInputRef.current?.files?.length}
+                onClick={() => {
+                  if (fileInputRef.current?.files?.length) {
+                    processExcelFile(fileInputRef.current.files[0]);
+                  }
+                }}
+              >
+                Importar
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

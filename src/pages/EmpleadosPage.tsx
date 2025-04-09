@@ -25,7 +25,10 @@ import {
   Plus, 
   Search, 
   User, 
-  UserRoundPlus 
+  Wallet,
+  FileText,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import {
   Popover,
@@ -33,16 +36,63 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
+import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
+
+// Extended employee type
+export type Employee = {
+  id: number;
+  name: string;
+  position: string;
+  startDate: string;
+  phone: string;
+  status: "active" | "inactive";
+  // Extended employee data
+  email?: string;
+  address?: string;
+  documentId?: string;
+  birthday?: string;
+  bankAccount?: string;
+  documents?: {
+    id: number;
+    name: string;
+    date: string;
+    type: "salary" | "contract" | "other";
+    url: string;
+  }[];
+};
 
 // Mock data for the employee list
-const mockEmployees = [
+const mockEmployees: Employee[] = [
   { 
     id: 1, 
     name: "María López", 
     position: "Estilista", 
     startDate: "15/02/2023", 
     phone: "11-1234-5678",
-    status: "active" 
+    status: "active",
+    email: "maria.lopez@example.com",
+    address: "Av. Corrientes 1234, CABA",
+    documentId: "27123456",
+    birthday: "15/05/1990",
+    bankAccount: "Banco Nación 0012345-6",
+    documents: [
+      {
+        id: 1,
+        name: "Recibo Febrero 2023",
+        date: "28/02/2023",
+        type: "salary",
+        url: "#"
+      },
+      {
+        id: 2,
+        name: "Contrato Inicial",
+        date: "15/02/2023",
+        type: "contract",
+        url: "#"
+      }
+    ]
   },
   { 
     id: 2, 
@@ -50,7 +100,12 @@ const mockEmployees = [
     position: "Manicurista", 
     startDate: "03/05/2023", 
     phone: "11-8765-4321",
-    status: "active" 
+    status: "active",
+    email: "juan.perez@example.com",
+    address: "Calle Florida 567, CABA",
+    documentId: "25789012",
+    birthday: "10/07/1988",
+    bankAccount: "Banco Galicia 7891234-5"
   },
   { 
     id: 3, 
@@ -58,7 +113,12 @@ const mockEmployees = [
     position: "Recepcionista", 
     startDate: "22/06/2023", 
     phone: "11-5678-1234",
-    status: "active" 
+    status: "active",
+    email: "ana.garcia@example.com",
+    address: "Av. Santa Fe 890, CABA",
+    documentId: "30456789",
+    birthday: "22/11/1995",
+    bankAccount: "Banco Santander 3456789-0"
   },
   { 
     id: 4, 
@@ -66,7 +126,12 @@ const mockEmployees = [
     position: "Estilista", 
     startDate: "10/08/2023", 
     phone: "11-4321-8765",
-    status: "inactive" 
+    status: "inactive",
+    email: "carlos.rodriguez@example.com",
+    address: "Av. Callao 1234, CABA",
+    documentId: "28901234",
+    birthday: "03/04/1985",
+    bankAccount: "Banco ICBC 9012345-6"
   },
   { 
     id: 5, 
@@ -74,22 +139,38 @@ const mockEmployees = [
     position: "Manicurista", 
     startDate: "17/10/2023", 
     phone: "11-2345-6789",
-    status: "active" 
+    status: "active",
+    email: "laura.martinez@example.com",
+    address: "Calle Libertad 567, CABA",
+    documentId: "29345678",
+    birthday: "17/09/1992",
+    bankAccount: "Banco Macro 2345678-9"
   },
 ];
 
 export default function EmpleadosPage() {
+  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredEmployees, setFilteredEmployees] = useState(mockEmployees);
+  const [filteredEmployees, setFilteredEmployees] = useState(
+    employees.filter(emp => emp.status === "active")
+  );
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  
+  // State for dialog visibility
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [newEmployee, setNewEmployee] = useState<Partial<Employee>>({
+    status: "active",
+    position: "Estilista"
+  });
 
   // Handle search and filter
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
     
-    filterEmployees(query, selectedPositions, selectedStatus);
+    filterEmployees(query, selectedPositions);
   };
 
   const handlePositionFilter = (position: string) => {
@@ -98,26 +179,19 @@ export default function EmpleadosPage() {
       : [...selectedPositions, position];
     
     setSelectedPositions(updatedPositions);
-    filterEmployees(searchQuery, updatedPositions, selectedStatus);
+    filterEmployees(searchQuery, updatedPositions);
   };
 
-  const handleStatusFilter = (status: string) => {
-    const updatedStatus = selectedStatus.includes(status)
-      ? selectedStatus.filter(s => s !== status)
-      : [...selectedStatus, status];
-    
-    setSelectedStatus(updatedStatus);
-    filterEmployees(searchQuery, selectedPositions, updatedStatus);
-  };
-
-  const filterEmployees = (query: string, positions: string[], statuses: string[]) => {
-    let filtered = mockEmployees;
+  const filterEmployees = (query: string, positions: string[]) => {
+    let filtered = employees.filter(emp => emp.status === "active");
     
     // Apply search filter
     if (query) {
       filtered = filtered.filter(emp => 
         emp.name.toLowerCase().includes(query) || 
-        emp.position.toLowerCase().includes(query)
+        emp.position.toLowerCase().includes(query) ||
+        emp.phone.toLowerCase().includes(query) ||
+        (emp.email && emp.email.toLowerCase().includes(query))
       );
     }
     
@@ -126,12 +200,75 @@ export default function EmpleadosPage() {
       filtered = filtered.filter(emp => positions.includes(emp.position));
     }
     
-    // Apply status filter
-    if (statuses.length > 0) {
-      filtered = filtered.filter(emp => statuses.includes(emp.status));
-    }
-    
     setFilteredEmployees(filtered);
+  };
+
+  // Handle employee status change
+  const toggleEmployeeStatus = (employee: Employee) => {
+    const newStatus = employee.status === "active" ? "inactive" : "active";
+    const updatedEmployees = employees.map(emp => 
+      emp.id === employee.id ? { ...emp, status: newStatus } : emp
+    );
+    
+    setEmployees(updatedEmployees);
+    setFilteredEmployees(updatedEmployees.filter(emp => emp.status === "active"));
+    
+    toast.success(`Estado de ${employee.name} actualizado a ${newStatus === "active" ? "activo" : "inactivo"}`);
+  };
+
+  // Handle creating a new employee
+  const handleCreateEmployee = (employeeData: Partial<Employee>) => {
+    const newEmployeeData: Employee = {
+      id: employees.length + 1,
+      name: employeeData.name || "",
+      position: employeeData.position || "Estilista",
+      startDate: new Date().toLocaleDateString("es-AR"),
+      phone: employeeData.phone || "",
+      status: "active",
+      email: employeeData.email,
+      address: employeeData.address,
+      documentId: employeeData.documentId,
+      birthday: employeeData.birthday,
+      bankAccount: employeeData.bankAccount,
+      documents: []
+    };
+    
+    const updatedEmployees = [...employees, newEmployeeData];
+    setEmployees(updatedEmployees);
+    setFilteredEmployees(updatedEmployees.filter(emp => emp.status === "active"));
+    
+    toast.success(`Empleado ${newEmployeeData.name} creado exitosamente`);
+    setIsProfileDialogOpen(false);
+    setNewEmployee({
+      status: "active",
+      position: "Estilista"
+    });
+  };
+
+  // Handle updating an employee
+  const handleUpdateEmployee = (employeeData: Employee) => {
+    const updatedEmployees = employees.map(emp => 
+      emp.id === employeeData.id ? employeeData : emp
+    );
+    
+    setEmployees(updatedEmployees);
+    setFilteredEmployees(updatedEmployees.filter(emp => emp.status === "active"));
+    
+    toast.success(`Empleado ${employeeData.name} actualizado exitosamente`);
+    setIsProfileDialogOpen(false);
+    setSelectedEmployee(null);
+  };
+
+  // Open profile dialog with the selected employee
+  const openProfileDialog = (employee: Employee | null = null) => {
+    setSelectedEmployee(employee);
+    setIsProfileDialogOpen(true);
+  };
+
+  // Open salary calculation dialog with the selected employee
+  const openSalaryDialog = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsSalaryDialogOpen(true);
   };
 
   return (
@@ -143,8 +280,11 @@ export default function EmpleadosPage() {
             Gestiona la información de tus empleados
           </p>
         </div>
-        <Button className="bg-salon-400 hover:bg-salon-500">
-          <UserRoundPlus className="mr-2 h-4 w-4" />
+        <Button 
+          className="bg-salon-400 hover:bg-salon-500" 
+          onClick={() => openProfileDialog(null)}
+        >
+          <Plus className="mr-2 h-4 w-4" />
           Nuevo Empleado
         </Button>
       </div>
@@ -192,26 +332,6 @@ export default function EmpleadosPage() {
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium mb-2 text-sm">Estado</h4>
-                      <div className="space-y-2">
-                        {["active", "inactive"].map((status) => (
-                          <div key={status} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`status-${status}`} 
-                              checked={selectedStatus.includes(status)}
-                              onCheckedChange={() => handleStatusFilter(status)}
-                            />
-                            <label 
-                              htmlFor={`status-${status}`}
-                              className="text-sm font-normal capitalize cursor-pointer"
-                            >
-                              {status === "active" ? "Activo" : "Inactivo"}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -228,6 +348,7 @@ export default function EmpleadosPage() {
                     <TableHead>Fecha de Inicio</TableHead>
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -239,13 +360,38 @@ export default function EmpleadosPage() {
                       <TableCell>{employee.phone}</TableCell>
                       <TableCell>
                         <Badge 
-                          variant={employee.status === "active" ? "default" : "outline"}
-                          className={employee.status === "active" 
-                            ? "bg-green-500 hover:bg-green-600" 
-                            : ""}
+                          variant="default"
+                          className="bg-green-500 hover:bg-green-600"
                         >
-                          {employee.status === "active" ? "Activo" : "Inactivo"}
+                          Activo
                         </Badge>
+                      </TableCell>
+                      <TableCell className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openProfileDialog(employee)}
+                          title="Ver perfil"
+                        >
+                          <User className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openSalaryDialog(employee)}
+                          title="Calcular sueldo"
+                        >
+                          <Wallet className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => toggleEmployeeStatus(employee)}
+                          className="text-red-500"
+                          title="Desactivar empleado"
+                        >
+                          <UserX className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -279,6 +425,23 @@ export default function EmpleadosPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Employee Profile Dialog */}
+      <EmployeeProfileDialog 
+        open={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        employee={selectedEmployee}
+        onSave={selectedEmployee ? handleUpdateEmployee : handleCreateEmployee}
+        newEmployeeData={newEmployee}
+        setNewEmployeeData={setNewEmployee}
+      />
+
+      {/* Salary Calculation Dialog */}
+      <SalaryCalculationDialog
+        open={isSalaryDialogOpen}
+        onOpenChange={setIsSalaryDialogOpen}
+        employee={selectedEmployee}
+      />
     </div>
   );
 }

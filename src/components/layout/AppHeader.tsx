@@ -19,6 +19,13 @@ export function AppHeader() {
       <div className="flex h-12 items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger />
+          <div className="md:flex items-center gap-2 hidden">
+            <img 
+              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+              alt="Nails&Co" 
+              className="h-6 w-auto object-contain"
+            />
+          </div>
           <div className="relative md:w-64 hidden sm:block">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input

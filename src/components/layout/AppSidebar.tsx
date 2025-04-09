@@ -22,7 +22,6 @@ import {
   BarChart, 
   Receipt, 
   LogOut, 
-  Home,
   LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,11 +81,15 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-salon-400">
-            <Home className="h-4 w-4 text-white" />
+          <div className="h-8 w-auto">
+            <img 
+              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+              alt="Nails&Co Logo" 
+              className="h-full w-auto object-contain"
+            />
           </div>
           <span className="text-lg font-semibold bg-gradient-to-r from-salon-400 to-salon-600 bg-clip-text text-transparent">
-            Estetica Flow
+            Central
           </span>
         </div>
         <SidebarTrigger className="md:hidden" />

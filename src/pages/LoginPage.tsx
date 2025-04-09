@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Home, Scissors } from "lucide-react";
+import { Eye, EyeOff, Scissors } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,11 +30,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-salon-50 to-salon-100 p-4">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-salon-400">
-            <Scissors className="h-6 w-6 text-white" />
+          <div className="w-40 h-auto mb-2">
+            <img 
+              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+              alt="Nails&Co Logo" 
+              className="w-full h-auto"
+            />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-salon-400 to-salon-600 bg-clip-text text-transparent">
-            Estetica Flow Central
+            Central de Gestión
           </h1>
           <p className="text-sm text-muted-foreground">
             Ingrese sus credenciales para acceder
@@ -55,7 +59,7 @@ export default function LoginPage() {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="ejemplo@estetica.com" 
+                  placeholder="ejemplo@nailsandco.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

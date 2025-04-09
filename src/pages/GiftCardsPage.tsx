@@ -170,14 +170,16 @@ export default function GiftCardsPage() {
   };
 
   const handleExportPDF = () => {
-    toast.success("Exportando a PDF...", {
+    toast.success({
+      title: "Exportando a PDF...",
       description: "El archivo se descargará en breve."
     });
     console.log("Exporting to PDF...");
   };
 
   const handleExportExcel = () => {
-    toast.success("Exportando a Excel...", {
+    toast.success({
+      title: "Exportando a Excel...",
       description: "El archivo se descargará en breve."
     });
     console.log("Exporting to Excel...");

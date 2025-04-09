@@ -78,7 +78,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2">
           <div className="h-8 w-auto">
             <img 
-              src="https://nailsandco.com.ar/wp-content/uploads/2023/03/NAILSCO.png" 
+              src="/lovable-uploads/d70ebe3b-1305-4b43-b7ef-b7e92d81eddf.png" 
               alt="Nails&Co Logo" 
               className="h-full w-auto object-contain"
             />

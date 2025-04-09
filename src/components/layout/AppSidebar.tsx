@@ -8,24 +8,23 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Link, useLocation } from "react-router-dom";
-import { 
-  CreditCard, 
-  Package, 
-  Wrench, 
-  DollarSign, 
-  Users, 
-  BarChart, 
-  Receipt, 
-  LogOut, 
-  LayoutDashboard
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Link, useLocation } from "react-router-dom";
+import {
+  LogOut,
+  LayoutDashboard,
+  Users,
+  DollarSign,
+  Package,
+  CreditCard,
+  BarChart,
+  Receipt,
+  Wrench
+} from "lucide-react";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -33,49 +32,45 @@ export function AppSidebar() {
   const mainMenuItems = [
     {
       title: "Dashboard",
-      url: "/",
+      path: "/",
       icon: LayoutDashboard,
     },
     {
       title: "Gift Cards",
-      url: "/gift-cards",
+      path: "/gift-cards",
       icon: CreditCard,
     },
     {
       title: "Stock",
-      url: "/stock",
+      path: "/stock",
       icon: Package,
     },
     {
       title: "Arreglos",
-      url: "/arreglos",
+      path: "/arreglos",
       icon: Wrench,
     },
     {
       title: "Gastos",
-      url: "/gastos",
+      path: "/gastos",
       icon: DollarSign,
     },
     {
       title: "Empleados",
-      url: "/empleados",
+      path: "/empleados",
       icon: Users,
     },
     {
       title: "Resultados",
-      url: "/resultados",
+      path: "/resultados",
       icon: BarChart,
     },
     {
       title: "Facturación",
-      url: "/facturacion",
+      path: "/facturacion",
       icon: Receipt,
     },
   ];
-
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
 
   return (
     <Sidebar>
@@ -83,14 +78,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-2">
           <div className="h-8 w-auto">
             <img 
-              src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 
+              src="https://nailsandco.com.ar/wp-content/uploads/2023/03/NAILSCO.png" 
               alt="Nails&Co Logo" 
               className="h-full w-auto object-contain"
             />
           </div>
-          <span className="text-lg font-semibold bg-gradient-to-r from-salon-400 to-salon-600 bg-clip-text text-transparent">
-            Central
-          </span>
+          {/* Removed "Central" text that was here */}
         </div>
         <SidebarTrigger className="md:hidden" />
       </SidebarHeader>
@@ -101,14 +94,12 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton 
                     asChild
-                    className={cn(
-                      isActive(item.url) && "bg-salon-100 text-salon-700"
-                    )}
+                    className={location.pathname === item.path ? "bg-salon-100 text-salon-700" : ""}
                   >
-                    <Link to={item.url} className="flex items-center gap-2">
+                    <Link to={item.path} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>

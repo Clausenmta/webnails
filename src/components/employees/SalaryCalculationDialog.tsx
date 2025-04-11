@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -17,6 +18,16 @@ import { Calculator, Download, Save, List } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Card, CardContent } from "@/components/ui/card";
+
+// Add this type augmentation to make TypeScript recognize the autoTable method
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: (options: any) => any;
+    lastAutoTable: {
+      finalY: number;
+    };
+  }
+}
 
 type SalaryCalculationDialogProps = {
   open: boolean;
@@ -203,7 +214,7 @@ export default function SalaryCalculationDialog({
       footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
     });
     
-    const signatureY = (doc as any).lastAutoTable.finalY + 20;
+    const signatureY = doc.lastAutoTable.finalY + 20;
     doc.text("_________________________", 40, signatureY);
     doc.text("_________________________", pageWidth - 40, signatureY, { align: "right" });
     doc.text("Firma del empleado", 40, signatureY + 10);
@@ -570,3 +581,4 @@ export default function SalaryCalculationDialog({
     </Dialog>
   );
 }
+

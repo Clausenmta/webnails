@@ -4,29 +4,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{email?: string; password?: string}>({});
+  const [errors, setErrors] = useState<{username?: string; password?: string}>({});
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
+
+  // Get the path the user was trying to access
+  const from = (location.state as any)?.from?.pathname || "/";
 
   const validateForm = () => {
-    const newErrors: {email?: string; password?: string} = {};
+    const newErrors: {username?: string; password?: string} = {};
     let isValid = true;
 
-    if (!email) {
-      newErrors.email = "El email es requerido";
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email inválido";
+    if (!username) {
+      newErrors.username = "El usuario es requerido";
       isValid = false;
     }
 
@@ -42,7 +45,7 @@ export default function LoginPage() {
     return isValid;
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -56,19 +59,36 @@ export default function LoginPage() {
     
     setIsLoading(true);
     
-    // Simulando autenticación
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const success = await login(username, password);
       
-      // Mostrar toast de éxito
+      if (success) {
+        // Mostrar toast de éxito
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Bienvenido/a al sistema de gestión",
+          className: "bg-green-100 border-green-300 text-green-800"
+        });
+        
+        navigate(from, { replace: true });
+      } else {
+        // Mostrar toast de error
+        toast({
+          title: "Error de inicio de sesión",
+          description: "Usuario o contraseña incorrectos",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
-        title: "Inicio de sesión exitoso",
-        description: "Bienvenido/a al sistema de gestión",
-        className: "bg-green-100 border-green-300 text-green-800"
+        title: "Error",
+        description: "Ha ocurrido un error durante el inicio de sesión",
+        variant: "destructive"
       });
-      
-      navigate("/");
-    }, 1500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,18 +120,18 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Usuario</Label>
                 <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="ejemplo@nailsandco.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username" 
+                  type="text" 
+                  placeholder="Ingrese su usuario" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
-                  className={errors.email ? "border-red-500" : ""}
+                  className={errors.username ? "border-red-500" : ""}
                 />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                {errors.username && (
+                  <p className="text-sm text-red-500">{errors.username}</p>
                 )}
               </div>
               <div className="space-y-2">

@@ -10,13 +10,90 @@ import {
   Wrench,
   TrendingUp,
   ArrowRight,
-  Calendar,
-  Clock,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import MonthSelector from "@/components/dashboard/MonthSelector";
 
 export default function DashboardPage() {
+  const { user, isAuthorized } = useAuth();
+  const isSuperAdmin = isAuthorized('superadmin');
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Filtrar accesos rápidos según el rol del usuario
+  const quickAccessLinks = [
+    {
+      title: "Gift Cards",
+      path: "/gift-cards",
+      icon: CreditCard,
+      requiredRole: undefined,
+    },
+    {
+      title: "Inventario",
+      path: "/stock",
+      icon: Package,
+      requiredRole: undefined,
+    },
+    {
+      title: "Registrar Gasto",
+      path: "/gastos",
+      icon: DollarSign,
+      requiredRole: undefined,
+    },
+    {
+      title: "Empleados",
+      path: "/empleados",
+      icon: Users,
+      requiredRole: 'superadmin' as const,
+    },
+  ].filter(link => {
+    if (!link.requiredRole) return true;
+    if (isSuperAdmin) return true;
+    return user?.role === link.requiredRole;
+  });
+
+  // Filtrar alertas según el rol del usuario
+  const alertItems = [
+    {
+      icon: AlertTriangle,
+      title: "Stock Bajo: Semi OPI Gel Base Coat",
+      description: "Quedan 2 unidades en inventario",
+      requiredRole: undefined,
+    },
+    {
+      icon: Clock,
+      title: "Vencimiento de Gift Card #G0082",
+      description: "Vence el 15/04/2025 (5 días)",
+      requiredRole: undefined,
+    },
+    {
+      icon: DollarSign,
+      title: "Pago de Alquiler Pendiente",
+      description: "Vence el 10/04/2025 (mañana)",
+      requiredRole: 'superadmin' as const,
+    },
+    {
+      icon: Wrench,
+      title: "Arreglo pendiente: Cliente Martínez, Laura",
+      description: "Registrado hace 7 días",
+      requiredRole: undefined,
+    },
+  ].filter(alert => {
+    if (!alert.requiredRole) return true;
+    if (isSuperAdmin) return true;
+    return user?.role === alert.requiredRole;
+  });
+
+  // Función para cambiar el mes
+  const handleMonthChange = (date: Date) => {
+    setCurrentDate(date);
+    // Aquí se cargarían los datos según el mes seleccionado
+    console.log("Mes seleccionado:", date);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -27,30 +104,31 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Abril 2025
-          </Button>
-          <Button className="bg-salon-400 hover:bg-salon-500">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Generar Reporte
-          </Button>
+          <MonthSelector onMonthChange={handleMonthChange} />
+          {isSuperAdmin && (
+            <Button className="bg-salon-400 hover:bg-salon-500">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Generar Reporte
+            </Button>
+          )}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="stats-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Facturación Mensual</CardTitle>
-            <DollarSign className="h-4 w-4 text-salon-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$487,650</div>
-            <p className="text-xs text-muted-foreground">
-              +12.5% respecto al mes pasado
-            </p>
-          </CardContent>
-        </Card>
+        {isSuperAdmin && (
+          <Card className="stats-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium">Facturación Mensual</CardTitle>
+              <DollarSign className="h-4 w-4 text-salon-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$487,650</div>
+              <p className="text-xs text-muted-foreground">
+                +12.5% respecto al mes pasado
+              </p>
+            </CardContent>
+          </Card>
+        )}
         <Card className="stats-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Gift Cards Activas</CardTitle>
@@ -97,42 +175,17 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Link to="/gift-cards">
-              <Button variant="outline" className="w-full justify-between text-left">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-salon-500" />
-                  <span>Gift Cards</span>
-                </div>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/stock">
-              <Button variant="outline" className="w-full justify-between text-left">
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-salon-500" />
-                  <span>Inventario</span>
-                </div>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/gastos">
-              <Button variant="outline" className="w-full justify-between text-left">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-salon-500" />
-                  <span>Registrar Gasto</span>
-                </div>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/empleados">
-              <Button variant="outline" className="w-full justify-between text-left">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-salon-500" />
-                  <span>Empleados</span>
-                </div>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            {quickAccessLinks.map((link, index) => (
+              <Link to={link.path} key={index}>
+                <Button variant="outline" className="w-full justify-between text-left">
+                  <div className="flex items-center gap-2">
+                    <link.icon className="h-4 w-4 text-salon-500" />
+                    <span>{link.title}</span>
+                  </div>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ))}
           </CardContent>
         </Card>
 
@@ -143,42 +196,17 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium">Stock Bajo: Semi OPI Gel Base Coat</p>
-                  <p className="text-xs text-muted-foreground">Quedan 2 unidades en inventario</p>
+            {alertItems.map((alert, index) => (
+              <div className="rounded-lg border p-3" key={index}>
+                <div className="flex items-center gap-3">
+                  <alert.icon className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="text-sm font-medium">{alert.title}</p>
+                    <p className="text-xs text-muted-foreground">{alert.description}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium">Vencimiento de Gift Card #G0082</p>
-                  <p className="text-xs text-muted-foreground">Vence el 15/04/2025 (5 días)</p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-5 w-5 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium">Pago de Alquiler Pendiente</p>
-                  <p className="text-xs text-muted-foreground">Vence el 10/04/2025 (mañana)</p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <Wrench className="h-5 w-5 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium">Arreglo pendiente: Cliente Martínez, Laura</p>
-                  <p className="text-xs text-muted-foreground">Registrado hace 7 días</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>

@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AppHeader() {
   // Estado para manejar el menú de notificaciones con useCallback para evitar re-renders
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   
   // Uso de useCallback para mejorar el rendimiento y evitar re-renders innecesarios
   const handleMenuOpenChange = useCallback((open: boolean) => {
@@ -27,18 +30,34 @@ export function AppHeader() {
   const handleLogout = useCallback(() => {
     setIsMenuOpen(false);
     
+    // Realizar el logout
+    logout();
+    
     // Notificación para el usuario
     toast({
       title: "Sesión cerrada",
       description: "Has cerrado sesión correctamente."
     });
     
-    console.log("Cerrar sesión");
-  }, []);
+    // Redirigir al login
+    navigate("/login");
+  }, [logout, navigate]);
 
   const handleNavigation = useCallback(() => {
     setIsMenuOpen(false);
   }, []);
+
+  // Función para obtener las iniciales del nombre del usuario
+  const getUserInitials = () => {
+    if (!user || !user.name) return "U";
+    
+    const nameParts = user.name.split(" ");
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase();
+    }
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+  };
 
   return (
     <header className="border-b bg-white py-2 px-6">
@@ -63,12 +82,14 @@ export function AppHeader() {
               <Button variant="ghost" className="rounded-full" size="icon">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/placeholder.svg" alt="Avatar" />
-                  <AvatarFallback className="bg-salon-400 text-white">AD</AvatarFallback>
+                  <AvatarFallback className="bg-salon-400 text-white">{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-50 bg-white">
-              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {user?.name} ({user?.role === 'superadmin' ? 'Administrador' : 'Empleado'})
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -17,6 +16,7 @@ import { toast } from "sonner";
 import { Calculator, Download, Save, List } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { Card, CardContent } from "@/components/ui/card";
 
 type SalaryCalculationDialogProps = {
   open: boolean;
@@ -45,7 +45,6 @@ type SalaryDetails = {
   totalSalary: number; // calculated
 };
 
-// Mock data for salary history
 const mockSalaryHistory: Record<number, SalaryDetails[]> = {
   1: [
     {
@@ -105,26 +104,16 @@ export default function SalaryCalculationDialog({
         commissionRate: employee.position === "Manicurista" ? 32 : 30,
       }));
       
-      // Load salary history for the employee
       setSalaryHistory(mockSalaryHistory[employee.id] || []);
     }
   }, [employee]);
 
-  // Calculate total salary and commission
   useEffect(() => {
-    // Calculate commission based on total billing and rate
     const commission = (salaryData.totalBilling * salaryData.commissionRate) / 100;
-    
-    // Calculate extras total
     const extrasTotal = salaryData.extras.reduce((sum, extra) => sum + extra.amount, 0);
-    
-    // Calculate total salary using the updated formula:
-    // Comisión + Recepción + SAC + Recibo + Capacitación + Vacaciones + Extras
     const totalSalary = commission + salaryData.reception + salaryData.sac + 
                          salaryData.receipt + salaryData.training + 
                          salaryData.vacation + extrasTotal;
-    
-    // Cash amount (calculated based on total salary)
     const cash = totalSalary - salaryData.advance;
     
     setSalaryData(prev => ({
@@ -146,50 +135,40 @@ export default function SalaryCalculationDialog({
   ]);
 
   const handleSave = () => {
-    // Here we would typically save the salary calculation to a database
-    // For now, we'll add it to our mock history and show a success toast
     const newSalaryRecord = {
       ...salaryData,
-      id: Date.now(), // Generate a unique ID
+      id: Date.now(),
     };
     
-    // Update our mock history
     const updatedHistory = [newSalaryRecord, ...salaryHistory];
     setSalaryHistory(updatedHistory);
     
-    // In a real app, this would save to a database
     mockSalaryHistory[employee?.id || 0] = updatedHistory;
     
     toast.success(`Cálculo de sueldo para ${employee?.name} guardado exitosamente`);
     
-    // Volver al historial después de guardar
     setShowHistory(true);
   };
 
   const handleExport = () => {
     if (!employee) return;
     
-    // Create a new jsPDF instance
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Add logo or header
     doc.setFontSize(20);
-    doc.setTextColor(128, 0, 128); // Purple color
+    doc.setTextColor(128, 0, 128);
     doc.text("Nails & Co", pageWidth / 2, 20, { align: "center" });
     
-    // Add title
     doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
     doc.text("Recibo de Sueldo", pageWidth / 2, 30, { align: "center" });
     
-    // Add employee info
     doc.setFontSize(12);
     doc.text(`Empleado: ${employee.name}`, 20, 45);
     doc.text(`Posición: ${employee.position}`, 20, 52);
     doc.text(`Período: ${salaryData.date}`, 20, 59);
     
-    // Add salary details
     doc.setFontSize(14);
     doc.text("Detalle de sueldo", 20, 70);
     
@@ -205,18 +184,15 @@ export default function SalaryCalculationDialog({
       ["Recibo", `$${salaryData.receipt.toFixed(2)}`],
     ];
     
-    // Add extras
     salaryData.extras.forEach(extra => {
       tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toFixed(2)}`]);
     });
     
-    // Add totals
     tableData.push(
       ["Efectivo", `$${salaryData.cash.toFixed(2)}`],
       ["TOTAL SUELDO", `$${salaryData.totalSalary.toFixed(2)}`]
     );
     
-    // @ts-ignore - jspdf-autotable types
     doc.autoTable({
       startY: 75,
       head: [tableData[0]],
@@ -227,14 +203,12 @@ export default function SalaryCalculationDialog({
       footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
     });
     
-    // Add signature section
     const signatureY = (doc as any).lastAutoTable.finalY + 20;
     doc.text("_________________________", 40, signatureY);
     doc.text("_________________________", pageWidth - 40, signatureY, { align: "right" });
     doc.text("Firma del empleado", 40, signatureY + 10);
     doc.text("Firma del empleador", pageWidth - 40, signatureY + 10, { align: "right" });
     
-    // Save the PDF
     doc.save(`Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${salaryData.date.replace(/\s+/g, '_')}.pdf`);
     
     toast.success(`Recibo de sueldo exportado para ${employee?.name}`);
@@ -275,7 +249,6 @@ export default function SalaryCalculationDialog({
     });
   };
 
-  // Comenzar cálculo de sueldo
   const startCalculation = () => {
     setShowHistory(false);
     setIsCalculating(true);
@@ -283,7 +256,6 @@ export default function SalaryCalculationDialog({
 
   if (!employee) return null;
 
-  // Calcular totales globales para el historial
   const totalCashPayment = salaryHistory.reduce((total, salary) => total + salary.cash, 0);
   const totalSalary = salaryHistory.reduce((total, salary) => total + salary.totalSalary, 0);
 

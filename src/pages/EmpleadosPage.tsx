@@ -20,6 +20,19 @@ export interface Employee {
   email: string;
   status: "active" | "inactive";
   avatar?: string;
+  // Add missing properties
+  phone?: string;
+  address?: string;
+  documentId?: string;
+  birthday?: string;
+  bankAccount?: string;
+  documents?: {
+    id: number;
+    name: string;
+    date: string;
+    type: "salary" | "contract" | "other";
+    url: string;
+  }[];
 }
 
 export default function EmpleadosPage() {
@@ -78,6 +91,14 @@ export default function EmpleadosPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSalaryOpen, setIsSalaryOpen] = useState(false);
+  
+  // Add new state for employee dialog
+  const [newEmployeeData, setNewEmployeeData] = useState<Partial<Employee>>({
+    name: "",
+    position: "Estilista",
+    status: "active",
+    documents: []
+  });
 
   const handleEmployeeClick = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -87,6 +108,26 @@ export default function EmpleadosPage() {
   const handleSalaryCalculation = (employee: Employee) => {
     setSelectedEmployee(employee);
     setIsSalaryOpen(true);
+  };
+
+  const handleSaveEmployee = (employeeData: Employee | Partial<Employee>) => {
+    if ('id' in employeeData && employeeData.id) {
+      // Update existing employee
+      setEmployees(prev => 
+        prev.map(emp => emp.id === employeeData.id ? { ...emp, ...employeeData } as Employee : emp)
+      );
+    } else {
+      // Add new employee
+      const newEmployee = {
+        ...employeeData,
+        id: Math.max(0, ...employees.map(e => e.id)) + 1,
+        joinDate: new Date().toLocaleDateString('es-AR'),
+        status: 'active',
+      } as Employee;
+      
+      setEmployees(prev => [newEmployee, ...prev]);
+    }
+    setIsProfileOpen(false);
   };
 
   const filteredEmployees = employees.filter(
@@ -296,6 +337,9 @@ export default function EmpleadosPage() {
             open={isProfileOpen}
             onOpenChange={setIsProfileOpen}
             employee={selectedEmployee}
+            onSave={handleSaveEmployee}
+            newEmployeeData={newEmployeeData}
+            setNewEmployeeData={setNewEmployeeData}
           />
           <SalaryCalculationDialog
             open={isSalaryOpen}

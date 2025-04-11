@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -125,9 +124,9 @@ export default function GastosPage() {
     const newExpenseRecord = { 
       ...newExpense, 
       id,
-      // Si la categoría es Fijos o Proveedores, asegurarse de que tenga estado "pending" por defecto
+      // If the category is Fijos or Proveedores, ensure it has a "pending" status by default
       status: (newExpense.category === "Fijos" || newExpense.category === "Proveedores") 
-        ? "pending" 
+        ? "pending" as const 
         : undefined
     };
     

@@ -11,12 +11,14 @@ import {
   TrendingUp,
   ArrowRight,
   AlertTriangle,
-  Clock
+  Clock,
+  Download
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import MonthSelector from "@/components/dashboard/MonthSelector";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
@@ -94,6 +96,23 @@ export default function DashboardPage() {
     console.log("Mes seleccionado:", date);
   };
 
+  // Función para generar reporte
+  const handleGenerateReport = () => {
+    toast.success("Reporte generado correctamente");
+    
+    // Simulación de descarga de archivo
+    const dummyContent = "Reporte del Dashboard - " + currentDate.toLocaleDateString();
+    const blob = new Blob([dummyContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Reporte_Dashboard_${currentDate.toLocaleDateString().replace(/\//g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -106,7 +125,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <MonthSelector onMonthChange={handleMonthChange} />
           {isSuperAdmin && (
-            <Button className="bg-salon-400 hover:bg-salon-500">
+            <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleGenerateReport}>
               <TrendingUp className="mr-2 h-4 w-4" />
               Generar Reporte
             </Button>

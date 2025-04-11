@@ -15,3 +15,9 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isAuthorized: (requiredRole: UserRole) => boolean;
 }
+
+// Tipos de exportación
+export interface ExportOptions {
+  filename: string;
+  format: 'pdf' | 'excel' | 'txt';
+}

@@ -93,7 +93,8 @@ export default function SalaryCalculationDialog({
   });
   
   const [newExtra, setNewExtra] = useState({ amount: 0, concept: "" });
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true); // Iniciar mostrando el historial
+  const [isCalculating, setIsCalculating] = useState(false);
   const [salaryHistory, setSalaryHistory] = useState<SalaryDetails[]>([]);
 
   useEffect(() => {
@@ -160,6 +161,9 @@ export default function SalaryCalculationDialog({
     mockSalaryHistory[employee?.id || 0] = updatedHistory;
     
     toast.success(`Cálculo de sueldo para ${employee?.name} guardado exitosamente`);
+    
+    // Volver al historial después de guardar
+    setShowHistory(true);
   };
 
   const handleExport = () => {
@@ -271,7 +275,17 @@ export default function SalaryCalculationDialog({
     });
   };
 
+  // Comenzar cálculo de sueldo
+  const startCalculation = () => {
+    setShowHistory(false);
+    setIsCalculating(true);
+  };
+
   if (!employee) return null;
+
+  // Calcular totales globales para el historial
+  const totalCashPayment = salaryHistory.reduce((total, salary) => total + salary.cash, 0);
+  const totalSalary = salaryHistory.reduce((total, salary) => total + salary.totalSalary, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -279,22 +293,97 @@ export default function SalaryCalculationDialog({
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
             <span>Cálculo de Sueldo</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2"
-            >
-              <List className="h-4 w-4" />
-              {showHistory ? "Volver al cálculo" : "Ver historial"}
-            </Button>
+            {isCalculating && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setShowHistory(true);
+                  setIsCalculating(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <List className="h-4 w-4" />
+                Volver al historial
+              </Button>
+            )}
           </DialogTitle>
           <DialogDescription>
             Empleado: <strong>{employee.name}</strong> - {employee.position}
           </DialogDescription>
         </DialogHeader>
 
-        {!showHistory ? (
+        {showHistory ? (
+          <div className="py-4">
+            <h3 className="text-lg font-semibold mb-4">Historial de Sueldos</h3>
+            
+            {salaryHistory.length > 0 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground">Total en Efectivo</p>
+                      <p className="text-2xl font-bold">${totalCashPayment.toLocaleString()}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground">Total Sueldos</p>
+                      <p className="text-2xl font-bold">${totalSalary.toLocaleString()}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {salaryHistory.map((salary, index) => (
+                  <div key={index} className="border rounded-md p-4">
+                    <div className="flex justify-between mb-2">
+                      <h4 className="font-medium">{salary.date}</h4>
+                      <span className="font-bold">${salary.totalSalary.toFixed(2)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>Facturación: ${salary.totalBilling.toFixed(2)}</div>
+                      <div>Comisión ({salary.commissionRate}%): ${salary.commission.toFixed(2)}</div>
+                      <div>Efectivo: ${salary.cash.toFixed(2)}</div>
+                      {salary.extras.length > 0 && (
+                        <div className="col-span-2 mt-2">
+                          <p className="font-medium">Extras:</p>
+                          <ul className="list-disc list-inside pl-2">
+                            {salary.extras.map((extra, i) => (
+                              <li key={i}>
+                                {extra.concept}: ${extra.amount.toFixed(2)}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="flex justify-center mt-6">
+                  <Button 
+                    onClick={startCalculation}
+                    className="bg-salon-400 hover:bg-salon-500"
+                  >
+                    <Calculator className="mr-2 h-4 w-4" />
+                    Calcular Nuevo Sueldo
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">No hay registros de sueldos anteriores</p>
+                <Button 
+                  onClick={startCalculation}
+                  className="bg-salon-400 hover:bg-salon-500"
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Calcular Sueldo
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
               <div className="space-y-4">
@@ -479,44 +568,6 @@ export default function SalaryCalculationDialog({
               <p className="text-sm"><strong>Fórmula:</strong> Comisión + Recepción + SAC + Recibo + Capacitación + Vacaciones + Extras</p>
             </div>
           </>
-        ) : (
-          <div className="py-4">
-            <h3 className="text-lg font-semibold mb-4">Historial de Sueldos</h3>
-            
-            {salaryHistory.length > 0 ? (
-              <div className="space-y-4">
-                {salaryHistory.map((salary, index) => (
-                  <div key={index} className="border rounded-md p-4">
-                    <div className="flex justify-between mb-2">
-                      <h4 className="font-medium">{salary.date}</h4>
-                      <span className="font-bold">${salary.totalSalary.toFixed(2)}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Facturación: ${salary.totalBilling.toFixed(2)}</div>
-                      <div>Comisión ({salary.commissionRate}%): ${salary.commission.toFixed(2)}</div>
-                      <div>Efectivo: ${salary.cash.toFixed(2)}</div>
-                      {salary.extras.length > 0 && (
-                        <div className="col-span-2 mt-2">
-                          <p className="font-medium">Extras:</p>
-                          <ul className="list-disc list-inside pl-2">
-                            {salary.extras.map((extra, i) => (
-                              <li key={i}>
-                                {extra.concept}: ${extra.amount.toFixed(2)}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No hay registros de sueldos anteriores</p>
-              </div>
-            )}
-          </div>
         )}
 
         <DialogFooter className="mt-6 flex-wrap gap-2">

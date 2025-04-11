@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,38 +48,44 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
+import { exportReport } from "@/utils/reportExport";
 
 const monthlyData = [
-  { month: "Ene", ventas: 42000, gastos: 28000, utilidad: 14000 },
-  { month: "Feb", ventas: 48000, gastos: 30000, utilidad: 18000 },
-  { month: "Mar", ventas: 51000, gastos: 31500, utilidad: 19500 },
-  { month: "Abr", ventas: 47000, gastos: 29000, utilidad: 18000 },
-  { month: "May", ventas: 53000, gastos: 32000, utilidad: 21000 },
-  { month: "Jun", ventas: 55000, gastos: 33000, utilidad: 22000 },
-  { month: "Jul", ventas: 58000, gastos: 34500, utilidad: 23500 },
-  { month: "Ago", ventas: 56000, gastos: 33800, utilidad: 22200 },
-  { month: "Sep", ventas: 60000, gastos: 36000, utilidad: 24000 },
-  { month: "Oct", ventas: 62000, gastos: 37500, utilidad: 24500 },
-  { month: "Nov", ventas: 59000, gastos: 35400, utilidad: 23600 },
-  { month: "Dic", ventas: 65000, gastos: 39000, utilidad: 26000 },
+  { month: "Ene", ventas: 42000, gastos: 28000, utilidad: 14000, ventasPrevMes: 39000, gastosPrevMes: 27000 },
+  { month: "Feb", ventas: 48000, gastos: 30000, utilidad: 18000, ventasPrevMes: 42000, gastosPrevMes: 28000 },
+  { month: "Mar", ventas: 51000, gastos: 31500, utilidad: 19500, ventasPrevMes: 48000, gastosPrevMes: 30000 },
+  { month: "Abr", ventas: 47000, gastos: 29000, utilidad: 18000, ventasPrevMes: 51000, gastosPrevMes: 31500 },
+  { month: "May", ventas: 53000, gastos: 32000, utilidad: 21000, ventasPrevMes: 47000, gastosPrevMes: 29000 },
+  { month: "Jun", ventas: 55000, gastos: 33000, utilidad: 22000, ventasPrevMes: 53000, gastosPrevMes: 32000 },
+  { month: "Jul", ventas: 58000, gastos: 34500, utilidad: 23500, ventasPrevMes: 55000, gastosPrevMes: 33000 },
+  { month: "Ago", ventas: 56000, gastos: 33800, utilidad: 22200, ventasPrevMes: 58000, gastosPrevMes: 34500 },
+  { month: "Sep", ventas: 60000, gastos: 36000, utilidad: 24000, ventasPrevMes: 56000, gastosPrevMes: 33800 },
+  { month: "Oct", ventas: 62000, gastos: 37500, utilidad: 24500, ventasPrevMes: 60000, gastosPrevMes: 36000 },
+  { month: "Nov", ventas: 59000, gastos: 35400, utilidad: 23600, ventasPrevMes: 62000, gastosPrevMes: 37500 },
+  { month: "Dic", ventas: 65000, gastos: 39000, utilidad: 26000, ventasPrevMes: 59000, gastosPrevMes: 35400 },
 ];
 
+// Servicios de Peluquería vs Servicios de Spa
 const serviceData = [
-  { servicio: "Corte de cabello", cantidad: 320, ingresos: 96000 },
-  { servicio: "Tinte", cantidad: 180, ingresos: 108000 },
-  { servicio: "Peinado", cantidad: 210, ingresos: 84000 },
-  { servicio: "Manicura", cantidad: 150, ingresos: 60000 },
-  { servicio: "Tratamiento facial", cantidad: 90, ingresos: 72000 },
-  { servicio: "Masajes", cantidad: 70, ingresos: 56000 },
+  { servicio: "Peluquería", cantidad: 560, ingresos: 168000, ingresosPrevMes: 152000 },
+  { servicio: "Spa", cantidad: 310, ingresos: 148000, ingresosPrevMes: 140000 },
 ];
 
 const expenseData = [
-  { categoria: "Salarios", monto: 118000 },
-  { categoria: "Productos", monto: 45000 },
-  { categoria: "Servicios", monto: 28000 },
-  { categoria: "Alquiler", monto: 35000 },
-  { categoria: "Marketing", monto: 15000 },
-  { categoria: "Otros", monto: 9000 },
+  { categoria: "Salarios", monto: 118000, montoPrevMes: 112000 },
+  { categoria: "Productos", monto: 45000, montoPrevMes: 42000 },
+  { categoria: "Servicios", monto: 28000, montoPrevMes: 26500 },
+  { categoria: "Alquiler", monto: 35000, montoPrevMes: 35000 },
+  { categoria: "Marketing", monto: 15000, montoPrevMes: 18000 },
+  { categoria: "Otros", monto: 9000, montoPrevMes: 8800 },
+];
+
+// Pagos pendientes
+const pendingPayments = [
+  { id: 1, proveedor: "Distribuidora OPI", monto: 35000, vencimiento: "15/04/2025", medioPago: "Transferencia" },
+  { id: 2, proveedor: "Inmobiliaria Norte", monto: 150000, vencimiento: "10/04/2025", medioPago: "Efectivo" },
+  { id: 3, proveedor: "Servicio de Internet", monto: 12500, vencimiento: "20/04/2025", medioPago: "Débito" },
+  { id: 4, proveedor: "Proveedor de Insumos", monto: 28000, vencimiento: "25/04/2025", medioPago: "Transferencia" },
 ];
 
 const availableYears = ["2023", "2024", "2025", "2026"];
@@ -157,8 +164,13 @@ export default function ResultadosPage() {
 
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || monthlyData[0];
   
-  const revenueGrowth = 8.2;
-  const profitGrowth = 12.5;
+  const revenueGrowth = currentMonthData.ventas > 0 && currentMonthData.ventasPrevMes > 0
+    ? ((currentMonthData.ventas - currentMonthData.ventasPrevMes) / currentMonthData.ventasPrevMes * 100).toFixed(1)
+    : "0.0";
+    
+  const profitGrowth = currentMonthData.utilidad > 0 && currentMonthData.ventasPrevMes > 0
+    ? ((currentMonthData.utilidad - (currentMonthData.ventasPrevMes - currentMonthData.gastosPrevMes)) / (currentMonthData.ventasPrevMes - currentMonthData.gastosPrevMes) * 100).toFixed(1)
+    : "0.0";
 
   const totalInitialInvestment = initialExpenses.reduce((total, expense) => total + expense.amount, 0);
 
@@ -169,13 +181,39 @@ export default function ResultadosPage() {
   };
 
   const handleExportPDF = () => {
-    toast.success("Informe exportado a PDF correctamente");
-    console.log("Exportando a PDF para mes:", selectedMonth, "año:", year);
+    const reportData = {
+      title: `Informe de Resultados - ${selectedMonth} ${year}`,
+      totalVentas: currentMonthData.ventas,
+      totalGastos: currentMonthData.gastos,
+      utilidad: currentMonthData.utilidad,
+      revenueGrowth: revenueGrowth,
+      profitGrowth: profitGrowth,
+      serviceData: serviceData,
+      expenseData: expenseData
+    };
+    
+    exportReport(reportData, {
+      filename: `Informe_Resultados_${selectedMonth}_${year}`,
+      format: 'pdf'
+    });
   };
 
   const handleExportExcel = () => {
-    toast.success("Informe exportado a Excel correctamente");
-    console.log("Exportando a Excel para mes:", selectedMonth, "año:", year);
+    const reportData = {
+      title: `Informe de Resultados - ${selectedMonth} ${year}`,
+      totalVentas: currentMonthData.ventas,
+      totalGastos: currentMonthData.gastos,
+      utilidad: currentMonthData.utilidad,
+      revenueGrowth: revenueGrowth,
+      profitGrowth: profitGrowth,
+      serviceData: serviceData,
+      expenseData: expenseData
+    };
+    
+    exportReport(reportData, {
+      filename: `Informe_Resultados_${selectedMonth}_${year}`,
+      format: 'excel'
+    });
   };
 
   const handleAddInitialExpense = () => {
@@ -227,6 +265,12 @@ export default function ResultadosPage() {
       amount: total
     };
   }).filter(item => item.amount > 0);
+
+  // Cálculo de porcentajes para servicios
+  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  
+  // Cálculo de porcentajes para gastos
+  const totalExpenses = expenseData.reduce((sum, item) => sum + item.monto, 0);
 
   return (
     <div className="space-y-6">
@@ -298,7 +342,7 @@ export default function ResultadosPage() {
           <CardContent>
             <div className="text-2xl font-bold">$ {currentMonthData.ventas.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              {revenueGrowth >= 0 ? (
+              {parseFloat(revenueGrowth) >= 0 ? (
                 <>
                   <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
                   <span className="text-emerald-500">{revenueGrowth}%</span>
@@ -306,7 +350,7 @@ export default function ResultadosPage() {
               ) : (
                 <>
                   <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
-                  <span className="text-rose-500">{Math.abs(revenueGrowth)}%</span>
+                  <span className="text-rose-500">{Math.abs(parseFloat(revenueGrowth))}%</span>
                 </>
               )}
               <span className="ml-1">vs mes anterior</span>
@@ -333,7 +377,7 @@ export default function ResultadosPage() {
           <CardContent>
             <div className="text-2xl font-bold">$ {currentMonthData.utilidad.toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              {profitGrowth >= 0 ? (
+              {parseFloat(profitGrowth) >= 0 ? (
                 <>
                   <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
                   <span className="text-emerald-500">{profitGrowth}%</span>
@@ -341,7 +385,7 @@ export default function ResultadosPage() {
               ) : (
                 <>
                   <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
-                  <span className="text-rose-500">{Math.abs(profitGrowth)}%</span>
+                  <span className="text-rose-500">{Math.abs(parseFloat(profitGrowth))}%</span>
                 </>
               )}
               <span className="ml-1">vs mes anterior</span>
@@ -416,7 +460,7 @@ export default function ResultadosPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Ingresos por Servicio</CardTitle>
+            <CardTitle>Facturación por Servicio</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -425,16 +469,55 @@ export default function ResultadosPage() {
                   <TableHead>Servicio</TableHead>
                   <TableHead className="text-center">Cantidad</TableHead>
                   <TableHead className="text-right">Ingresos</TableHead>
+                  <TableHead className="text-right">% del Total</TableHead>
+                  <TableHead className="text-right">% vs Mes Anterior</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {serviceData.map((item) => (
-                  <TableRow key={item.servicio}>
-                    <TableCell>{item.servicio}</TableCell>
-                    <TableCell className="text-center">{item.cantidad}</TableCell>
-                    <TableCell className="text-right">$ {item.ingresos.toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
+                {serviceData.map((item) => {
+                  const percentage = totalServices > 0 
+                    ? ((item.ingresos / totalServices) * 100).toFixed(1) 
+                    : "0.0";
+                  
+                  const percentageChange = item.ingresosPrevMes > 0 
+                    ? ((item.ingresos - item.ingresosPrevMes) / item.ingresosPrevMes * 100).toFixed(1)
+                    : "0.0";
+                  
+                  return (
+                    <TableRow key={item.servicio}>
+                      <TableCell>{item.servicio}</TableCell>
+                      <TableCell className="text-center">{item.cantidad}</TableCell>
+                      <TableCell className="text-right">$ {item.ingresos.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{percentage}%</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end">
+                          {parseFloat(percentageChange) >= 0 ? (
+                            <>
+                              <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
+                              <span className="text-emerald-500">{percentageChange}%</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
+                              <span className="text-rose-500">{Math.abs(parseFloat(percentageChange))}%</span>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="font-bold bg-muted/30">
+                  <TableCell>TOTAL</TableCell>
+                  <TableCell className="text-center">
+                    {serviceData.reduce((sum, item) => sum + item.cantidad, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    $ {totalServices.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                  <TableCell className="text-right">-</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
@@ -450,27 +533,91 @@ export default function ResultadosPage() {
                 <TableRow>
                   <TableHead>Categoría</TableHead>
                   <TableHead className="text-right">Monto</TableHead>
-                  <TableHead className="text-right">Porcentaje</TableHead>
+                  <TableHead className="text-right">% del Total</TableHead>
+                  <TableHead className="text-right">% vs Mes Anterior</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenseData.map((item) => {
-                  const totalExpenses = expenseData.reduce((total, exp) => total + exp.monto, 0);
-                  const percentage = (item.monto / totalExpenses * 100).toFixed(1);
+                  const percentage = totalExpenses > 0 
+                    ? ((item.monto / totalExpenses) * 100).toFixed(1) 
+                    : "0.0";
+                  
+                  const percentageChange = item.montoPrevMes > 0 
+                    ? ((item.monto - item.montoPrevMes) / item.montoPrevMes * 100).toFixed(1)
+                    : "0.0";
                   
                   return (
                     <TableRow key={item.categoria}>
                       <TableCell>{item.categoria}</TableCell>
                       <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
                       <TableCell className="text-right">{percentage}%</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end">
+                          {parseFloat(percentageChange) >= 0 ? (
+                            <>
+                              <ArrowUp className="mr-1 h-4 w-4 text-rose-500" />
+                              <span className="text-rose-500">{percentageChange}%</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowDown className="mr-1 h-4 w-4 text-emerald-500" />
+                              <span className="text-emerald-500">{Math.abs(parseFloat(percentageChange))}%</span>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
+                <TableRow className="font-bold bg-muted/30">
+                  <TableCell>TOTAL</TableCell>
+                  <TableCell className="text-right">
+                    $ {totalExpenses.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                  <TableCell className="text-right">-</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle>Pagos Pendientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Proveedor</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-center">Vencimiento</TableHead>
+                <TableHead className="text-right">Medio de Pago</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingPayments.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.proveedor}</TableCell>
+                  <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
+                  <TableCell className="text-center">{item.vencimiento}</TableCell>
+                  <TableCell className="text-right">{item.medioPago}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="font-bold bg-muted/30">
+                <TableCell>TOTAL</TableCell>
+                <TableCell className="text-right">
+                  $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
+                </TableCell>
+                <TableCell colSpan={2}></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         <Accordion type="single" collapsible defaultValue="item-1">

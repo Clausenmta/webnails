@@ -67,6 +67,8 @@ type EmployeeProfileDialogProps = {
   setNewEmployeeData: (data: Partial<Employee>) => void;
 };
 
+type DocumentType = "salary" | "contract" | "other";
+
 export default function EmployeeProfileDialog({
   open,
   onOpenChange,
@@ -80,14 +82,20 @@ export default function EmployeeProfileDialog({
     id: number;
     name: string;
     date: string;
-    type: "salary" | "contract" | "other";
+    type: DocumentType;
     url: string;
   }[]>(
-    employee?.documents || []
+    (employee?.documents as {
+      id: number;
+      name: string;
+      date: string;
+      type: DocumentType;
+      url: string;
+    }[]) || []
   );
   const [fileUpload, setFileUpload] = useState<{
     name: string;
-    type: "salary" | "contract" | "other";
+    type: DocumentType;
   }>({
     name: "",
     type: "salary",
@@ -143,7 +151,7 @@ export default function EmployeeProfileDialog({
 
     if (employee) {
       // If editing an existing employee, update their documents
-      employee.documents = updatedDocuments;
+      employee.documents = updatedDocuments as Employee["documents"];
     }
 
     // Reset the file upload form
@@ -161,7 +169,7 @@ export default function EmployeeProfileDialog({
 
     if (employee) {
       // If editing an existing employee, update their documents
-      employee.documents = updatedDocuments;
+      employee.documents = updatedDocuments as Employee["documents"];
     }
 
     toast.success("Documento eliminado exitosamente");

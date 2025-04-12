@@ -17,6 +17,7 @@ export interface Employee {
   email: string;
   status: "active" | "inactive";
   joinDate: string;
+  contact?: string;
   salary?: number;
   billingAverage?: number;
   currentMonthBilling?: number;
@@ -29,7 +30,7 @@ export interface Employee {
     id: number;
     name: string;
     date: string;
-    type: string;
+    type: "salary" | "contract" | "other";
     url: string;
   }[];
 }

@@ -116,7 +116,8 @@ export const exportReport = (data: any, options: ExportOptions) => {
       return true;
     }
     
-    toast.success(`Reporte exportado como ${format.toUpperCase()} correctamente`);
+    // Fix for the toUpperCase error - ensure format is a string before calling toUpperCase
+    toast.success(`Reporte exportado como ${String(format).toUpperCase()} correctamente`);
     return true;
   } catch (error) {
     console.error('Error al exportar reporte:', error);

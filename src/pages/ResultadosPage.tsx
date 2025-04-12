@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +64,6 @@ const monthlyData = [
   { month: "Dic", ventas: 65000, gastos: 39000, utilidad: 26000, ventasPrevMes: 59000, gastosPrevMes: 35400 },
 ];
 
-// Servicios de Peluquería vs Servicios de Spa
 const serviceData = [
   { servicio: "Peluquería", cantidad: 560, ingresos: 168000, ingresosPrevMes: 152000 },
   { servicio: "Spa", cantidad: 310, ingresos: 148000, ingresosPrevMes: 140000 },
@@ -80,7 +78,6 @@ const expenseData = [
   { categoria: "Otros", monto: 9000, montoPrevMes: 8800 },
 ];
 
-// Pagos pendientes
 const pendingPayments = [
   { id: 1, proveedor: "Distribuidora OPI", monto: 35000, vencimiento: "15/04/2025", medioPago: "Transferencia" },
   { id: 2, proveedor: "Inmobiliaria Norte", monto: 150000, vencimiento: "10/04/2025", medioPago: "Efectivo" },
@@ -266,10 +263,8 @@ export default function ResultadosPage() {
     };
   }).filter(item => item.amount > 0);
 
-  // Cálculo de porcentajes para servicios
   const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
-  
-  // Cálculo de porcentajes para gastos
+
   const totalExpenses = expenseData.reduce((sum, item) => sum + item.monto, 0);
 
   return (
@@ -333,130 +328,6 @@ export default function ResultadosPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$ {currentMonthData.ventas.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {parseFloat(revenueGrowth) >= 0 ? (
-                <>
-                  <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
-                  <span className="text-emerald-500">{revenueGrowth}%</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
-                  <span className="text-rose-500">{Math.abs(parseFloat(revenueGrowth))}%</span>
-                </>
-              )}
-              <span className="ml-1">vs mes anterior</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos</CardTitle>
-            <ArrowDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$ {currentMonthData.gastos.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">
-              {(currentMonthData.gastos / currentMonthData.ventas * 100).toFixed(1)}% del ingreso total
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ganancia Neta</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$ {currentMonthData.utilidad.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {parseFloat(profitGrowth) >= 0 ? (
-                <>
-                  <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
-                  <span className="text-emerald-500">{profitGrowth}%</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
-                  <span className="text-rose-500">{Math.abs(parseFloat(profitGrowth))}%</span>
-                </>
-              )}
-              <span className="ml-1">vs mes anterior</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">245</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
-              <span className="text-emerald-500">18%</span>
-              <span className="ml-1">vs mes anterior</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Ingresos vs Gastos Mensuales</CardTitle>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer config={{}}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Legend />
-                  <Bar name="Ingresos" dataKey="ventas" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar name="Gastos" dataKey="gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Tendencia de Utilidad</CardTitle>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer config={{}}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    name="Utilidad" 
-                    dataKey="utilidad" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
@@ -467,7 +338,6 @@ export default function ResultadosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Servicio</TableHead>
-                  <TableHead className="text-center">Cantidad</TableHead>
                   <TableHead className="text-right">Ingresos</TableHead>
                   <TableHead className="text-right">% del Total</TableHead>
                   <TableHead className="text-right">% vs Mes Anterior</TableHead>
@@ -486,7 +356,6 @@ export default function ResultadosPage() {
                   return (
                     <TableRow key={item.servicio}>
                       <TableCell>{item.servicio}</TableCell>
-                      <TableCell className="text-center">{item.cantidad}</TableCell>
                       <TableCell className="text-right">$ {item.ingresos.toLocaleString()}</TableCell>
                       <TableCell className="text-right">{percentage}%</TableCell>
                       <TableCell className="text-right">
@@ -509,9 +378,6 @@ export default function ResultadosPage() {
                 })}
                 <TableRow className="font-bold bg-muted/30">
                   <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-center">
-                    {serviceData.reduce((sum, item) => sum + item.cantidad, 0)}
-                  </TableCell>
                   <TableCell className="text-right">
                     $ {totalServices.toLocaleString()}
                   </TableCell>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +14,12 @@ export interface Employee {
   id: number;
   name: string;
   position: string;
-  joinDate: string;
-  contact: string;
   email: string;
   status: "active" | "inactive";
-  avatar?: string;
-  // Add missing properties
+  joinDate: string;
+  salary?: number;
+  billingAverage?: number;
+  currentMonthBilling?: number;
   phone?: string;
   address?: string;
   documentId?: string;
@@ -30,7 +29,7 @@ export interface Employee {
     id: number;
     name: string;
     date: string;
-    type: "salary" | "contract" | "other";
+    type: string;
     url: string;
   }[];
 }
@@ -92,7 +91,6 @@ export default function EmpleadosPage() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSalaryOpen, setIsSalaryOpen] = useState(false);
   
-  // Add new state for employee dialog
   const [newEmployeeData, setNewEmployeeData] = useState<Partial<Employee>>({
     name: "",
     position: "Estilista",
@@ -112,12 +110,10 @@ export default function EmpleadosPage() {
 
   const handleSaveEmployee = (employeeData: Employee | Partial<Employee>) => {
     if ('id' in employeeData && employeeData.id) {
-      // Update existing employee
       setEmployees(prev => 
         prev.map(emp => emp.id === employeeData.id ? { ...emp, ...employeeData } as Employee : emp)
       );
     } else {
-      // Add new employee
       const newEmployee = {
         ...employeeData,
         id: Math.max(0, ...employees.map(e => e.id)) + 1,
@@ -136,7 +132,6 @@ export default function EmpleadosPage() {
       employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Obtener empleados por posición para mostrar en panel de resumen
   const employeesByPosition = employees.reduce((acc, employee) => {
     if (employee.status === "active") {
       acc[employee.position] = (acc[employee.position] || 0) + 1;
@@ -144,8 +139,29 @@ export default function EmpleadosPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Total de empleados activos
   const activeEmployees = employees.filter(emp => emp.status === "active").length;
+
+  const positionSummary = employees.reduce((acc, employee) => {
+    const position = employee.position;
+    
+    if (!acc[position]) {
+      acc[position] = {
+        count: 0,
+        totalBilling: 0,
+        avgBilling: 0
+      };
+    }
+    
+    acc[position].count += 1;
+    acc[position].totalBilling += employee.currentMonthBilling || 0;
+    
+    return acc;
+  }, {} as Record<string, { count: number, totalBilling: number, avgBilling: number }>);
+
+  Object.keys(positionSummary).forEach(position => {
+    const { count, totalBilling } = positionSummary[position];
+    positionSummary[position].avgBilling = count > 0 ? totalBilling / count : 0;
+  });
 
   return (
     <div className="space-y-6">
@@ -240,37 +256,38 @@ export default function EmpleadosPage() {
         </TabsContent>
         
         <TabsContent value="summary">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Total Empleados</CardTitle>
-                <Users className="h-4 w-4 text-salon-500" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Empleados
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{activeEmployees}</div>
-                <p className="text-xs text-muted-foreground">
-                  Empleados activos
+                <div className="text-2xl font-bold">{employees.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {employees.filter(e => e.status === "active").length} activos, {employees.filter(e => e.status === "inactive").length} inactivos
                 </p>
               </CardContent>
             </Card>
             
-            {Object.entries(employeesByPosition).map(([position, count], index) => (
-              <Card key={index}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-sm font-medium">{position}</CardTitle>
-                  {position === "Estilista" ? (
-                    <BriefcaseBusiness className="h-4 w-4 text-salon-500" />
-                  ) : position === "Manicurista" ? (
-                    <UserCheck className="h-4 w-4 text-salon-500" />
-                  ) : (
-                    <UserRound className="h-4 w-4 text-salon-500" />
-                  )}
+            {Object.entries(positionSummary).map(([position, data]) => (
+              <Card key={position}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {position}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{count}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {count === 1 ? "Empleado" : "Empleados"}
-                  </p>
+                  <div className="text-2xl font-bold">{data.count}</div>
+                  <div className="flex flex-col mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Facturación Total: ${data.totalBilling.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Promedio: ${data.avgBilling.toLocaleString()}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             ))}

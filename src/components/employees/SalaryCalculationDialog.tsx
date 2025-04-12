@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -19,7 +18,6 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Add this type augmentation to make TypeScript recognize the autoTable method
 declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => any;
@@ -122,10 +120,13 @@ export default function SalaryCalculationDialog({
   useEffect(() => {
     const commission = (salaryData.totalBilling * salaryData.commissionRate) / 100;
     const extrasTotal = salaryData.extras.reduce((sum, extra) => sum + extra.amount, 0);
+    
     const totalSalary = commission + salaryData.reception + salaryData.sac + 
-                         salaryData.receipt + salaryData.training + 
-                         salaryData.vacation + extrasTotal;
-    const cash = totalSalary - salaryData.advance;
+                        salaryData.training + salaryData.vacation + extrasTotal;
+    
+    const cash = commission + salaryData.reception + salaryData.sac + 
+                 salaryData.training + salaryData.vacation + extrasTotal - 
+                 salaryData.receipt;
     
     setSalaryData(prev => ({
       ...prev,
@@ -548,7 +549,7 @@ export default function SalaryCalculationDialog({
             </div>
 
             <div className="bg-muted rounded-md p-3 mt-2">
-              <p className="text-sm"><strong>Fórmula:</strong> Comisión + Recepción + SAC + Recibo + Capacitación + Vacaciones + Extras</p>
+              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + Recepción + SAC + Capacitación + Vacaciones + Extras - Recibo</p>
             </div>
           </>
         )}
@@ -581,4 +582,3 @@ export default function SalaryCalculationDialog({
     </Dialog>
   );
 }
-

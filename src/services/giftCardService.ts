@@ -40,6 +40,14 @@ export const giftCardService = {
   async fetchGiftCards(): Promise<GiftCard[]> {
     try {
       console.log("Solicitando gift cards desde la base de datos");
+      
+      // Verificamos la sesión del usuario
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn("No hay sesión activa. Usando datos de muestra.");
+        return MOCK_GIFT_CARDS;
+      }
+      
       const { data, error } = await supabase
         .from('gift_cards')
         .select('*')
@@ -59,6 +67,7 @@ export const giftCardService = {
       }));
     } catch (error) {
       console.error("Error al obtener gift cards:", error);
+      toast.error(`Error al obtener tarjetas de regalo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       return [];
     }
   },
@@ -66,6 +75,20 @@ export const giftCardService = {
   async addGiftCard(newGiftCard: NewGiftCard): Promise<GiftCard> {
     try {
       console.log("Agregando nueva gift card:", newGiftCard);
+      
+      // Verificamos la sesión del usuario
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No hay sesión activa para agregar gift card");
+        toast.error("Debe iniciar sesión para agregar tarjetas de regalo");
+        throw new Error("No hay sesión activa");
+      }
+      
+      // Agregamos la información del usuario que crea la gift card si no está presente
+      if (!newGiftCard.created_by) {
+        newGiftCard.created_by = session.user.email || session.user.id;
+      }
+      
       const { data, error } = await supabase
         .from('gift_cards')
         .insert([newGiftCard])
@@ -88,6 +111,7 @@ export const giftCardService = {
       };
     } catch (error) {
       console.error("Error al agregar gift card:", error);
+      toast.error(`Error al agregar tarjeta de regalo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       throw error;
     }
   },
@@ -95,6 +119,15 @@ export const giftCardService = {
   async updateGiftCard(id: number, updates: Partial<NewGiftCard>): Promise<GiftCard> {
     try {
       console.log("Actualizando gift card con ID:", id, "con datos:", updates);
+      
+      // Verificamos la sesión del usuario
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No hay sesión activa para actualizar gift card");
+        toast.error("Debe iniciar sesión para actualizar tarjetas de regalo");
+        throw new Error("No hay sesión activa");
+      }
+      
       const { data, error } = await supabase
         .from('gift_cards')
         .update(updates)
@@ -118,6 +151,7 @@ export const giftCardService = {
       };
     } catch (error) {
       console.error("Error al actualizar gift card:", error);
+      toast.error(`Error al actualizar tarjeta de regalo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       throw error;
     }
   },
@@ -125,6 +159,15 @@ export const giftCardService = {
   async deleteGiftCard(id: number): Promise<void> {
     try {
       console.log("Eliminando gift card con ID:", id);
+      
+      // Verificamos la sesión del usuario
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("No hay sesión activa para eliminar gift card");
+        toast.error("Debe iniciar sesión para eliminar tarjetas de regalo");
+        throw new Error("No hay sesión activa");
+      }
+      
       const { error } = await supabase
         .from('gift_cards')
         .delete()
@@ -140,6 +183,7 @@ export const giftCardService = {
       toast.success("Tarjeta de regalo eliminada correctamente");
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
+      toast.error(`Error al eliminar tarjeta de regalo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       throw error;
     }
   }

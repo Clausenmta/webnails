@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -62,15 +64,72 @@ interface Expense {
 export default function GastosPage() {
   const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
+  const queryClient = useQueryClient();
   
-  // Datos de gastos (inicializado como un array vacío)
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-
   // Estados para diálogos
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isViewExpenseOpen, setIsViewExpenseOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
+  // Query para obtener gastos
+  const { data: expenses = [], isLoading } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Mutación para agregar gastos
+  const addExpenseMutation = useMutation({
+    mutationFn: async (newExpense: Omit<Expense, 'id'>) => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([newExpense])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setIsAddExpenseOpen(false);
+      toast.success("Gasto registrado correctamente");
+    },
+    onError: (error) => {
+      toast.error("Error al registrar el gasto: " + error.message);
+    }
+  });
+
+  // Mutación para eliminar gastos
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setIsDeleteDialogOpen(false);
+      setExpenseToDelete(null);
+      toast.success("Gasto eliminado correctamente");
+    },
+    onError: (error) => {
+      toast.error("Error al eliminar el gasto: " + error.message);
+    }
+  });
+
   // Estado para nuevo gasto
   const [newExpense, setNewExpense] = useState<Omit<Expense, 'id'>>({
     date: format(new Date(), 'dd/MM/yyyy'),
@@ -82,10 +141,6 @@ export default function GastosPage() {
     dueDate: "",
     provider: ""
   });
-
-  // Estado para el diálogo de confirmación de eliminación
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   // Actualizar createdBy cuando cambia el usuario
   useEffect(() => {
@@ -128,32 +183,13 @@ export default function GastosPage() {
       );
 
   const handleAddExpense = () => {
-    const id = Math.max(0, ...expenses.map(e => e.id)) + 1;
-    const newExpenseRecord = { 
-      ...newExpense, 
-      id,
+    addExpenseMutation.mutate({
+      ...newExpense,
       // If the category is Fijos or Proveedores, ensure it has a "pending" status by default
       status: (newExpense.category === "Fijos" || newExpense.category === "Proveedores") 
-        ? "pending" as const 
+        ? "pending" 
         : undefined
-    };
-    
-    setExpenses([newExpenseRecord, ...expenses]);
-    
-    // Resetear el formulario
-    setNewExpense({
-      date: format(new Date(), 'dd/MM/yyyy'),
-      concept: "",
-      amount: 0,
-      category: "Insumos",
-      createdBy: user?.username || "",
-      details: "",
-      dueDate: "",
-      provider: ""
     });
-    
-    setIsAddExpenseOpen(false);
-    toast.success("Gasto registrado correctamente");
   };
 
   const handleViewExpense = (expense: Expense) => {
@@ -170,10 +206,7 @@ export default function GastosPage() {
   // Función para confirmar la eliminación
   const confirmDeleteExpense = () => {
     if (expenseToDelete) {
-      setExpenses(expenses.filter(expense => expense.id !== expenseToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setExpenseToDelete(null);
-      toast.success("Gasto eliminado correctamente");
+      deleteExpenseMutation.mutate(expenseToDelete.id);
     }
   };
 

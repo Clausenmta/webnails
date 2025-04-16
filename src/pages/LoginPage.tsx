@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -19,10 +19,18 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   // Get the path the user was trying to access
   const from = (location.state as any)?.from?.pathname || "/";
+
+  // Redirigir a la página principal si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("Usuario ya autenticado, redirigiendo a:", from);
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   const validateForm = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -50,6 +58,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Iniciando proceso de login...");
     
     if (!validateForm()) {
       toast({
@@ -63,10 +72,14 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
+      console.log("Enviando solicitud de login para:", email);
       const success = await login(email, password);
       
       if (success) {
+        console.log("Login exitoso, redirigiendo a:", from);
         navigate(from, { replace: true });
+      } else {
+        console.log("Login fallido");
       }
     } catch (error) {
       console.error("Login error:", error);

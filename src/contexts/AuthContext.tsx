@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType } from '@/types/auth';
 import { supabase } from "@/integrations/supabase/client";
@@ -56,9 +57,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Inicializar la sesión de Supabase y escuchar cambios
   useEffect(() => {
+    console.log("Inicializando contexto de autenticación");
+
     // Configurar el listener de cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log("Evento de autenticación:", event);
         setSession(currentSession);
         if (currentSession?.user) {
           // Crear usuario con rol basado en email
@@ -72,12 +76,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log("Usuario autenticado:", userData);
         } else {
           setUser(null);
+          console.log("No hay usuario autenticado");
         }
       }
     );
 
     // Verificar si hay una sesión activa al cargar
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Verificando sesión existente:", currentSession ? "Sesión encontrada" : "No hay sesión");
       setSession(currentSession);
       if (currentSession?.user) {
         // Crear usuario con rol basado en email
@@ -89,6 +95,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUser(userData);
         console.log("Sesión existente encontrada:", userData);
+      } else {
+        console.log("No se encontró sesión activa");
       }
       setIsLoading(false);
     });
@@ -100,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log("Intentando iniciar sesión con:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -116,6 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data.user) {
+        console.log("Inicio de sesión exitoso:", data.user.email);
         toast({
           title: "Inicio de sesión exitoso",
           description: `Bienvenido/a ${data.user.user_metadata.name || data.user.email?.split('@')[0] || ''}`,
@@ -137,6 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    console.log("Cerrando sesión...");
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error al cerrar sesión:', error.message);
@@ -146,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive"
       });
     } else {
+      console.log("Sesión cerrada correctamente");
       setUser(null);
       setSession(null);
     }

@@ -58,10 +58,11 @@ import {
 } from "lucide-react";
 import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import * as XLSX from 'xlsx';
+import { exportReport } from "@/utils/reportExport";
 
 type GiftCardStatus = "Pendiente" | "Canjeada" | "Vencida";
 type GiftCardType = "Física" | "Virtual";
@@ -189,10 +190,11 @@ export default function GiftCardsPage() {
       // Re-habilitar acciones después de un breve tiempo
       setTimeout(() => {
         setDialogsEnabled(true);
-      }, 300);
+      }, 500); // Aumentamos el tiempo para prevenir clics múltiples
     }
   }, [dialogsEnabled]);
 
+  // Función para cerrar todos los diálogos
   const closeAllDialogs = useCallback(() => {
     // Primero cerramos todos los diálogos
     setIsNewGiftCardDialogOpen(false);
@@ -206,7 +208,7 @@ export default function GiftCardsPage() {
     setTimeout(() => {
       setSelectedGiftCard(null);
       setEditGiftCard({});
-    }, 200);
+    }, 300); // Aumentado para asegurar que los diálogos se cierren completamente
   }, []);
 
   const handleNewGiftCardChange = useCallback((field: keyof GiftCard, value: any) => {
@@ -225,48 +227,36 @@ export default function GiftCardsPage() {
 
   const handleExportPDF = useCallback(() => {
     try {
-      toast({
-        title: "Exportando a PDF...",
-        description: "El archivo se descargará en breve."
+      // Usar la función exportReport del utility
+      exportReport(giftCards, {
+        filename: "gift-cards",
+        format: "pdf"
       });
-      console.log("Exporting to PDF...");
     } catch (error) {
       console.error("Error al exportar a PDF:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo exportar a PDF. Intente nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("No se pudo exportar a PDF. Intente nuevamente.");
     }
-  }, []);
+  }, [giftCards]);
 
   const handleExportExcel = useCallback(() => {
     try {
-      toast({
-        title: "Exportando a Excel...",
-        description: "El archivo se descargará en breve."
+      // Usar la función exportReport del utility
+      exportReport(giftCards, {
+        filename: "gift-cards",
+        format: "excel"
       });
-      console.log("Exporting to Excel...");
     } catch (error) {
       console.error("Error al exportar a Excel:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo exportar a Excel. Intente nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("No se pudo exportar a Excel. Intente nuevamente.");
     }
-  }, []);
+  }, [giftCards]);
 
   const handleCreateGiftCard = useCallback(() => {
     if (!dialogsEnabled) return;
     
     try {
       if (!newGiftCard.number || !newGiftCard.service) {
-        toast({
-          title: "Error",
-          description: "Por favor complete todos los campos requeridos.",
-          variant: "destructive"
-        });
+        toast.error("Por favor complete todos los campos requeridos.");
         return;
       }
 
@@ -306,37 +296,27 @@ export default function GiftCardsPage() {
           issueDate: new Date().toISOString().split('T')[0]
         });
         
-        toast({
-          title: "Gift Card creada",
-          description: `La gift card ${newCard.number} ha sido creada exitosamente.`
-        });
-      }, 200);
+        toast.success(`La gift card ${newCard.number} ha sido creada exitosamente.`);
+      }, 300);
     } catch (error) {
       console.error("Error al crear gift card:", error);
       setIsNewGiftCardDialogOpen(false);
       
       setTimeout(() => {
-        toast({
-          title: "Error",
-          description: "Ocurrió un error al crear la gift card. Intente nuevamente.",
-          variant: "destructive"
-        });
-      }, 200);
+        toast.error("Ocurrió un error al crear la gift card. Intente nuevamente.");
+      }, 300);
     }
   }, [newGiftCard, giftCards, dialogsEnabled]);
 
   const handleViewDetails = useCallback((card: GiftCard) => {
     safeAction(() => {
       try {
-        setSelectedGiftCard(card);
+        // Hacer una copia profunda para evitar problemas de referencia
+        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
         setIsViewDetailsDialogOpen(true);
       } catch (error) {
         console.error("Error al ver detalles:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los detalles. Intente nuevamente.",
-          variant: "destructive"
-        });
+        toast.error("No se pudieron cargar los detalles. Intente nuevamente.");
       }
     });
   }, [safeAction]);
@@ -350,11 +330,7 @@ export default function GiftCardsPage() {
         setIsEditDialogOpen(true);
       } catch (error) {
         console.error("Error al editar:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo abrir el editor. Intente nuevamente.",
-          variant: "destructive"
-        });
+        toast.error("No se pudo abrir el editor. Intente nuevamente.");
       }
     });
   }, [safeAction]);
@@ -364,11 +340,7 @@ export default function GiftCardsPage() {
     
     try {
       if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
-        toast({
-          title: "Error",
-          description: "Por favor complete todos los campos requeridos.",
-          variant: "destructive"
-        });
+        toast.error("Por favor complete todos los campos requeridos.");
         return;
       }
 
@@ -377,9 +349,6 @@ export default function GiftCardsPage() {
       
       const cardId = selectedGiftCard.id;
       const updatedCardNumber = editGiftCard.number;
-      
-      // Limpiar referencias
-      const currentSelectedGiftCard = {...selectedGiftCard};
       
       // Pequeño retraso para asegurar que la interfaz responda
       setTimeout(() => {
@@ -397,11 +366,8 @@ export default function GiftCardsPage() {
           return card;
         }));
         
-        toast({
-          title: "Gift Card actualizada",
-          description: `La gift card ${updatedCardNumber} ha sido actualizada exitosamente.`
-        });
-      }, 200);
+        toast.success(`La gift card ${updatedCardNumber} ha sido actualizada exitosamente.`);
+      }, 300);
     } catch (error) {
       console.error("Error al guardar edición:", error);
       setIsEditDialogOpen(false);
@@ -410,12 +376,8 @@ export default function GiftCardsPage() {
         setSelectedGiftCard(null);
         setEditGiftCard({});
         
-        toast({
-          title: "Error",
-          description: "Ocurrió un error al actualizar la gift card. Intente nuevamente.",
-          variant: "destructive"
-        });
-      }, 200);
+        toast.error("Ocurrió un error al actualizar la gift card. Intente nuevamente.");
+      }, 300);
     }
   }, [editGiftCard, selectedGiftCard, dialogsEnabled]);
 
@@ -427,11 +389,7 @@ export default function GiftCardsPage() {
         setIsDeleteDialogOpen(true);
       } catch (error) {
         console.error("Error al preparar eliminación:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo preparar la eliminación. Intente nuevamente.",
-          variant: "destructive"
-        });
+        toast.error("No se pudo preparar la eliminación. Intente nuevamente.");
       }
     });
   }, [safeAction]);
@@ -457,11 +415,8 @@ export default function GiftCardsPage() {
         setGiftCards(prevCards => prevCards.filter(card => card.id !== cardToDelete.id));
         
         // Mostrar mensaje de confirmación
-        toast({
-          title: "Gift Card eliminada",
-          description: `La gift card ${cardToDelete.number} ha sido eliminada exitosamente.`
-        });
-      }, 200);
+        toast.success(`La gift card ${cardToDelete.number} ha sido eliminada exitosamente.`);
+      }, 300);
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
       
@@ -472,12 +427,8 @@ export default function GiftCardsPage() {
         // Limpiar la selección
         setSelectedGiftCard(null);
         
-        toast({
-          title: "Error",
-          description: "Ocurrió un error al eliminar la gift card. Intente nuevamente.",
-          variant: "destructive"
-        });
-      }, 200);
+        toast.error("Ocurrió un error al eliminar la gift card. Intente nuevamente.");
+      }, 300);
     }
   }, [selectedGiftCard, dialogsEnabled]);
 
@@ -489,11 +440,7 @@ export default function GiftCardsPage() {
         setIsConfirmRedeemDialogOpen(true);
       } catch (error) {
         console.error("Error al preparar canje:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo preparar el canje. Intente nuevamente.",
-          variant: "destructive"
-        });
+        toast.error("No se pudo preparar el canje. Intente nuevamente.");
       }
     });
   }, [safeAction]);
@@ -528,11 +475,8 @@ export default function GiftCardsPage() {
         }));
         
         // Mostrar mensaje de confirmación
-        toast({
-          title: "Gift Card canjeada",
-          description: `La gift card ${cardToRedeem.number} ha sido marcada como canjeada.`
-        });
-      }, 200);
+        toast.success(`La gift card ${cardToRedeem.number} ha sido marcada como canjeada.`);
+      }, 300);
     } catch (error) {
       console.error("Error al canjear gift card:", error);
       
@@ -543,12 +487,8 @@ export default function GiftCardsPage() {
         // Limpiar la selección
         setSelectedGiftCard(null);
         
-        toast({
-          title: "Error",
-          description: "Ocurrió un error al canjear la gift card. Intente nuevamente.",
-          variant: "destructive"
-        });
-      }, 200);
+        toast.error("Ocurrió un error al canjear la gift card. Intente nuevamente.");
+      }, 300);
     }
   }, [selectedGiftCard, dialogsEnabled]);
 
@@ -708,11 +648,8 @@ export default function GiftCardsPage() {
               setTimeout(() => {
                 setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
                 
-                toast({
-                  title: "Importación completada",
-                  description: `Se importaron ${newGiftCards.length} gift cards correctamente`
-                });
-              }, 100);
+                toast.success(`Se importaron ${newGiftCards.length} gift cards correctamente`);
+              }, 300);
             } else {
               setImportStatus("error");
               setImportProgress(100);
@@ -721,33 +658,21 @@ export default function GiftCardsPage() {
               setTimeout(() => {
                 setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
                 
-                toast({
-                  title: "Importación parcial",
-                  description: `Se importaron ${newGiftCards.length} gift cards con ${errors.length} errores.`,
-                  variant: "destructive"
-                });
-              }, 100);
+                toast.error(`Se importaron ${newGiftCards.length} gift cards con ${errors.length} errores.`);
+              }, 300);
             }
           } else {
             setImportStatus("error");
             setImportProgress(100);
             
-            toast({
-              title: "Error en la importación",
-              description: "No se pudo importar ninguna gift card. Revise los errores.",
-              variant: "destructive"
-            });
+            toast.error("No se pudo importar ninguna gift card. Revise los errores.");
           }
         } catch (error) {
           console.error("Error al procesar el archivo Excel:", error);
           setImportStatus("error");
           setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
           
-          toast({
-            title: "Error en la importación",
-            description: "No se pudo procesar el archivo Excel. Verifique el formato.",
-            variant: "destructive"
-          });
+          toast.error("No se pudo procesar el archivo Excel. Verifique el formato.");
         }
       };
       
@@ -755,11 +680,7 @@ export default function GiftCardsPage() {
         setImportStatus("error");
         setImportErrors(["Error al leer el archivo"]);
         
-        toast({
-          title: "Error en la importación",
-          description: "No se pudo leer el archivo.",
-          variant: "destructive"
-        });
+        toast.error("No se pudo leer el archivo.");
       };
       
       reader.readAsArrayBuffer(file);
@@ -769,11 +690,7 @@ export default function GiftCardsPage() {
       setImportProgress(0);
       setImportErrors(["Error inesperado al procesar el archivo"]);
       
-      toast({
-        title: "Error",
-        description: "Error inesperado al procesar el archivo.",
-        variant: "destructive"
-      });
+      toast.error("Error inesperado al procesar el archivo.");
     }
   }, [giftCards, validateGiftCardData]);
 
@@ -785,11 +702,7 @@ export default function GiftCardsPage() {
       }
     } catch (error) {
       console.error("Error al seleccionar archivo:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo seleccionar el archivo. Intente nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("No se pudo seleccionar el archivo. Intente nuevamente.");
     }
   }, [processExcelFile]);
 
@@ -828,17 +741,10 @@ export default function GiftCardsPage() {
       
       XLSX.writeFile(workbook, "plantilla_gift_cards.xlsx");
       
-      toast({
-        title: "Plantilla descargada",
-        description: "La plantilla de Excel para importar gift cards ha sido descargada"
-      });
+      toast.success("La plantilla de Excel para importar gift cards ha sido descargada");
     } catch (error) {
       console.error("Error al descargar plantilla:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo descargar la plantilla. Intente nuevamente.",
-        variant: "destructive"
-      });
+      toast.error("No se pudo descargar la plantilla. Intente nuevamente.");
     }
   }, []);
 
@@ -858,13 +764,21 @@ export default function GiftCardsPage() {
 
   // Control de cierre de diálogos para evitar congelamiento de la interfaz
   const handleDialogOpenChange = useCallback((open: boolean, setOpenFn: React.Dispatch<React.SetStateAction<boolean>>, cleanup?: () => void) => {
-    if (!open && cleanup) {
+    if (!open) {
+      // Primero cerramos el diálogo
       setOpenFn(false);
-      setTimeout(cleanup, 200);
-    } else {
+      
+      // Luego ejecutamos la limpieza si es necesario
+      if (cleanup) {
+        setTimeout(() => {
+          cleanup();
+        }, 300); // Aumentado para asegurar que los diálogos se cierren completamente
+      }
+    } else if (dialogsEnabled) {
+      // Solo abrimos si los diálogos están habilitados
       setOpenFn(open);
     }
-  }, []);
+  }, [dialogsEnabled]);
 
   return (
     <div className="space-y-6">

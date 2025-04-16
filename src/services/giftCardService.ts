@@ -1,5 +1,6 @@
 
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Interfaz para Gift Card
 export interface GiftCard {
@@ -37,19 +38,20 @@ const MOCK_GIFT_CARDS: GiftCard[] = [
 
 export const giftCardService = {
   async fetchGiftCards(): Promise<GiftCard[]> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Usando datos de muestra.");
-      return Promise.resolve(MOCK_GIFT_CARDS);
-    }
-
     try {
+      console.log("Solicitando gift cards desde la base de datos");
       const { data, error } = await supabase
         .from('gift_cards')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al obtener gift cards:", error.message);
+        toast.error(`Error al cargar las tarjetas de regalo: ${error.message}`);
+        throw error;
+      }
       
+      console.log("Gift cards obtenidas:", data?.length || 0);
       // Convertimos el valor de status al tipo correcto
       return (data || []).map(giftCard => ({
         ...giftCard,
@@ -62,24 +64,22 @@ export const giftCardService = {
   },
 
   async addGiftCard(newGiftCard: NewGiftCard): Promise<GiftCard> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando inserción.");
-      const mockGiftCard: GiftCard = {
-        ...newGiftCard,
-        id: Math.floor(Math.random() * 1000) + 10,
-        created_at: new Date().toISOString()
-      };
-      return Promise.resolve(mockGiftCard);
-    }
-
     try {
+      console.log("Agregando nueva gift card:", newGiftCard);
       const { data, error } = await supabase
         .from('gift_cards')
         .insert([newGiftCard])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al agregar gift card:", error.message);
+        toast.error(`Error al guardar la tarjeta de regalo: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gift card agregada correctamente:", data);
+      toast.success("Tarjeta de regalo creada correctamente");
       
       // Convertimos el valor de status al tipo correcto
       return {
@@ -93,17 +93,8 @@ export const giftCardService = {
   },
 
   async updateGiftCard(id: number, updates: Partial<NewGiftCard>): Promise<GiftCard> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando actualización.");
-      const mockGiftCard: GiftCard = {
-        ...MOCK_GIFT_CARDS[0],
-        ...updates,
-        id
-      };
-      return Promise.resolve(mockGiftCard);
-    }
-
     try {
+      console.log("Actualizando gift card con ID:", id, "con datos:", updates);
       const { data, error } = await supabase
         .from('gift_cards')
         .update(updates)
@@ -111,7 +102,14 @@ export const giftCardService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al actualizar gift card:", error.message);
+        toast.error(`Error al actualizar la tarjeta de regalo: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gift card actualizada correctamente:", data);
+      toast.success("Tarjeta de regalo actualizada correctamente");
       
       // Convertimos el valor de status al tipo correcto
       return {
@@ -125,18 +123,21 @@ export const giftCardService = {
   },
 
   async deleteGiftCard(id: number): Promise<void> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando eliminación.");
-      return Promise.resolve();
-    }
-
     try {
+      console.log("Eliminando gift card con ID:", id);
       const { error } = await supabase
         .from('gift_cards')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al eliminar gift card:", error.message);
+        toast.error(`Error al eliminar la tarjeta de regalo: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gift card eliminada correctamente");
+      toast.success("Tarjeta de regalo eliminada correctamente");
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
       throw error;

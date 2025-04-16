@@ -1,5 +1,6 @@
 
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Interfaz para Stock
 export interface StockItem {
@@ -51,18 +52,20 @@ const MOCK_STOCK: StockItem[] = [
 
 export const stockService = {
   async fetchStock(): Promise<StockItem[]> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Usando datos de muestra.");
-      return Promise.resolve(MOCK_STOCK);
-    }
-
     try {
+      console.log("Solicitando stock desde la base de datos");
       const { data, error } = await supabase
         .from('stock')
         .select('*')
         .order('product_name', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al obtener stock:", error.message);
+        toast.error(`Error al cargar inventario: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Stock obtenido:", data?.length || 0, "items");
       return data || [];
     } catch (error) {
       console.error("Error al obtener stock:", error);
@@ -71,24 +74,22 @@ export const stockService = {
   },
 
   async addStockItem(newStockItem: NewStockItem): Promise<StockItem> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando inserción.");
-      const mockStockItem: StockItem = {
-        ...newStockItem,
-        id: Math.floor(Math.random() * 1000) + 10,
-        created_at: new Date().toISOString()
-      };
-      return Promise.resolve(mockStockItem);
-    }
-
     try {
+      console.log("Agregando nuevo item de stock:", newStockItem);
       const { data, error } = await supabase
         .from('stock')
         .insert([newStockItem])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al agregar item de stock:", error.message);
+        toast.error(`Error al guardar el producto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Item de stock agregado correctamente:", data);
+      toast.success("Producto agregado correctamente al inventario");
       return data;
     } catch (error) {
       console.error("Error al agregar item de stock:", error);
@@ -97,17 +98,8 @@ export const stockService = {
   },
 
   async updateStockItem(id: number, updates: Partial<NewStockItem>): Promise<StockItem> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando actualización.");
-      const mockStockItem: StockItem = {
-        ...MOCK_STOCK[0],
-        ...updates,
-        id
-      };
-      return Promise.resolve(mockStockItem);
-    }
-
     try {
+      console.log("Actualizando item de stock con ID:", id, "con datos:", updates);
       const { data, error } = await supabase
         .from('stock')
         .update(updates)
@@ -115,7 +107,14 @@ export const stockService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al actualizar item de stock:", error.message);
+        toast.error(`Error al actualizar el producto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Item de stock actualizado correctamente:", data);
+      toast.success("Producto actualizado correctamente");
       return data;
     } catch (error) {
       console.error("Error al actualizar item de stock:", error);
@@ -124,18 +123,21 @@ export const stockService = {
   },
 
   async deleteStockItem(id: number): Promise<void> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando eliminación.");
-      return Promise.resolve();
-    }
-
     try {
+      console.log("Eliminando item de stock con ID:", id);
       const { error } = await supabase
         .from('stock')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al eliminar item de stock:", error.message);
+        toast.error(`Error al eliminar el producto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Item de stock eliminado correctamente");
+      toast.success("Producto eliminado correctamente");
     } catch (error) {
       console.error("Error al eliminar item de stock:", error);
       throw error;

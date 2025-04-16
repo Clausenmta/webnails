@@ -1,6 +1,7 @@
 
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Expense, NewExpense } from "@/types/expenses";
+import { toast } from "sonner";
 
 // Datos de muestra para cuando Supabase no está configurado
 const MOCK_EXPENSES: Expense[] = [
@@ -19,20 +20,20 @@ const MOCK_EXPENSES: Expense[] = [
 
 export const expenseService = {
   async fetchExpenses(): Promise<Expense[]> {
-    // Si Supabase no está configurado, devuelve datos de muestra
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Usando datos de muestra.");
-      return Promise.resolve(MOCK_EXPENSES);
-    }
-
     try {
+      console.log("Solicitando gastos desde la base de datos");
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .order('date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al obtener gastos:", error.message);
+        toast.error(`Error al cargar gastos: ${error.message}`);
+        throw error;
+      }
       
+      console.log("Gastos obtenidos:", data?.length || 0);
       // Aseguramos que los valores de status sean del tipo correcto
       return (data || []).map(expense => ({
         ...expense,
@@ -46,25 +47,22 @@ export const expenseService = {
   },
 
   async addExpense(newExpense: NewExpense): Promise<Expense> {
-    // Si Supabase no está configurado, simula una inserción
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando inserción.");
-      const mockExpense: Expense = {
-        ...newExpense,
-        id: Math.floor(Math.random() * 1000) + 10,
-        created_at: new Date().toISOString()
-      };
-      return Promise.resolve(mockExpense);
-    }
-
     try {
+      console.log("Agregando nuevo gasto:", newExpense);
       const { data, error } = await supabase
         .from('expenses')
         .insert([newExpense])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al agregar gasto:", error.message);
+        toast.error(`Error al guardar el gasto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gasto agregado correctamente:", data);
+      toast.success("Gasto registrado correctamente");
       
       // Aseguramos que status sea del tipo correcto
       return {
@@ -78,19 +76,21 @@ export const expenseService = {
   },
 
   async deleteExpense(id: number): Promise<void> {
-    // Si Supabase no está configurado, simula una eliminación
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando eliminación.");
-      return Promise.resolve();
-    }
-
     try {
+      console.log("Eliminando gasto con ID:", id);
       const { error } = await supabase
         .from('expenses')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al eliminar gasto:", error.message);
+        toast.error(`Error al eliminar el gasto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gasto eliminado correctamente");
+      toast.success("Gasto eliminado correctamente");
     } catch (error) {
       console.error("Error al eliminar gasto:", error);
       throw error;
@@ -98,18 +98,8 @@ export const expenseService = {
   },
 
   async updateExpense(id: number, updates: Partial<NewExpense>): Promise<Expense> {
-    // Si Supabase no está configurado, simula una actualización
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando actualización.");
-      const mockExpense: Expense = {
-        ...MOCK_EXPENSES[0],
-        ...updates,
-        id
-      };
-      return Promise.resolve(mockExpense);
-    }
-
     try {
+      console.log("Actualizando gasto con ID:", id, "con datos:", updates);
       const { data, error } = await supabase
         .from('expenses')
         .update(updates)
@@ -117,7 +107,14 @@ export const expenseService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error al actualizar gasto:", error.message);
+        toast.error(`Error al actualizar el gasto: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Gasto actualizado correctamente:", data);
+      toast.success("Gasto actualizado correctamente");
       
       // Aseguramos que status sea del tipo correcto
       return {

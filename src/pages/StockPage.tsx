@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Package, Pencil, Trash2, PlusCircle, RefreshCw, Database, ShieldCheck } from "lucide-react";
+import { Package, Pencil, Trash2, PlusCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleInfo from "@/components/auth/UserRoleInfo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -389,7 +389,7 @@ export default function StockPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del Producto</Label>
               <Input
@@ -397,6 +397,7 @@ export default function StockPage() {
                 value={newProduct.product_name}
                 onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
                 placeholder="Nombre completo del producto"
+                className="w-full"
               />
             </div>
             
@@ -406,10 +407,10 @@ export default function StockPage() {
                 value={newProduct.category} 
                 onValueChange={(value) => setNewProduct({...newProduct, category: value})}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full border-[#9b87f5] focus:ring-[#9b87f5]">
                   <SelectValue placeholder="Seleccionar categoría" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {stockCategories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -428,6 +429,7 @@ export default function StockPage() {
                   min="0"
                   value={newProduct.quantity || ""}
                   onChange={(e) => setNewProduct({...newProduct, quantity: Number(e.target.value)})}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -438,6 +440,7 @@ export default function StockPage() {
                   min="1"
                   value={newProduct.min_stock_level || ""}
                   onChange={(e) => setNewProduct({...newProduct, min_stock_level: Number(e.target.value)})}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
@@ -448,19 +451,23 @@ export default function StockPage() {
                   min="0"
                   value={newProduct.unit_price || ""}
                   onChange={(e) => setNewProduct({...newProduct, unit_price: Number(e.target.value)})}
+                  className="w-full"
                 />
               </div>
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddProductOpen(false)}>
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddProductOpen(false)}
+            >
               Cancelar
             </Button>
             <Button 
               onClick={handleAddProduct}
               disabled={!newProduct.product_name || addProductMutation.isPending}
-              className="bg-salon-400 hover:bg-salon-500"
+              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
             >
               {addProductMutation.isPending ? "Guardando..." : "Agregar Producto"}
             </Button>

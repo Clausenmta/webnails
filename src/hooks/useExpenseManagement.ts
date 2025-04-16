@@ -19,13 +19,17 @@ export function useExpenseManagement() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // Query para obtener gastos
+  // Query para obtener gastos con mejor manejo de errores
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses'],
-    queryFn: expenseService.fetchExpenses
+    queryFn: expenseService.fetchExpenses,
+    onError: (error: any) => {
+      console.error("Error al obtener gastos:", error);
+      toast.error(`Error al cargar gastos: ${error.message}`);
+    }
   });
 
-  // Mutación para agregar gastos
+  // Mutación para agregar gastos con mejor manejo de errores
   const addExpenseMutation = useMutation({
     mutationFn: expenseService.addExpense,
     onSuccess: () => {
@@ -33,12 +37,13 @@ export function useExpenseManagement() {
       setIsAddExpenseOpen(false);
       toast.success("Gasto registrado correctamente");
     },
-    onError: (error) => {
-      toast.error("Error al registrar el gasto: " + error.message);
+    onError: (error: any) => {
+      console.error("Error al registrar el gasto:", error);
+      toast.error(`Error al registrar el gasto: ${error.message}`);
     }
   });
 
-  // Mutación para eliminar gastos
+  // Mutación para eliminar gastos con mejor manejo de errores
   const deleteExpenseMutation = useMutation({
     mutationFn: (id: number) => expenseService.deleteExpense(id),
     onSuccess: () => {
@@ -47,8 +52,9 @@ export function useExpenseManagement() {
       setExpenseToDelete(null);
       toast.success("Gasto eliminado correctamente");
     },
-    onError: (error) => {
-      toast.error("Error al eliminar el gasto: " + error.message);
+    onError: (error: any) => {
+      console.error("Error al eliminar el gasto:", error);
+      toast.error(`Error al eliminar el gasto: ${error.message}`);
     }
   });
 

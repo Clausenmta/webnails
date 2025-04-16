@@ -36,5 +36,41 @@ export const stockQueryService = {
       toast.error(`Error al obtener stock: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       return [];
     }
+  },
+
+  async getStockItem(id: number): Promise<StockItem | null> {
+    try {
+      console.log("Buscando item de stock con ID:", id);
+      
+      // Verificamos la sesión del usuario
+      const session = await getActiveSession();
+      if (!session) {
+        console.warn("No hay sesión activa para buscar item");
+        return null;
+      }
+      
+      const { data, error } = await supabase
+        .from('stock')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No se encontró el registro
+          console.warn("No se encontró el item de stock con ID:", id);
+          return null;
+        }
+        
+        console.error("Error al obtener item de stock:", error.message);
+        toast.error(`Error al cargar producto: ${error.message}`);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Error al obtener item de stock:", error);
+      return null;
+    }
   }
 };

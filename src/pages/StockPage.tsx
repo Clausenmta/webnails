@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -23,16 +24,9 @@ import { toast } from "sonner";
 import { Package, Pencil, Trash2, PlusCircle, RefreshCw, Database, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleInfo from "@/components/auth/UserRoleInfo";
-
-interface Product {
-  id: number;
-  code: string;
-  name: string;
-  category: string;
-  stock: number;
-  minStock: number;
-  price: number;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { stockService, stockCategories } from "@/services/stock";
+import type { StockItem, NewStockItem } from "@/services/stock";
 
 interface StockLocation {
   id: number;
@@ -47,111 +41,161 @@ interface StockLocation {
 export default function StockPage() {
   const { isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
+  const queryClient = useQueryClient();
   
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, code: "OPI-001", name: "OPI Gel Base Coat", category: "Esmaltes", stock: 5, minStock: 3, price: 12000 },
-    { id: 2, code: "OPI-002", name: "OPI Gel Top Coat", category: "Esmaltes", stock: 8, minStock: 3, price: 12000 },
-    { id: 3, code: "CND-001", name: "CND Shellac Base", category: "Esmaltes", stock: 2, minStock: 3, price: 10500 },
-    { id: 4, code: "CND-002", name: "CND Shellac Top", category: "Esmaltes", stock: 4, minStock: 3, price: 10500 },
-    { id: 5, code: "INS-001", name: "Algodón Premium", category: "Insumos", stock: 15, minStock: 5, price: 3000 },
-    { id: 6, code: "INS-002", name: "Acetona 1L", category: "Insumos", stock: 3, minStock: 2, price: 5000 },
-  ]);
-
-  const [stockLocations, setStockLocations] = useState<StockLocation[]>([
-    {
-      id: 1,
-      name: "Salón Principal",
-      items: [
-        { productId: 1, productName: "OPI Gel Base Coat", quantity: 3 },
-        { productId: 2, productName: "OPI Gel Top Coat", quantity: 5 },
-        { productId: 5, productName: "Algodón Premium", quantity: 7 },
-      ]
-    },
-    {
-      id: 2,
-      name: "Depósito",
-      items: [
-        { productId: 1, productName: "OPI Gel Base Coat", quantity: 2 },
-        { productId: 2, productName: "OPI Gel Top Coat", quantity: 3 },
-        { productId: 3, productName: "CND Shellac Base", quantity: 2 },
-        { productId: 4, productName: "CND Shellac Top", quantity: 4 },
-        { productId: 5, productName: "Algodón Premium", quantity: 8 },
-        { productId: 6, productName: "Acetona 1L", quantity: 3 },
-      ]
-    },
-    {
-      id: 3,
-      name: "Sala de Manicura",
-      items: [
-        { productId: 3, productName: "CND Shellac Base", quantity: 1 },
-        { productId: 4, productName: "CND Shellac Top", quantity: 2 },
-      ]
-    }
-  ]);
-
+  // Estado para diálogos
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
+  const [showRoleInfo, setShowRoleInfo] = useState(false);
   
-  const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({
-    code: "",
-    name: "",
-    category: "Esmaltes",
-    stock: 0,
-    minStock: 1,
-    price: 0
+  // Estado para formularios
+  const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
+    product_name: "",
+    category: stockCategories[0],
+    quantity: 0,
+    min_stock_level: 1,
+    unit_price: 0,
+    purchase_date: new Date().toLocaleDateString(),
   });
 
   const [stockUpdate, setStockUpdate] = useState({
-    productId: 1,
+    productId: 0,
     quantity: 0,
     operation: "add" as "add" | "remove"
   });
 
-  const productCategories = ["Esmaltes", "Insumos", "Tratamientos", "Herramientas", "Decoración"];
+  // Consultar productos de stock
+  const { data: stockItems = [], isLoading, error } = useQuery({
+    queryKey: ['stock'],
+    queryFn: stockService.fetchStock
+  });
 
-  const [showRoleInfo, setShowRoleInfo] = useState(false);
+  // Mutación para agregar productos
+  const addProductMutation = useMutation({
+    mutationFn: stockService.addStockItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      setIsAddProductOpen(false);
+      resetNewProductForm();
+    }
+  });
 
-  const handleAddProduct = () => {
-    const id = Math.max(0, ...products.map(p => p.id)) + 1;
-    setProducts([...products, { ...newProduct, id }]);
+  // Mutación para actualizar stock
+  const updateStockMutation = useMutation({
+    mutationFn: (data: { id: number, updates: Partial<NewStockItem> }) => 
+      stockService.updateStockItem(data.id, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      setIsUpdateStockOpen(false);
+      setStockUpdate({
+        productId: 0,
+        quantity: 0,
+        operation: "add"
+      });
+    }
+  });
+
+  // Mutación para eliminar productos
+  const deleteProductMutation = useMutation({
+    mutationFn: stockService.deleteStockItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+    }
+  });
+
+  useEffect(() => {
+    if (error) {
+      toast.error(`Error al cargar inventario: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }, [error]);
+
+  // Reiniciar formulario
+  const resetNewProductForm = () => {
     setNewProduct({
-      code: "",
-      name: "",
-      category: "Esmaltes",
-      stock: 0,
-      minStock: 1,
-      price: 0
+      product_name: "",
+      category: stockCategories[0],
+      quantity: 0,
+      min_stock_level: 1,
+      unit_price: 0,
+      purchase_date: new Date().toLocaleDateString(),
     });
-    setIsAddProductOpen(false);
-    toast.success("Producto agregado correctamente");
+  };
+
+  // Manejadores de eventos
+  const handleAddProduct = () => {
+    const stockItem: Omit<NewStockItem, 'created_by'> = {
+      ...newProduct,
+    };
+    
+    addProductMutation.mutate(stockItem as NewStockItem);
   };
 
   const handleUpdateStock = () => {
-    const updatedProducts = products.map(product => {
-      if (product.id === stockUpdate.productId) {
-        const newStock = stockUpdate.operation === "add" 
-          ? product.stock + stockUpdate.quantity 
-          : Math.max(0, product.stock - stockUpdate.quantity);
-        
-        return { ...product, stock: newStock };
-      }
-      return product;
+    if (!stockUpdate.productId || stockUpdate.quantity <= 0) {
+      toast.error("Seleccione un producto y una cantidad válida");
+      return;
+    }
+
+    const selectedProduct = stockItems.find(item => item.id === stockUpdate.productId);
+    if (!selectedProduct) {
+      toast.error("Producto no encontrado");
+      return;
+    }
+
+    const newQuantity = stockUpdate.operation === "add" 
+      ? selectedProduct.quantity + stockUpdate.quantity 
+      : Math.max(0, selectedProduct.quantity - stockUpdate.quantity);
+
+    updateStockMutation.mutate({
+      id: stockUpdate.productId,
+      updates: { quantity: newQuantity }
     });
-    
-    setProducts(updatedProducts);
-    setStockUpdate({
-      productId: 1,
-      quantity: 0,
-      operation: "add"
-    });
-    setIsUpdateStockOpen(false);
-    toast.success("Stock actualizado correctamente");
   };
 
   const handleDeleteProduct = (id: number) => {
-    setProducts(products.filter(product => product.id !== id));
-    toast.success("Producto eliminado correctamente");
+    if (window.confirm("¿Está seguro que desea eliminar este producto?")) {
+      deleteProductMutation.mutate(id);
+    }
   };
+
+  // Datos de ubicaciones (simulado)
+  const stockLocations: StockLocation[] = [
+    {
+      id: 1,
+      name: "Salón Principal",
+      items: stockItems
+        .filter(item => item.location === "Salón Principal" || !item.location)
+        .slice(0, 5)
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          quantity: Math.ceil(item.quantity * 0.6)
+        }))
+    },
+    {
+      id: 2,
+      name: "Depósito",
+      items: stockItems
+        .slice(0, 6)
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          quantity: Math.ceil(item.quantity * 0.4)
+        }))
+    },
+    {
+      id: 3,
+      name: "Sala de Manicura",
+      items: stockItems
+        .filter(item => item.category === "Productos para uñas" || item.category === "Esmaltes")
+        .slice(0, 3)
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          quantity: Math.floor(item.quantity * 0.3)
+        }))
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -189,119 +233,152 @@ export default function StockPage() {
 
       {showRoleInfo && <UserRoleInfo />}
 
-      <Tabs defaultValue="products">
-        <TabsList className="mb-4">
-          <TabsTrigger value="products">Listado de Productos</TabsTrigger>
-          <TabsTrigger value="locations">Detalle por Ubicación</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="products">
-          <Card>
-            <CardHeader>
-              <CardTitle>Listado de Productos</CardTitle>
-              <CardDescription>
-                Inventario completo de productos e insumos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="py-3 px-4 text-left">Código</th>
-                      <th className="py-3 px-4 text-left">Producto</th>
-                      <th className="py-3 px-4 text-left">Categoría</th>
-                      <th className="py-3 px-4 text-center">Stock</th>
-                      <th className="py-3 px-4 text-center">Mínimo</th>
-                      {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
-                      <th className="py-3 px-4 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map(product => (
-                      <tr key={product.id} className="border-b">
-                        <td className="py-3 px-4">{product.code}</td>
-                        <td className="py-3 px-4">{product.name}</td>
-                        <td className="py-3 px-4">{product.category}</td>
-                        <td className={`py-3 px-4 text-center ${product.stock < product.minStock ? "text-red-500 font-medium" : ""}`}>
-                          {product.stock}
-                        </td>
-                        <td className="py-3 px-4 text-center">{product.minStock}</td>
-                        {isSuperAdmin && (
-                          <td className="py-3 px-4 text-right">${product.price.toLocaleString()}</td>
-                        )}
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+      {isLoading && (
+        <Card>
+          <CardContent className="p-8 flex justify-center">
+            <p>Cargando inventario...</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoading && (
+        <Tabs defaultValue="products">
+          <TabsList className="mb-4">
+            <TabsTrigger value="products">Listado de Productos</TabsTrigger>
+            <TabsTrigger value="locations">Detalle por Ubicación</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="products">
+            <Card>
+              <CardHeader>
+                <CardTitle>Listado de Productos</CardTitle>
+                <CardDescription>
+                  Inventario completo de productos e insumos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="py-3 px-4 text-left">Código</th>
+                        <th className="py-3 px-4 text-left">Producto</th>
+                        <th className="py-3 px-4 text-left">Categoría</th>
+                        <th className="py-3 px-4 text-center">Stock</th>
+                        <th className="py-3 px-4 text-center">Mínimo</th>
+                        {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
+                        <th className="py-3 px-4 text-right">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="locations">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalle de Stock por Ubicación</CardTitle>
-              <CardDescription>
-                Distribución de productos en las diferentes ubicaciones
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {stockLocations.map(location => (
-                  <Card key={location.id} className="shadow-sm">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center">
-                        <Database className="h-4 w-4 mr-2 text-salon-500" />
-                        {location.name}
-                      </CardTitle>
-                      <CardDescription>
-                        {location.items.length} productos
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="rounded-md border">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b bg-muted/50">
-                              <th className="py-2 px-3 text-left">Producto</th>
-                              <th className="py-2 px-3 text-right">Cantidad</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {location.items.map((item, index) => (
-                              <tr key={index} className="border-b last:border-0">
-                                <td className="py-2 px-3">{item.productName}</td>
-                                <td className="py-2 px-3 text-right">{item.quantity}</td>
+                    </thead>
+                    <tbody>
+                      {stockItems.map(product => (
+                        <tr key={product.id} className="border-b">
+                          <td className="py-3 px-4">{product.id}</td>
+                          <td className="py-3 px-4">{product.product_name}</td>
+                          <td className="py-3 px-4">{product.category}</td>
+                          <td className={`py-3 px-4 text-center ${product.quantity < (product.min_stock_level || 3) ? "text-red-500 font-medium" : ""}`}>
+                            {product.quantity}
+                          </td>
+                          <td className="py-3 px-4 text-center">{product.min_stock_level || 3}</td>
+                          {isSuperAdmin && (
+                            <td className="py-3 px-4 text-right">${product.unit_price.toLocaleString()}</td>
+                          )}
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  // TODO: Implementar edición
+                                  toast.info("Función de edición será implementada pronto");
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      
+                      {stockItems.length === 0 && (
+                        <tr>
+                          <td colSpan={isSuperAdmin ? 7 : 6} className="py-6 text-center text-muted-foreground">
+                            No hay productos en el inventario
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="locations">
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalle de Stock por Ubicación</CardTitle>
+                <CardDescription>
+                  Distribución de productos en las diferentes ubicaciones
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stockLocations.map(location => (
+                    <Card key={location.id} className="shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center">
+                          <Database className="h-4 w-4 mr-2 text-salon-500" />
+                          {location.name}
+                        </CardTitle>
+                        <CardDescription>
+                          {location.items.length} productos
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="rounded-md border">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b bg-muted/50">
+                                <th className="py-2 px-3 text-left">Producto</th>
+                                <th className="py-2 px-3 text-right">Cantidad</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                            </thead>
+                            <tbody>
+                              {location.items.map((item, index) => (
+                                <tr key={index} className="border-b last:border-0">
+                                  <td className="py-2 px-3">{item.productName}</td>
+                                  <td className="py-2 px-3 text-right">{item.quantity}</td>
+                                </tr>
+                              ))}
+                              
+                              {location.items.length === 0 && (
+                                <tr>
+                                  <td colSpan={2} className="py-4 text-center text-muted-foreground">
+                                    No hay productos en esta ubicación
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
 
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
         <DialogContent className="sm:max-w-[500px]">
@@ -313,44 +390,33 @@ export default function StockPage() {
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">Código</Label>
-                <Input
-                  id="code"
-                  value={newProduct.code}
-                  onChange={(e) => setNewProduct({...newProduct, code: e.target.value})}
-                  placeholder="Ej: OPI-001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría</Label>
-                <Select 
-                  value={newProduct.category} 
-                  onValueChange={(value) => setNewProduct({...newProduct, category: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productCategories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del Producto</Label>
               <Input
                 id="name"
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                value={newProduct.product_name}
+                onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
                 placeholder="Nombre completo del producto"
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoría</Label>
+              <Select 
+                value={newProduct.category} 
+                onValueChange={(value) => setNewProduct({...newProduct, category: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stockCategories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="grid grid-cols-3 gap-4">
@@ -360,8 +426,8 @@ export default function StockPage() {
                   id="stock"
                   type="number"
                   min="0"
-                  value={newProduct.stock}
-                  onChange={(e) => setNewProduct({...newProduct, stock: Number(e.target.value)})}
+                  value={newProduct.quantity || ""}
+                  onChange={(e) => setNewProduct({...newProduct, quantity: Number(e.target.value)})}
                 />
               </div>
               <div className="space-y-2">
@@ -370,8 +436,8 @@ export default function StockPage() {
                   id="minStock"
                   type="number"
                   min="1"
-                  value={newProduct.minStock}
-                  onChange={(e) => setNewProduct({...newProduct, minStock: Number(e.target.value)})}
+                  value={newProduct.min_stock_level || ""}
+                  onChange={(e) => setNewProduct({...newProduct, min_stock_level: Number(e.target.value)})}
                 />
               </div>
               <div className="space-y-2">
@@ -380,8 +446,8 @@ export default function StockPage() {
                   id="price"
                   type="number"
                   min="0"
-                  value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: Number(e.target.value)})}
+                  value={newProduct.unit_price || ""}
+                  onChange={(e) => setNewProduct({...newProduct, unit_price: Number(e.target.value)})}
                 />
               </div>
             </div>
@@ -393,10 +459,10 @@ export default function StockPage() {
             </Button>
             <Button 
               onClick={handleAddProduct}
-              disabled={!newProduct.code || !newProduct.name}
+              disabled={!newProduct.product_name || addProductMutation.isPending}
               className="bg-salon-400 hover:bg-salon-500"
             >
-              Agregar Producto
+              {addProductMutation.isPending ? "Guardando..." : "Agregar Producto"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -415,16 +481,16 @@ export default function StockPage() {
             <div className="space-y-2">
               <Label htmlFor="product">Producto</Label>
               <Select 
-                value={stockUpdate.productId.toString()} 
+                value={stockUpdate.productId ? stockUpdate.productId.toString() : ""} 
                 onValueChange={(value) => setStockUpdate({...stockUpdate, productId: Number(value)})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar producto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {products.map(product => (
+                  {stockItems.map(product => (
                     <SelectItem key={product.id} value={product.id.toString()}>
-                      {product.name} ({product.code})
+                      {product.product_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -465,9 +531,9 @@ export default function StockPage() {
             </Button>
             <Button 
               onClick={handleUpdateStock}
-              disabled={stockUpdate.quantity <= 0}
+              disabled={stockUpdate.quantity <= 0 || !stockUpdate.productId || updateStockMutation.isPending}
             >
-              Actualizar Stock
+              {updateStockMutation.isPending ? "Actualizando..." : "Actualizar Stock"}
             </Button>
           </DialogFooter>
         </DialogContent>

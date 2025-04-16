@@ -14,6 +14,7 @@ export interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAuthorized: (requiredRole: UserRole) => boolean;
+  updateUserRole: (email: string, newRole: UserRole) => void;
 }
 
 // Tipos de exportación

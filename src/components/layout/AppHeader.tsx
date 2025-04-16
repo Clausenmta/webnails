@@ -1,7 +1,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, ShieldCheck } from "lucide-react";
+import { Bell, ShieldCheck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -16,12 +16,14 @@ import { useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import UserRoleInfo from "../auth/UserRoleInfo";
+import UserRoleManager from "../auth/UserRoleManager";
 
 export function AppHeader() {
   // Estado para manejar el menú de notificaciones con useCallback para evitar re-renders
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(false);
-  const { user, logout } = useAuth();
+  const [showRoleManager, setShowRoleManager] = useState(false);
+  const { user, logout, isAuthorized } = useAuth();
   const navigate = useNavigate();
   
   // Uso de useCallback para mejorar el rendimiento y evitar re-renders innecesarios
@@ -63,6 +65,12 @@ export function AppHeader() {
 
   const toggleRoleInfo = () => {
     setShowRoleInfo(!showRoleInfo);
+    setShowRoleManager(false);
+  };
+
+  const toggleRoleManager = () => {
+    setShowRoleManager(!showRoleManager);
+    setShowRoleInfo(false);
   };
 
   return (
@@ -82,6 +90,17 @@ export function AppHeader() {
           >
             <ShieldCheck className="h-5 w-5" />
           </Button>
+          {isAuthorized('superadmin') && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              aria-label="Gestionar Roles"
+              onClick={toggleRoleManager}
+              className="text-muted-foreground"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -136,6 +155,12 @@ export function AppHeader() {
           <UserRoleInfo />
         </div>
       )}
+
+      {showRoleManager && (
+        <div className="mt-4">
+          <UserRoleManager />
+        </div>
+      )}
     </header>
   );
-}
+};

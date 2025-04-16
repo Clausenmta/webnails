@@ -5,12 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 
+// Crear un mapa de correos electrónicos a roles para facilitar la gestión
+const userRoleMap: Record<string, UserRole> = {
+  'claus@nailsandco.com.ar': 'superadmin',
+  'paula@nailsandco.com.ar': 'superadmin',
+  // Agrega más asignaciones de correo electrónico a rol según sea necesario
+};
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => false,
   logout: () => {},
   isAuthenticated: false,
   isAuthorized: () => false,
+  updateUserRole: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -20,16 +28,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
 
-  // Lista de superadmins para facilitar la gestión
-  const superadminEmails = [
-    'claus@nailsandco.com.ar',
-    'paula@nailsandco.com.ar'
-  ];
-
-  // Determinar el rol basado en el email
+  // Determinar el rol basado en el email usando el mapa de roles
   const determineUserRole = (email: string | undefined): UserRole => {
     if (!email) return 'employee';
-    return superadminEmails.includes(email.toLowerCase()) ? 'superadmin' : 'employee';
+    return userRoleMap[email.toLowerCase()] || 'employee';
+  };
+
+  // Función para actualizar el rol de un usuario
+  const updateUserRole = (email: string, newRole: UserRole) => {
+    if (!email) return;
+    
+    // Actualizar el mapa de roles
+    userRoleMap[email.toLowerCase()] = newRole;
+    
+    // Si el usuario actual es el que se está modificando, actualizar su estado
+    if (user && user.username.toLowerCase() === email.toLowerCase()) {
+      setUser({
+        ...user,
+        role: newRole
+      });
+      
+      toast({
+        title: "Rol actualizado",
+        description: `El rol de ${email} ha sido actualizado a ${newRole === 'superadmin' ? 'Administrador' : 'Empleado'}`,
+        className: "bg-green-100 border-green-300 text-green-800"
+      });
+    }
   };
 
   // Inicializar la sesión de Supabase y escuchar cambios
@@ -147,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         isAuthenticated: !!user,
         isAuthorized,
+        updateUserRole,
       }}
     >
       {!isLoading && children}

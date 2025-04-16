@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -43,12 +42,10 @@ export default function StockPage() {
   const isSuperAdmin = isAuthorized('superadmin');
   const queryClient = useQueryClient();
   
-  // Estado para diálogos
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(false);
   
-  // Estado para formularios
   const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
     product_name: "",
     category: stockCategories[0],
@@ -64,13 +61,11 @@ export default function StockPage() {
     operation: "add" as "add" | "remove"
   });
 
-  // Consultar productos de stock
   const { data: stockItems = [], isLoading, error } = useQuery({
     queryKey: ['stock'],
     queryFn: stockService.fetchStock
   });
 
-  // Mutación para agregar productos
   const addProductMutation = useMutation({
     mutationFn: stockService.addStockItem,
     onSuccess: () => {
@@ -80,7 +75,6 @@ export default function StockPage() {
     }
   });
 
-  // Mutación para actualizar stock
   const updateStockMutation = useMutation({
     mutationFn: (data: { id: number, updates: Partial<NewStockItem> }) => 
       stockService.updateStockItem(data.id, data.updates),
@@ -95,7 +89,6 @@ export default function StockPage() {
     }
   });
 
-  // Mutación para eliminar productos
   const deleteProductMutation = useMutation({
     mutationFn: stockService.deleteStockItem,
     onSuccess: () => {
@@ -109,7 +102,6 @@ export default function StockPage() {
     }
   }, [error]);
 
-  // Reiniciar formulario
   const resetNewProductForm = () => {
     setNewProduct({
       product_name: "",
@@ -121,7 +113,6 @@ export default function StockPage() {
     });
   };
 
-  // Manejadores de eventos
   const handleAddProduct = () => {
     const stockItem: Omit<NewStockItem, 'created_by'> = {
       ...newProduct,
@@ -158,7 +149,6 @@ export default function StockPage() {
     }
   };
 
-  // Datos de ubicaciones (simulado)
   const stockLocations: StockLocation[] = [
     {
       id: 1,
@@ -289,7 +279,6 @@ export default function StockPage() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => {
-                                  // TODO: Implementar edición
                                   toast.info("Función de edición será implementada pronto");
                                 }}
                               >
@@ -336,7 +325,7 @@ export default function StockPage() {
                     <Card key={location.id} className="shadow-sm">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center">
-                          <Database className="h-4 w-4 mr-2 text-salon-500" />
+                          <Package className="h-4 w-4 mr-2 text-salon-500" />
                           {location.name}
                         </CardTitle>
                         <CardDescription>

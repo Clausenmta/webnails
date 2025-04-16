@@ -62,6 +62,12 @@ export const stockService = {
         return MOCK_STOCK;
       }
       
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
+      }
+      
       const { data, error } = await supabase
         .from('stock')
         .select('*')
@@ -92,6 +98,12 @@ export const stockService = {
         console.error("No hay sesión activa para agregar stock");
         toast.error("Debe iniciar sesión para agregar productos");
         throw new Error("No hay sesión activa");
+      }
+      
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       // Agregamos la información del usuario que crea el producto si no está presente
@@ -133,6 +145,12 @@ export const stockService = {
         throw new Error("No hay sesión activa");
       }
       
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
+      }
+      
       const { data, error } = await supabase
         .from('stock')
         .update(updates)
@@ -166,6 +184,12 @@ export const stockService = {
         console.error("No hay sesión activa para eliminar stock");
         toast.error("Debe iniciar sesión para eliminar productos");
         throw new Error("No hay sesión activa");
+      }
+      
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { error } = await supabase

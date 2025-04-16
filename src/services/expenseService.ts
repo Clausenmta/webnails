@@ -14,7 +14,7 @@ const MOCK_EXPENSES: Expense[] = [
     created_by: "admin",
     details: "Datos de ejemplo cuando Supabase no está configurado",
     created_at: new Date().toISOString(),
-    status: "pending" // Aseguramos que sea "pending" | "paid" y no un string genérico
+    status: "pending"
   }
 ];
 
@@ -28,6 +28,12 @@ export const expenseService = {
       if (!session) {
         console.warn("No hay sesión activa. Usando datos de muestra.");
         return MOCK_EXPENSES;
+      }
+      
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { data, error } = await supabase
@@ -65,6 +71,12 @@ export const expenseService = {
         console.error("No hay sesión activa para agregar gasto");
         toast.error("Debe iniciar sesión para agregar gastos");
         throw new Error("No hay sesión activa");
+      }
+      
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       // Agregamos la información del usuario que crea el gasto si no está presente
@@ -111,6 +123,12 @@ export const expenseService = {
         throw new Error("No hay sesión activa");
       }
       
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
+      }
+      
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -141,6 +159,12 @@ export const expenseService = {
         console.error("No hay sesión activa para actualizar gasto");
         toast.error("Debe iniciar sesión para actualizar gastos");
         throw new Error("No hay sesión activa");
+      }
+      
+      // Refrescamos el token para evitar problemas de autenticación
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { data, error } = await supabase

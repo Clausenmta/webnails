@@ -1,5 +1,6 @@
 
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase, getActiveSession, handleSupabaseError } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // Interfaz para Arreglos
 export interface Arreglo {
@@ -49,12 +50,9 @@ const MOCK_ARREGLOS: Arreglo[] = [
 
 export const arreglosService = {
   async fetchArreglos(): Promise<Arreglo[]> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Usando datos de muestra.");
-      return Promise.resolve(MOCK_ARREGLOS);
-    }
-
     try {
+      await getActiveSession();
+      
       const { data, error } = await supabase
         .from('arreglos')
         .select('*')
@@ -69,23 +67,18 @@ export const arreglosService = {
         payment_status: arreglo.payment_status as "pendiente" | "pagado"
       }));
     } catch (error) {
-      console.error("Error al obtener arreglos:", error);
-      return [];
+      handleSupabaseError(error, "obtener arreglos");
+      return MOCK_ARREGLOS;
     }
   },
 
   async addArreglo(newArreglo: NewArreglo): Promise<Arreglo> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando inserción.");
-      const mockArreglo: Arreglo = {
-        ...newArreglo,
-        id: Math.floor(Math.random() * 1000) + 10,
-        created_at: new Date().toISOString()
-      };
-      return Promise.resolve(mockArreglo);
-    }
-
     try {
+      const session = await getActiveSession();
+      if (!session) {
+        throw new Error("Debe iniciar sesión para realizar esta operación");
+      }
+      
       const { data, error } = await supabase
         .from('arreglos')
         .insert([newArreglo])
@@ -101,23 +94,18 @@ export const arreglosService = {
         payment_status: data.payment_status as "pendiente" | "pagado"
       };
     } catch (error) {
-      console.error("Error al agregar arreglo:", error);
+      handleSupabaseError(error, "agregar arreglo");
       throw error;
     }
   },
 
   async updateArreglo(id: number, updates: Partial<NewArreglo>): Promise<Arreglo> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando actualización.");
-      const mockArreglo: Arreglo = {
-        ...MOCK_ARREGLOS[0],
-        ...updates,
-        id
-      };
-      return Promise.resolve(mockArreglo);
-    }
-
     try {
+      const session = await getActiveSession();
+      if (!session) {
+        throw new Error("Debe iniciar sesión para realizar esta operación");
+      }
+      
       const { data, error } = await supabase
         .from('arreglos')
         .update(updates)
@@ -134,18 +122,18 @@ export const arreglosService = {
         payment_status: data.payment_status as "pendiente" | "pagado"
       };
     } catch (error) {
-      console.error("Error al actualizar arreglo:", error);
+      handleSupabaseError(error, "actualizar arreglo");
       throw error;
     }
   },
 
   async deleteArreglo(id: number): Promise<void> {
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase no está configurado. Simulando eliminación.");
-      return Promise.resolve();
-    }
-
     try {
+      const session = await getActiveSession();
+      if (!session) {
+        throw new Error("Debe iniciar sesión para realizar esta operación");
+      }
+      
       const { error } = await supabase
         .from('arreglos')
         .delete()
@@ -153,7 +141,7 @@ export const arreglosService = {
       
       if (error) throw error;
     } catch (error) {
-      console.error("Error al eliminar arreglo:", error);
+      handleSupabaseError(error, "eliminar arreglo");
       throw error;
     }
   }

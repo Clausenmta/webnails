@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -18,55 +17,12 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-// Mock data for repairs
-const initialArreglos = [
-  { 
-    id: 1, 
-    cliente: "María López", 
-    descripcion: "Uñas quebradas", 
-    estado: "Pendiente", 
-    fecha: "2025-04-10", 
-    precio: 1500,
-    comandaOriginal: "Cecilia",
-    fechaComanda: "2025-04-05",
-    arregladoPor: "Cecilia",
-    observaciones: "Cliente habitual",
-    fechaArreglo: "2025-04-10",
-    descuenta: "NO"
-  },
-  { 
-    id: 2, 
-    cliente: "Laura Fernández", 
-    descripcion: "Reparación de dos uñas", 
-    estado: "Completado", 
-    fecha: "2025-04-08", 
-    precio: 2000,
-    comandaOriginal: "Lourdes",
-    fechaComanda: "2025-04-01",
-    arregladoPor: "Lourdes",
-    observaciones: "Urgente",
-    fechaArreglo: "2025-04-08",
-    descuenta: "SI"
-  },
-  { 
-    id: 3, 
-    cliente: "Carolina Silva", 
-    descripcion: "Uñas dañadas", 
-    estado: "En proceso", 
-    fecha: "2025-04-09", 
-    precio: 1800,
-    comandaOriginal: "Ludmila",
-    fechaComanda: "2025-04-03",
-    arregladoPor: "Daiana",
-    observaciones: "",
-    fechaArreglo: "2025-04-09",
-    descuenta: "NO"
-  },
-];
+import { useArreglosManagement } from "@/hooks/useArreglosManagement";
+import { useAuth } from "@/contexts/AuthContext";
+import { NewArreglo } from "@/services/arreglosService";
 
 // Estado options
-const estadoOptions = ["Pendiente", "En proceso", "Completado", "Cancelado"];
+const estadoOptions = ["pendiente", "en_proceso", "completado", "cancelado"];
 
 // Manicuristas options
 const manicuristasOptions = [
@@ -77,144 +33,100 @@ const manicuristasOptions = [
 // Descuenta options
 const descuentaOptions = ["SI", "NO"];
 
-// Define interface for filters
-interface Filtros {
-  estados: string[];
-  manicuristasOriginal: string[];
-  manicuristasArreglo: string[];
-  fechaDesde: string | null;
-  fechaHasta: string | null;
-  descuenta: string;
-  precioMinimo: string;
-  precioMaximo: string;
-}
-
 export default function ArreglosPage() {
-  const [arreglos, setArreglos] = useState(initialArreglos);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [currentArreglo, setCurrentArreglo] = useState({
-    id: 0,
-    cliente: "",
-    descripcion: "",
-    estado: "Pendiente",
-    fecha: new Date().toISOString().split("T")[0],
-    precio: 0,
-    comandaOriginal: "",
-    fechaComanda: new Date().toISOString().split("T")[0],
-    arregladoPor: "",
-    observaciones: "",
-    fechaArreglo: new Date().toISOString().split("T")[0],
-    descuenta: "NO"
+  const { user } = useAuth();
+  const {
+    // Estado y datos
+    filteredArreglos,
+    isLoading,
+    
+    // Estado de diálogos
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+    isFilterDialogOpen,
+    setIsFilterDialogOpen,
+    currentArreglo,
+    setCurrentArreglo,
+    
+    // Filtros
+    searchTerm,
+    setSearchTerm,
+    filtros,
+    setFiltros,
+    filtrosAplicados,
+    cantidadFiltrosAplicados,
+    
+    // Vista
+    vistaActiva, 
+    setVistaActiva,
+    
+    // Mutaciones
+    addArregloMutation,
+    updateArregloMutation,
+    deleteArregloMutation,
+    
+    // Fecha y Calendar
+    fechaComandaDate,
+    setFechaComandaDate,
+    fechaArregloDate,
+    setFechaArregloDate,
+    fechaDesdeDate,
+    setFechaDesdeDate,
+    fechaHastaDate,
+    setFechaHastaDate,
+    
+    // Otros
+    mismaManicura,
+    setMismaManicura,
+    sortConfig,
+    setSortConfig,
+    
+    // Funciones
+    handleApplyFilters,
+    handleResetFilters,
+    handleExportReport,
+    resetForm
+  } = useArreglosManagement();
+
+  // Nuevo estado para el formulario
+  const [formData, setFormData] = useState<Partial<NewArreglo>>({
+    client_name: "",
+    description: "",
+    status: "pendiente",
+    date: new Date().toISOString().split("T")[0],
+    price: 0,
+    created_by: "",
+    service_type: "",
+    payment_status: "pendiente",
+    notes: ""
   });
 
-  // Filtros
-  const [filtros, setFiltros] = useState<Filtros>({
-    estados: [],
-    manicuristasOriginal: [],
-    manicuristasArreglo: [],
-    fechaDesde: null,
-    fechaHasta: null,
-    descuenta: "",
-    precioMinimo: "",
-    precioMaximo: ""
-  });
-
-  const [filtrosAplicados, setFiltrosAplicados] = useState<Filtros>({
-    estados: [],
-    manicuristasOriginal: [],
-    manicuristasArreglo: [],
-    fechaDesde: null,
-    fechaHasta: null,
-    descuenta: "",
-    precioMinimo: "",
-    precioMaximo: ""
-  });
-  const [cantidadFiltrosAplicados, setCantidadFiltrosAplicados] = useState(0);
-  
-  // Vista activa para la tabla
-  const [vistaActiva, setVistaActiva] = useState("todos"); // todos, pendientes, proceso, completados
-
-  // Calendar states
-  const [fechaComandaDate, setFechaComandaDate] = useState<Date | undefined>(undefined);
-  const [fechaArregloDate, setFechaArregloDate] = useState<Date | undefined>(undefined);
-  const [fechaDesdeDate, setFechaDesdeDate] = useState<Date | undefined>(undefined);
-  const [fechaHastaDate, setFechaHastaDate] = useState<Date | undefined>(undefined);
-
-  // Checkbox state for "Misma manicura que original"
-  const [mismaManicura, setMismaManicura] = useState(false);
-
-  // Sorting state
-  const [sortConfig, setSortConfig] = useState({
-    key: "fecha",
-    direction: "desc"
-  });
-
-  // Update filtrosAplicados count when filters change
+  // Update form data when currentArreglo changes
   useEffect(() => {
-    let count = 0;
-    
-    if (filtros.estados.length > 0) count++;
-    if (filtros.manicuristasOriginal.length > 0) count++;
-    if (filtros.manicuristasArreglo.length > 0) count++;
-    if (filtros.fechaDesde) count++;
-    if (filtros.fechaHasta) count++;
-    if (filtros.descuenta) count++;
-    if (filtros.precioMinimo) count++;
-    if (filtros.precioMaximo) count++;
-    
-    setCantidadFiltrosAplicados(count);
-    setFiltrosAplicados({...filtros});
-  }, [filtros]);
-
-  // Handle applying filters
-  const handleApplyFilters = () => {
-    setFiltrosAplicados({...filtros});
-    setIsFilterDialogOpen(false);
-    toast.success("Filtros aplicados");
-  };
-
-  // Handle resetting filters
-  const handleResetFilters = () => {
-    setFiltros({
-      estados: [],
-      manicuristasOriginal: [],
-      manicuristasArreglo: [],
-      fechaDesde: null,
-      fechaHasta: null,
-      descuenta: "",
-      precioMinimo: "",
-      precioMaximo: ""
-    });
-    setFechaDesdeDate(undefined);
-    setFechaHastaDate(undefined);
-    setFiltrosAplicados({
-      estados: [],
-      manicuristasOriginal: [],
-      manicuristasArreglo: [],
-      fechaDesde: null,
-      fechaHasta: null,
-      descuenta: "",
-      precioMinimo: "",
-      precioMaximo: ""
-    });
-    setCantidadFiltrosAplicados(0);
-    setIsFilterDialogOpen(false);
-    toast.success("Filtros restablecidos");
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (field: keyof Filtros, value: any) => {
-    setFiltros({
-      ...filtros,
-      [field]: value
-    });
-  };
+    if (currentArreglo) {
+      setFormData(currentArreglo);
+      setFechaComandaDate(currentArreglo.date ? new Date(currentArreglo.date) : undefined);
+      setFechaArregloDate(currentArreglo.completed_date ? new Date(currentArreglo.completed_date) : undefined);
+      setMismaManicura(currentArreglo.created_by === currentArreglo.assigned_to);
+    } else {
+      setFormData({
+        client_name: "",
+        description: "",
+        status: "pendiente",
+        date: new Date().toISOString().split("T")[0],
+        price: 0,
+        created_by: user?.username || "",
+        service_type: "",
+        payment_status: "pendiente",
+        notes: ""
+      });
+    }
+  }, [currentArreglo, user]);
 
   // Handle toggle changes for multi-select filters
-  const handleToggleFilter = (field: keyof Filtros, value: string) => {
+  const handleToggleFilter = (field: keyof typeof filtros, value: string) => {
     if (field === 'estados' || field === 'manicuristasOriginal' || field === 'manicuristasArreglo') {
       const currentValues = filtros[field] || [];
       
@@ -232,143 +144,48 @@ export default function ArreglosPage() {
     }
   };
 
-  // Filter arreglos based on search term and applied filters
-  const filteredArreglos = arreglos.filter(arreglo => {
-    // Basic search filter
-    const matchesSearch = 
-      arreglo.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.estado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.comandaOriginal.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.arregladoPor.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (!matchesSearch) return false;
-    
-    // Applied filters
-    if (filtrosAplicados.estados.length > 0 && 
-        !filtrosAplicados.estados.includes(arreglo.estado)) {
-      return false;
-    }
-    
-    if (filtrosAplicados.manicuristasOriginal.length > 0 && 
-        !filtrosAplicados.manicuristasOriginal.includes(arreglo.comandaOriginal)) {
-      return false;
-    }
-    
-    if (filtrosAplicados.manicuristasArreglo.length > 0 && 
-        !filtrosAplicados.manicuristasArreglo.includes(arreglo.arregladoPor)) {
-      return false;
-    }
-    
-    if (filtrosAplicados.fechaDesde) {
-      const fechaArreglo = new Date(arreglo.fecha);
-      const fechaDesde = new Date(filtrosAplicados.fechaDesde);
-      if (fechaArreglo < fechaDesde) return false;
-    }
-    
-    if (filtrosAplicados.fechaHasta) {
-      const fechaArreglo = new Date(arreglo.fecha);
-      const fechaHasta = new Date(filtrosAplicados.fechaHasta);
-      if (fechaArreglo > fechaHasta) return false;
-    }
-    
-    if (filtrosAplicados.descuenta && arreglo.descuenta !== filtrosAplicados.descuenta) {
-      return false;
-    }
-    
-    if (filtrosAplicados.precioMinimo && arreglo.precio < parseInt(filtrosAplicados.precioMinimo)) {
-      return false;
-    }
-    
-    if (filtrosAplicados.precioMaximo && arreglo.precio > parseInt(filtrosAplicados.precioMaximo)) {
-      return false;
-    }
-
-    // Vista activa filter
-    if (vistaActiva === "pendientes" && arreglo.estado !== "Pendiente") return false;
-    if (vistaActiva === "proceso" && arreglo.estado !== "En proceso") return false;
-    if (vistaActiva === "completados" && arreglo.estado !== "Completado") return false;
-    if (vistaActiva === "cancelados" && arreglo.estado !== "Cancelado") return false;
-    
-    return true;
-  });
-
-  // Sort arreglos based on sortConfig
-  const sortedArreglos = [...filteredArreglos].sort((a, b) => {
-    if (a[sortConfig.key as keyof typeof a] < b[sortConfig.key as keyof typeof b]) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (a[sortConfig.key as keyof typeof a] > b[sortConfig.key as keyof typeof b]) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
-  // Handle sorting
-  const handleSort = (key: string) => {
-    setSortConfig({
-      key,
-      direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc",
+  // Handle filter changes
+  const handleFilterChange = (field: keyof typeof filtros, value: any) => {
+    setFiltros({
+      ...filtros,
+      [field]: value
     });
-  };
-
-  // Reset form fields
-  const resetForm = () => {
-    setCurrentArreglo({
-      id: 0,
-      cliente: "",
-      descripcion: "",
-      estado: "Pendiente",
-      fecha: new Date().toISOString().split("T")[0],
-      precio: 0,
-      comandaOriginal: "",
-      fechaComanda: new Date().toISOString().split("T")[0],
-      arregladoPor: "",
-      observaciones: "",
-      fechaArreglo: new Date().toISOString().split("T")[0],
-      descuenta: "NO"
-    });
-    setFechaComandaDate(undefined);
-    setFechaArregloDate(undefined);
-    setMismaManicura(false);
   };
 
   // Open add dialog
   const handleAddClick = () => {
+    setCurrentArreglo(null);
     resetForm();
     setIsAddDialogOpen(true);
   };
 
   // Open edit dialog
-  const handleEditClick = (arreglo: typeof initialArreglos[0]) => {
+  const handleEditClick = (arreglo: any) => {
     setCurrentArreglo(arreglo);
-    setFechaComandaDate(arreglo.fechaComanda ? new Date(arreglo.fechaComanda) : undefined);
-    setFechaArregloDate(arreglo.fechaArreglo ? new Date(arreglo.fechaArreglo) : undefined);
-    setMismaManicura(arreglo.comandaOriginal === arreglo.arregladoPor);
     setIsEditDialogOpen(true);
   };
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setCurrentArreglo({
-      ...currentArreglo,
-      [name]: name === "precio" ? Number(value) : value,
+    setFormData({
+      ...formData,
+      [name]: name === "price" ? Number(value) : value,
     });
   };
 
   // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
-    setCurrentArreglo({
-      ...currentArreglo,
+    setFormData({
+      ...formData,
       [name]: value,
     });
 
     // If changing comanda original and "misma manicura" is checked, auto-fill arregladoPor
-    if (name === "comandaOriginal" && mismaManicura) {
-      setCurrentArreglo(prev => ({
+    if (name === "created_by" && mismaManicura) {
+      setFormData(prev => ({
         ...prev,
-        arregladoPor: value
+        assigned_to: value
       }));
     }
   };
@@ -378,27 +195,27 @@ export default function ArreglosPage() {
     setMismaManicura(checked);
     
     // If checked and there's a comanda original selected, auto-fill arregladoPor
-    if (checked && currentArreglo.comandaOriginal) {
-      setCurrentArreglo(prev => ({
+    if (checked && formData.created_by) {
+      setFormData(prev => ({
         ...prev,
-        arregladoPor: prev.comandaOriginal
+        assigned_to: prev.created_by
       }));
     }
   };
 
   // Handle date changes
   const handleDateChange = (name: string, date: Date | undefined) => {
-    if (name === "fechaComanda") {
+    if (name === "date") {
       setFechaComandaDate(date);
-      setCurrentArreglo({
-        ...currentArreglo,
-        fechaComanda: date ? date.toISOString().split("T")[0] : "",
+      setFormData({
+        ...formData,
+        date: date ? date.toISOString().split("T")[0] : "",
       });
-    } else if (name === "fechaArreglo") {
+    } else if (name === "completed_date") {
       setFechaArregloDate(date);
-      setCurrentArreglo({
-        ...currentArreglo,
-        fechaArreglo: date ? date.toISOString().split("T")[0] : "",
+      setFormData({
+        ...formData,
+        completed_date: date ? date.toISOString().split("T")[0] : "",
       });
     } else if (name === "fechaDesde") {
       setFechaDesdeDate(date);
@@ -417,66 +234,62 @@ export default function ArreglosPage() {
 
   // Save new arreglo
   const handleSaveNew = () => {
-    if (!currentArreglo.cliente || !currentArreglo.descripcion || !currentArreglo.fecha) {
+    if (!formData.client_name || !formData.description || !formData.date) {
       toast.error("Por favor complete todos los campos requeridos");
       return;
     }
 
-    const newArreglo = {
-      ...currentArreglo,
-      id: arreglos.length > 0 ? Math.max(...arreglos.map(a => a.id)) + 1 : 1,
-    };
-
-    setArreglos([...arreglos, newArreglo]);
-    setIsAddDialogOpen(false);
-    resetForm();
-    toast.success("Arreglo agregado exitosamente");
+    addArregloMutation.mutate(formData as NewArreglo);
   };
 
   // Update existing arreglo
   const handleUpdate = () => {
-    if (!currentArreglo.cliente || !currentArreglo.descripcion || !currentArreglo.fecha) {
+    if (!currentArreglo) return;
+    
+    if (!formData.client_name || !formData.description || !formData.date) {
       toast.error("Por favor complete todos los campos requeridos");
       return;
     }
 
-    const updatedArreglos = arreglos.map(arreglo => 
-      arreglo.id === currentArreglo.id ? currentArreglo : arreglo
-    );
-
-    setArreglos(updatedArreglos);
-    setIsEditDialogOpen(false);
-    resetForm();
-    toast.success("Arreglo actualizado exitosamente");
+    updateArregloMutation.mutate({ 
+      id: currentArreglo.id, 
+      updates: formData as Partial<NewArreglo> 
+    });
   };
 
   // Delete arreglo
   const handleDelete = (id: number) => {
     if (confirm("¿Está seguro de que desea eliminar este arreglo?")) {
-      const updatedArreglos = arreglos.filter(arreglo => arreglo.id !== id);
-      setArreglos(updatedArreglos);
-      toast.success("Arreglo eliminado exitosamente");
+      deleteArregloMutation.mutate(id);
     }
   };
 
-  // Export functions
-  const exportToPDF = () => {
-    toast.success("Exportando a PDF...");
-    // Implement actual PDF export functionality here
-  };
-
-  const exportToExcel = () => {
-    toast.success("Exportando a Excel...");
-    // Implement actual Excel export functionality here
+  // Handle sorting
+  const handleSort = (key: string) => {
+    setSortConfig({
+      key: key as keyof typeof sortConfig.key,
+      direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc",
+    });
   };
 
   const getEstadoBadgeClass = (estado: string) => {
     switch (estado) {
-      case 'Completado': return 'bg-green-100 text-green-800';
-      case 'En proceso': return 'bg-blue-100 text-blue-800';
-      case 'Pendiente': return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelado': return 'bg-red-100 text-red-800';
+      case 'completado': return 'bg-green-100 text-green-800';
+      case 'en_proceso': return 'bg-blue-100 text-blue-800';
+      case 'pendiente': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelado': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Mapeo de DB valores a display format
+  const mapStatus = (status: string) => {
+    switch (status) {
+      case 'pendiente': return 'Pendiente';
+      case 'en_proceso': return 'En proceso';
+      case 'completado': return 'Completado';
+      case 'cancelado': return 'Cancelado';
+      default: return status;
     }
   };
 
@@ -499,11 +312,11 @@ export default function ArreglosPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={exportToPDF}>
+              <DropdownMenuItem onClick={handleExportReport}>
                 <FileText className="mr-2 h-4 w-4" />
                 Exportar a PDF
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportToExcel}>
+              <DropdownMenuItem onClick={handleExportReport}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 Exportar a Excel
               </DropdownMenuItem>
@@ -580,7 +393,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("cliente")}
+                      onClick={() => handleSort("client_name")}
                     >
                       Cliente
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -590,7 +403,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("estado")}
+                      onClick={() => handleSort("status")}
                     >
                       Estado
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -599,7 +412,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("comandaOriginal")}
+                      onClick={() => handleSort("created_by")}
                     >
                       Comanda Original
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -608,7 +421,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("arregladoPor")}
+                      onClick={() => handleSort("assigned_to")}
                     >
                       Arreglado Por
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -617,7 +430,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("fecha")}
+                      onClick={() => handleSort("date")}
                     >
                       Fecha
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -626,7 +439,7 @@ export default function ArreglosPage() {
                   <TableHead>
                     <div 
                       className="flex items-center cursor-pointer"
-                      onClick={() => handleSort("precio")}
+                      onClick={() => handleSort("price")}
                     >
                       Precio
                       <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -636,20 +449,26 @@ export default function ArreglosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedArreglos.length > 0 ? (
-                  sortedArreglos.map((arreglo) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      Cargando arreglos...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredArreglos.length > 0 ? (
+                  filteredArreglos.map((arreglo) => (
                     <TableRow key={arreglo.id}>
-                      <TableCell className="font-medium">{arreglo.cliente}</TableCell>
-                      <TableCell>{arreglo.descripcion}</TableCell>
+                      <TableCell className="font-medium">{arreglo.client_name}</TableCell>
+                      <TableCell>{arreglo.description}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoBadgeClass(arreglo.estado)}`}>
-                          {arreglo.estado}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoBadgeClass(arreglo.status)}`}>
+                          {mapStatus(arreglo.status)}
                         </span>
                       </TableCell>
-                      <TableCell>{arreglo.comandaOriginal}</TableCell>
-                      <TableCell>{arreglo.arregladoPor}</TableCell>
-                      <TableCell>{new Date(arreglo.fecha).toLocaleDateString()}</TableCell>
-                      <TableCell>${arreglo.precio.toLocaleString()}</TableCell>
+                      <TableCell>{arreglo.created_by}</TableCell>
+                      <TableCell>{arreglo.assigned_to || '-'}</TableCell>
+                      <TableCell>{arreglo.date}</TableCell>
+                      <TableCell>${arreglo.price.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -693,32 +512,32 @@ export default function ArreglosPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="cliente">Cliente</Label>
+                <Label htmlFor="client_name">Cliente</Label>
                 <Input
-                  id="cliente"
-                  name="cliente"
+                  id="client_name"
+                  name="client_name"
                   placeholder="Nombre del cliente"
-                  value={currentArreglo.cliente}
+                  value={formData.client_name || ""}
                   onChange={handleInputChange}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="descripcion">Descripción</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Input
-                  id="descripcion"
-                  name="descripcion"
+                  id="description"
+                  name="description"
                   placeholder="Descripción del arreglo"
-                  value={currentArreglo.descripcion}
+                  value={formData.description || ""}
                   onChange={handleInputChange}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="comandaOriginal">Comanda Original</Label>
+                  <Label htmlFor="created_by">Comanda Original</Label>
                   <Select
-                    value={currentArreglo.comandaOriginal}
-                    onValueChange={(value) => handleSelectChange("comandaOriginal", value)}
+                    value={formData.created_by || ""}
+                    onValueChange={(value) => handleSelectChange("created_by", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar manicurista" />
@@ -733,7 +552,7 @@ export default function ArreglosPage() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="fechaComanda">Fecha Comanda</Label>
+                  <Label htmlFor="date">Fecha Comanda</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -751,7 +570,7 @@ export default function ArreglosPage() {
                       <Calendar
                         mode="single"
                         selected={fechaComandaDate}
-                        onSelect={(date) => handleDateChange("fechaComanda", date)}
+                        onSelect={(date) => handleDateChange("date", date)}
                         initialFocus
                       />
                     </PopoverContent>
@@ -761,10 +580,10 @@ export default function ArreglosPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="arregladoPor">Arreglado Por</Label>
+                  <Label htmlFor="assigned_to">Arreglado Por</Label>
                   <Select
-                    value={currentArreglo.arregladoPor}
-                    onValueChange={(value) => handleSelectChange("arregladoPor", value)}
+                    value={formData.assigned_to || ""}
+                    onValueChange={(value) => handleSelectChange("assigned_to", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar manicurista" />
@@ -792,7 +611,7 @@ export default function ArreglosPage() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="fechaArreglo">Fecha Arreglo</Label>
+                  <Label htmlFor="completed_date">Fecha Arreglo</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -810,7 +629,7 @@ export default function ArreglosPage() {
                       <Calendar
                         mode="single"
                         selected={fechaArregloDate}
-                        onSelect={(date) => handleDateChange("fechaArreglo", date)}
+                        onSelect={(date) => handleDateChange("completed_date", date)}
                         initialFocus
                       />
                     </PopoverContent>
@@ -819,12 +638,12 @@ export default function ArreglosPage() {
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="observaciones">Observaciones</Label>
+                <Label htmlFor="notes">Observaciones</Label>
                 <Textarea
-                  id="observaciones"
-                  name="observaciones"
+                  id="notes"
+                  name="notes"
                   placeholder="Observaciones adicionales"
-                  value={currentArreglo.observaciones}
+                  value={formData.notes || ""}
                   onChange={handleInputChange}
                   rows={3}
                 />
@@ -832,10 +651,10 @@ export default function ArreglosPage() {
               
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="estado">Estado</Label>
+                  <Label htmlFor="status">Estado</Label>
                   <Select
-                    value={currentArreglo.estado}
-                    onValueChange={(value) => handleSelectChange("estado", value)}
+                    value={formData.status || "pendiente"}
+                    onValueChange={(value) => handleSelectChange("status", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar estado" />
@@ -843,38 +662,35 @@ export default function ArreglosPage() {
                     <SelectContent>
                       {estadoOptions.map((estado) => (
                         <SelectItem key={estado} value={estado}>
-                          {estado}
+                          {mapStatus(estado)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="descuenta">Descuenta</Label>
+                  <Label htmlFor="payment_status">Pago</Label>
                   <Select
-                    value={currentArreglo.descuenta}
-                    onValueChange={(value) => handleSelectChange("descuenta", value)}
+                    value={formData.payment_status || "pendiente"}
+                    onValueChange={(value) => handleSelectChange("payment_status", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="¿Descuenta?" />
+                      <SelectValue placeholder="Estado de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {descuentaOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="pagado">Pagado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="precio">Precio</Label>
+                  <Label htmlFor="price">Precio</Label>
                   <Input
-                    id="precio"
-                    name="precio"
+                    id="price"
+                    name="price"
                     type="number"
                     placeholder="0"
-                    value={currentArreglo.precio}
+                    value={formData.price || 0}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -885,8 +701,12 @@ export default function ArreglosPage() {
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleSaveNew}>
-              Guardar
+            <Button 
+              className="bg-salon-400 hover:bg-salon-500" 
+              onClick={handleSaveNew}
+              disabled={addArregloMutation.isPending}
+            >
+              {addArregloMutation.isPending ? "Guardando..." : "Guardar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -904,32 +724,32 @@ export default function ArreglosPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-cliente">Cliente</Label>
+                <Label htmlFor="edit-client_name">Cliente</Label>
                 <Input
-                  id="edit-cliente"
-                  name="cliente"
+                  id="edit-client_name"
+                  name="client_name"
                   placeholder="Nombre del cliente"
-                  value={currentArreglo.cliente}
+                  value={formData.client_name || ""}
                   onChange={handleInputChange}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-descripcion">Descripción</Label>
+                <Label htmlFor="edit-description">Descripción</Label>
                 <Input
-                  id="edit-descripcion"
-                  name="descripcion"
+                  id="edit-description"
+                  name="description"
                   placeholder="Descripción del arreglo"
-                  value={currentArreglo.descripcion}
+                  value={formData.description || ""}
                   onChange={handleInputChange}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-comandaOriginal">Comanda Original</Label>
+                  <Label htmlFor="edit-created_by">Comanda Original</Label>
                   <Select
-                    value={currentArreglo.comandaOriginal}
-                    onValueChange={(value) => handleSelectChange("comandaOriginal", value)}
+                    value={formData.created_by || ""}
+                    onValueChange={(value) => handleSelectChange("created_by", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar manicurista" />
@@ -944,7 +764,7 @@ export default function ArreglosPage() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-fechaComanda">Fecha Comanda</Label>
+                  <Label htmlFor="edit-date">Fecha Comanda</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -962,7 +782,7 @@ export default function ArreglosPage() {
                       <Calendar
                         mode="single"
                         selected={fechaComandaDate}
-                        onSelect={(date) => handleDateChange("fechaComanda", date)}
+                        onSelect={(date) => handleDateChange("date", date)}
                         initialFocus
                       />
                     </PopoverContent>
@@ -972,10 +792,10 @@ export default function ArreglosPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-arregladoPor">Arreglado Por</Label>
+                  <Label htmlFor="edit-assigned_to">Arreglado Por</Label>
                   <Select
-                    value={currentArreglo.arregladoPor}
-                    onValueChange={(value) => handleSelectChange("arregladoPor", value)}
+                    value={formData.assigned_to || ""}
+                    onValueChange={(value) => handleSelectChange("assigned_to", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar manicurista" />
@@ -1003,7 +823,7 @@ export default function ArreglosPage() {
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-fechaArreglo">Fecha Arreglo</Label>
+                  <Label htmlFor="edit-completed_date">Fecha Arreglo</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1021,7 +841,7 @@ export default function ArreglosPage() {
                       <Calendar
                         mode="single"
                         selected={fechaArregloDate}
-                        onSelect={(date) => handleDateChange("fechaArreglo", date)}
+                        onSelect={(date) => handleDateChange("completed_date", date)}
                         initialFocus
                       />
                     </PopoverContent>
@@ -1030,12 +850,12 @@ export default function ArreglosPage() {
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="edit-observaciones">Observaciones</Label>
+                <Label htmlFor="edit-notes">Observaciones</Label>
                 <Textarea
-                  id="edit-observaciones"
-                  name="observaciones"
+                  id="edit-notes"
+                  name="notes"
                   placeholder="Observaciones adicionales"
-                  value={currentArreglo.observaciones}
+                  value={formData.notes || ""}
                   onChange={handleInputChange}
                   rows={3}
                 />
@@ -1043,10 +863,10 @@ export default function ArreglosPage() {
               
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-estado">Estado</Label>
+                  <Label htmlFor="edit-status">Estado</Label>
                   <Select
-                    value={currentArreglo.estado}
-                    onValueChange={(value) => handleSelectChange("estado", value)}
+                    value={formData.status || "pendiente"}
+                    onValueChange={(value) => handleSelectChange("status", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar estado" />
@@ -1054,38 +874,35 @@ export default function ArreglosPage() {
                     <SelectContent>
                       {estadoOptions.map((estado) => (
                         <SelectItem key={estado} value={estado}>
-                          {estado}
+                          {mapStatus(estado)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-descuenta">Descuenta</Label>
+                  <Label htmlFor="edit-payment_status">Pago</Label>
                   <Select
-                    value={currentArreglo.descuenta}
-                    onValueChange={(value) => handleSelectChange("descuenta", value)}
+                    value={formData.payment_status || "pendiente"}
+                    onValueChange={(value) => handleSelectChange("payment_status", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="¿Descuenta?" />
+                      <SelectValue placeholder="Estado de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {descuentaOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="pagado">Pagado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-precio">Precio</Label>
+                  <Label htmlFor="edit-price">Precio</Label>
                   <Input
-                    id="edit-precio"
-                    name="precio"
+                    id="edit-price"
+                    name="price"
                     type="number"
                     placeholder="0"
-                    value={currentArreglo.precio}
+                    value={formData.price || 0}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -1096,8 +913,12 @@ export default function ArreglosPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleUpdate}>
-              Actualizar
+            <Button 
+              className="bg-salon-400 hover:bg-salon-500" 
+              onClick={handleUpdate}
+              disabled={updateArregloMutation.isPending}
+            >
+              {updateArregloMutation.isPending ? "Actualizando..." : "Actualizar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1121,198 +942,4 @@ export default function ArreglosPage() {
                     <Badge
                       key={estado}
                       variant={filtros.estados.includes(estado) ? "default" : "outline"}
-                      className={filtros.estados.includes(estado) ? "bg-salon-400 hover:bg-salon-500 cursor-pointer" : "cursor-pointer"}
-                      onClick={() => handleToggleFilter("estados", estado)}
-                    >
-                      {estado}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Manicurista Original</Label>
-                  <Select
-                    value={filtros.manicuristasOriginal.length === 1 ? filtros.manicuristasOriginal[0] : ""}
-                    onValueChange={(value) => {
-                      if (value) {
-                        handleFilterChange("manicuristasOriginal", [value]);
-                      } else {
-                        handleFilterChange("manicuristasOriginal", []);
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar manicurista" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {manicuristasOptions.map((manicurista) => (
-                        <SelectItem key={manicurista} value={manicurista}>
-                          {manicurista}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label>Arreglado Por</Label>
-                  <Select
-                    value={filtros.manicuristasArreglo.length === 1 ? filtros.manicuristasArreglo[0] : ""}
-                    onValueChange={(value) => {
-                      if (value) {
-                        handleFilterChange("manicuristasArreglo", [value]);
-                      } else {
-                        handleFilterChange("manicuristasArreglo", []);
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar manicurista" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {manicuristasOptions.map((manicurista) => (
-                        <SelectItem key={manicurista} value={manicurista}>
-                          {manicurista}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid gap-2">
-                <Label>Rango de Fechas</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs" htmlFor="fechaDesde">Desde</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-1",
-                            !fechaDesdeDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {fechaDesdeDate ? format(fechaDesdeDate, "dd/MM/yyyy") : <span>Fecha inicio</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={fechaDesdeDate}
-                          onSelect={(date) => handleDateChange("fechaDesde", date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs" htmlFor="fechaHasta">Hasta</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal mt-1",
-                            !fechaHastaDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {fechaHastaDate ? format(fechaHastaDate, "dd/MM/yyyy") : <span>Fecha fin</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={fechaHastaDate}
-                          onSelect={(date) => handleDateChange("fechaHasta", date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label>Descuenta</Label>
-                  <Select
-                    value={filtros.descuenta}
-                    onValueChange={(value) => handleFilterChange("descuenta", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
-                      {descuentaOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="precioMinimo">Precio Mínimo</Label>
-                  <Input
-                    id="precioMinimo"
-                    type="number"
-                    placeholder="Min"
-                    value={filtros.precioMinimo}
-                    onChange={(e) => handleFilterChange("precioMinimo", e.target.value)}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="precioMaximo">Precio Máximo</Label>
-                  <Input
-                    id="precioMaximo"
-                    type="number"
-                    placeholder="Max"
-                    value={filtros.precioMaximo}
-                    onChange={(e) => handleFilterChange("precioMaximo", e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              {cantidadFiltrosAplicados > 0 && (
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-sm text-muted-foreground">
-                    {cantidadFiltrosAplicados} filtro(s) aplicado(s)
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-3 text-sm"
-                    onClick={handleResetFilters}
-                  >
-                    <X className="mr-2 h-3.5 w-3.5" />
-                    Limpiar todos
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFilterDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button className="bg-salon-400 hover:bg-salon-500" onClick={handleApplyFilters}>
-              Aplicar Filtros
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                      className={filtros.estados.includes(estado) ? "bg-salon-400 hover:bg-salon

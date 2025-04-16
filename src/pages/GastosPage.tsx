@@ -63,15 +63,8 @@ export default function GastosPage() {
   const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   
-  // Datos de ejemplo de gastos
-  const [expenses, setExpenses] = useState<Expense[]>([
-    { id: 1, date: "05/04/2025", concept: "Alquiler", amount: 150000, category: "Fijos", createdBy: "claus", dueDate: "10/04/2025", provider: "Inmobiliaria Norte", status: "pending" },
-    { id: 2, date: "03/04/2025", concept: "Expensas", amount: 30000, category: "Fijos", createdBy: "paula", dueDate: "15/04/2025", provider: "Consorcio", status: "pending" },
-    { id: 3, date: "03/04/2025", concept: "Productos OPI", amount: 45000, category: "Proveedores", createdBy: "claus", dueDate: "20/04/2025", provider: "Distribuidora OPI", status: "pending" },
-    { id: 4, date: "02/04/2025", concept: "Productos CND", amount: 35000, category: "Proveedores", createdBy: "paula", dueDate: "30/04/2025", provider: "Distribuidora CND", status: "pending" },
-    { id: 5, date: "01/04/2025", concept: "Materiales varios", amount: 12500, category: "Insumos", createdBy: "recepcion", details: "Compra de materiales para manicura" },
-    { id: 6, date: "30/03/2025", concept: "Limpieza", amount: 8000, category: "Servicios", createdBy: "recepcion1", details: "Productos de limpieza para el local" },
-  ]);
+  // Datos de gastos (inicializado como un array vacío)
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   // Estados para diálogos
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);

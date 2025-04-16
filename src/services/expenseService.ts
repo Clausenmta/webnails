@@ -1,4 +1,3 @@
-
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Expense, NewExpense } from "@/types/expenses";
 

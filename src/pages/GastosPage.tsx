@@ -16,6 +16,16 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,7 +39,8 @@ import {
   Download, 
   Clock, 
   Calendar, 
-  AlertTriangle 
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 import { format, addDays, isAfter, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
@@ -78,6 +89,10 @@ export default function GastosPage() {
     dueDate: "",
     provider: ""
   });
+
+  // Estado para el diálogo de confirmación de eliminación
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   // Actualizar createdBy cuando cambia el usuario
   useEffect(() => {
@@ -151,6 +166,22 @@ export default function GastosPage() {
   const handleViewExpense = (expense: Expense) => {
     setCurrentExpense(expense);
     setIsViewExpenseOpen(true);
+  };
+
+  // Función para manejar la eliminación de gastos
+  const handleDeleteExpense = (expense: Expense) => {
+    setExpenseToDelete(expense);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Función para confirmar la eliminación
+  const confirmDeleteExpense = () => {
+    if (expenseToDelete) {
+      setExpenses(expenses.filter(expense => expense.id !== expenseToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setExpenseToDelete(null);
+      toast.success("Gasto eliminado correctamente");
+    }
   };
 
   const handleExportReport = () => {
@@ -245,14 +276,27 @@ export default function GastosPage() {
                           <td className="py-3 px-4 text-right">${expense.amount.toLocaleString()}</td>
                           {isSuperAdmin && <td className="py-3 px-4">{expense.createdBy}</td>}
                           <td className="py-3 px-4 text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleViewExpense(expense)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleViewExpense(expense)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                              {isSuperAdmin && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDeleteExpense(expense)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Eliminar
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -611,6 +655,34 @@ export default function GastosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de confirmación para eliminar gasto */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El gasto será eliminado permanentemente de la base de datos.
+              {expenseToDelete && (
+                <div className="mt-2 p-3 bg-muted rounded-md">
+                  <p><strong>Concepto:</strong> {expenseToDelete.concept}</p>
+                  <p><strong>Monto:</strong> ${expenseToDelete.amount.toLocaleString()}</p>
+                  <p><strong>Fecha:</strong> {expenseToDelete.date}</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteExpense}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

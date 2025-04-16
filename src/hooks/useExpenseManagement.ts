@@ -23,9 +23,11 @@ export function useExpenseManagement() {
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: expenseService.fetchExpenses,
-    onError: (error: any) => {
-      console.error("Error al obtener gastos:", error);
-      toast.error(`Error al cargar gastos: ${error.message}`);
+    onSettled: (data, error) => {
+      if (error) {
+        console.error("Error al obtener gastos:", error);
+        toast.error(`Error al cargar gastos: ${(error as Error).message}`);
+      }
     }
   });
 

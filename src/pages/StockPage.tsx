@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -21,8 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Package, Pencil, Trash2, PlusCircle, RefreshCw, Database } from "lucide-react";
+import { Package, Pencil, Trash2, PlusCircle, RefreshCw, Database, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import UserRoleInfo from "@/components/auth/UserRoleInfo";
 
 interface Product {
   id: number;
@@ -44,12 +44,10 @@ interface StockLocation {
   }[];
 }
 
-// Esta es una página de ejemplo simplificada para el manejo de stock con permisos por rol
 export default function StockPage() {
   const { isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   
-  // Datos de ejemplo de productos
   const [products, setProducts] = useState<Product[]>([
     { id: 1, code: "OPI-001", name: "OPI Gel Base Coat", category: "Esmaltes", stock: 5, minStock: 3, price: 12000 },
     { id: 2, code: "OPI-002", name: "OPI Gel Top Coat", category: "Esmaltes", stock: 8, minStock: 3, price: 12000 },
@@ -59,7 +57,6 @@ export default function StockPage() {
     { id: 6, code: "INS-002", name: "Acetona 1L", category: "Insumos", stock: 3, minStock: 2, price: 5000 },
   ]);
 
-  // Datos de ejemplo de ubicaciones de stock
   const [stockLocations, setStockLocations] = useState<StockLocation[]>([
     {
       id: 1,
@@ -92,11 +89,9 @@ export default function StockPage() {
     }
   ]);
 
-  // Estado para los diálogos
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
   
-  // Estado para nuevo producto
   const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({
     code: "",
     name: "",
@@ -106,7 +101,6 @@ export default function StockPage() {
     price: 0
   });
 
-  // Estado para actualización de stock
   const [stockUpdate, setStockUpdate] = useState({
     productId: 1,
     quantity: 0,
@@ -114,6 +108,8 @@ export default function StockPage() {
   });
 
   const productCategories = ["Esmaltes", "Insumos", "Tratamientos", "Herramientas", "Decoración"];
+
+  const [showRoleInfo, setShowRoleInfo] = useState(false);
 
   const handleAddProduct = () => {
     const id = Math.max(0, ...products.map(p => p.id)) + 1;
@@ -181,8 +177,17 @@ export default function StockPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Actualizar Stock
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowRoleInfo(!showRoleInfo)}
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            {showRoleInfo ? "Ocultar Roles" : "Verificar Roles"}
+          </Button>
         </div>
       </div>
+
+      {showRoleInfo && <UserRoleInfo />}
 
       <Tabs defaultValue="products">
         <TabsList className="mb-4">
@@ -298,7 +303,6 @@ export default function StockPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para agregar producto */}
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -398,7 +402,6 @@ export default function StockPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para actualizar stock */}
       <Dialog open={isUpdateStockOpen} onOpenChange={setIsUpdateStockOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

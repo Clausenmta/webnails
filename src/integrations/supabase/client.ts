@@ -14,6 +14,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     storage: localStorage,
+    storageKey: 'supabase_auth_token',
+    detectSessionInUrl: true,
   }
 });
 
@@ -21,3 +23,24 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Evento de autenticación:', event, session ? 'Usuario autenticado' : 'Sin sesión');
 });
+
+// Helper to check if a session is active and refresh it
+export const getActiveSession = async () => {
+  try {
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // If there's a session, try to refresh it
+    if (session) {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("Error al refrescar la sesión:", refreshError.message);
+      }
+    }
+    
+    return session;
+  } catch (error) {
+    console.error("Error getting/refreshing session:", error);
+    return null;
+  }
+};

@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getActiveSession } from "@/lib/supabase";
 import { toast } from "sonner";
 
 // Interfaz para Stock
@@ -55,17 +55,11 @@ export const stockService = {
     try {
       console.log("Solicitando stock desde la base de datos");
       
-      // Verificamos la sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession();
+      // Verificamos la sesión del usuario con la función mejorada
+      const session = await getActiveSession();
       if (!session) {
         console.warn("No hay sesión activa. Usando datos de muestra.");
         return MOCK_STOCK;
-      }
-      
-      // Refrescamos el token para evitar problemas de autenticación
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { data, error } = await supabase
@@ -92,18 +86,12 @@ export const stockService = {
     try {
       console.log("Agregando nuevo item de stock:", newStockItem);
       
-      // Verificamos la sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession();
+      // Verificamos la sesión del usuario con la función mejorada
+      const session = await getActiveSession();
       if (!session) {
         console.error("No hay sesión activa para agregar stock");
         toast.error("Debe iniciar sesión para agregar productos");
         throw new Error("No hay sesión activa");
-      }
-      
-      // Refrescamos el token para evitar problemas de autenticación
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       // Agregamos la información del usuario que crea el producto si no está presente
@@ -137,18 +125,12 @@ export const stockService = {
     try {
       console.log("Actualizando item de stock con ID:", id, "con datos:", updates);
       
-      // Verificamos la sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession();
+      // Verificamos la sesión del usuario con la función mejorada
+      const session = await getActiveSession();
       if (!session) {
         console.error("No hay sesión activa para actualizar stock");
         toast.error("Debe iniciar sesión para actualizar productos");
         throw new Error("No hay sesión activa");
-      }
-      
-      // Refrescamos el token para evitar problemas de autenticación
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { data, error } = await supabase
@@ -178,18 +160,12 @@ export const stockService = {
     try {
       console.log("Eliminando item de stock con ID:", id);
       
-      // Verificamos la sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession();
+      // Verificamos la sesión del usuario con la función mejorada
+      const session = await getActiveSession();
       if (!session) {
         console.error("No hay sesión activa para eliminar stock");
         toast.error("Debe iniciar sesión para eliminar productos");
         throw new Error("No hay sesión activa");
-      }
-      
-      // Refrescamos el token para evitar problemas de autenticación
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("Error al refrescar la sesión:", refreshError.message);
       }
       
       const { error } = await supabase

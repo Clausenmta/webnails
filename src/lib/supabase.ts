@@ -1,14 +1,14 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getActiveSession } from "@/integrations/supabase/client";
 
 // This file provides backward compatibility for services 
 // that were previously using the old supabase client
 
-export { supabase };
+export { supabase, getActiveSession };
 
 // Función para comprobar si la sesión está activa
 export const isUserAuthenticated = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = await getActiveSession();
   return !!session;
 };
 

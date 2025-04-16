@@ -10,7 +10,7 @@ export interface Expense {
   due_date?: string; // "DD/MM/YYYY" - opcional para gastos con vencimiento
   provider?: string; // opcional para gastos con vencimiento
   status?: "pending" | "paid"; // opcional para gastos con vencimiento
-  created_at?: string;
+  created_at: string;
 }
 
 export type NewExpense = Omit<Expense, 'id' | 'created_at'>;

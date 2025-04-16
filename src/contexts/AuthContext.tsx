@@ -1,15 +1,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType } from '@/types/auth';
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
-
-// Predefined users
-const USERS = [
-  { id: '1', username: 'claus', password: 'chimuelo1510', name: 'Claus', role: 'superadmin' as UserRole },
-  { id: '2', username: 'paula', password: 'tucuman1344', name: 'Paula', role: 'superadmin' as UserRole },
-  { id: '3', username: 'recepcion', password: 'nails1452', name: 'Recepcionista', role: 'employee' as UserRole },
-  { id: '4', username: 'recepcion1', password: 'nails3652', name: 'Recepcionista 1', role: 'employee' as UserRole },
-];
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -24,56 +18,114 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
-  // Check for stored user on component mount
+  // Inicializar la sesión de Supabase y escuchar cambios
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('user');
+    // Configurar el listener de cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        if (currentSession?.user) {
+          // Crear usuario con rol predeterminado, se puede mejorar consultando una tabla de roles
+          const userData: User = {
+            id: currentSession.user.id,
+            username: currentSession.user.email || '',
+            name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'Usuario',
+            role: (currentSession.user.email === 'claus@nailsandco.com.ar' || 
+                   currentSession.user.email === 'paula@nailsandco.com.ar') 
+                  ? 'superadmin' : 'employee'
+          };
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = async (username: string, password: string): Promise<boolean> => {
-    const foundUser = USERS.find(
-      (u) => u.username === username && u.password === password
     );
 
-    if (foundUser) {
-      // Create a user object without the password
-      const loggedInUser: User = {
-        id: foundUser.id,
-        username: foundUser.username,
-        name: foundUser.name,
-        role: foundUser.role,
-      };
+    // Verificar si hay una sesión activa al cargar
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      if (currentSession?.user) {
+        // Crear usuario con rol predeterminado
+        const userData: User = {
+          id: currentSession.user.id,
+          username: currentSession.user.email || '',
+          name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'Usuario',
+          role: (currentSession.user.email === 'claus@nailsandco.com.ar' || 
+                 currentSession.user.email === 'paula@nailsandco.com.ar') 
+                ? 'superadmin' : 'employee'
+        };
+        setUser(userData);
+      }
+      setIsLoading(false);
+    });
 
-      setUser(loggedInUser);
-      localStorage.setItem('user', JSON.stringify(loggedInUser));
-      
-      return true;
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error('Error al iniciar sesión:', error.message);
+        toast({
+          title: "Error de inicio de sesión",
+          description: error.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: `Bienvenido/a ${data.user.user_metadata.name || data.user.email?.split('@')[0] || ''}`,
+          className: "bg-green-100 border-green-300 text-green-800"
+        });
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error inesperado",
+        variant: "destructive"
+      });
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error al cerrar sesión:', error.message);
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar la sesión correctamente",
+        variant: "destructive"
+      });
+    } else {
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const isAuthorized = (requiredRole: UserRole): boolean => {
     if (!user) return false;
     
-    // Superadmin has access to everything
+    // Superadmin tiene acceso a todo
     if (user.role === 'superadmin') return true;
     
-    // Employee only has access to employee permissions
+    // Employee solo tiene acceso a permisos de employee
     return user.role === requiredRole;
   };
 

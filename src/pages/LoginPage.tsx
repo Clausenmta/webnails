@@ -10,11 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{username?: string; password?: string}>({});
+  const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,11 +25,14 @@ export default function LoginPage() {
   const from = (location.state as any)?.from?.pathname || "/";
 
   const validateForm = () => {
-    const newErrors: {username?: string; password?: string} = {};
+    const newErrors: {email?: string; password?: string} = {};
     let isValid = true;
 
-    if (!username) {
-      newErrors.username = "El usuario es requerido";
+    if (!email) {
+      newErrors.email = "El email es requerido";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Email inválido";
       isValid = false;
     }
 
@@ -60,24 +63,10 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      const success = await login(username, password);
+      const success = await login(email, password);
       
       if (success) {
-        // Mostrar toast de éxito
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Bienvenido/a al sistema de gestión",
-          className: "bg-green-100 border-green-300 text-green-800"
-        });
-        
         navigate(from, { replace: true });
-      } else {
-        // Mostrar toast de error
-        toast({
-          title: "Error de inicio de sesión",
-          description: "Usuario o contraseña incorrectos",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -120,18 +109,18 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Usuario</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input 
-                  id="username" 
-                  type="text" 
-                  placeholder="Ingrese su usuario" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email" 
+                  type="email" 
+                  placeholder="ejemplo@correo.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className={errors.username ? "border-red-500" : ""}
+                  className={errors.email ? "border-red-500" : ""}
                 />
-                {errors.username && (
-                  <p className="text-sm text-red-500">{errors.username}</p>
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-2">

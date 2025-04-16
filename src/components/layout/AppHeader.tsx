@@ -1,7 +1,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell } from "lucide-react";
+import { Bell, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -15,10 +15,12 @@ import {
 import { useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import UserRoleInfo from "../auth/UserRoleInfo";
 
 export function AppHeader() {
   // Estado para manejar el menú de notificaciones con useCallback para evitar re-renders
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showRoleInfo, setShowRoleInfo] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
@@ -59,6 +61,10 @@ export function AppHeader() {
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
 
+  const toggleRoleInfo = () => {
+    setShowRoleInfo(!showRoleInfo);
+  };
+
   return (
     <header className="border-b bg-white py-2 px-6">
       <div className="flex h-12 items-center justify-between">
@@ -67,6 +73,15 @@ export function AppHeader() {
           {/* Logo removed from header, only kept in sidebar */}
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Verificar Roles"
+            onClick={toggleRoleInfo}
+            className="text-muted-foreground"
+          >
+            <ShieldCheck className="h-5 w-5" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -115,6 +130,12 @@ export function AppHeader() {
           </DropdownMenu>
         </div>
       </div>
+      
+      {showRoleInfo && (
+        <div className="mt-4">
+          <UserRoleInfo />
+        </div>
+      )}
     </header>
   );
 }

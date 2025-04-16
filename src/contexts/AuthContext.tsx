@@ -20,6 +20,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
 
+  // Lista de superadmins para facilitar la gestión
+  const superadminEmails = [
+    'claus@nailsandco.com.ar',
+    'paula@nailsandco.com.ar'
+  ];
+
+  // Determinar el rol basado en el email
+  const determineUserRole = (email: string | undefined): UserRole => {
+    if (!email) return 'employee';
+    return superadminEmails.includes(email.toLowerCase()) ? 'superadmin' : 'employee';
+  };
+
   // Inicializar la sesión de Supabase y escuchar cambios
   useEffect(() => {
     // Configurar el listener de cambios de autenticación
@@ -27,16 +39,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, currentSession) => {
         setSession(currentSession);
         if (currentSession?.user) {
-          // Crear usuario con rol predeterminado, se puede mejorar consultando una tabla de roles
+          // Crear usuario con rol basado en email
           const userData: User = {
             id: currentSession.user.id,
             username: currentSession.user.email || '',
             name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'Usuario',
-            role: (currentSession.user.email === 'claus@nailsandco.com.ar' || 
-                   currentSession.user.email === 'paula@nailsandco.com.ar') 
-                  ? 'superadmin' : 'employee'
+            role: determineUserRole(currentSession.user.email)
           };
           setUser(userData);
+          console.log("Usuario autenticado:", userData);
         } else {
           setUser(null);
         }
@@ -47,16 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user) {
-        // Crear usuario con rol predeterminado
+        // Crear usuario con rol basado en email
         const userData: User = {
           id: currentSession.user.id,
           username: currentSession.user.email || '',
           name: currentSession.user.user_metadata.name || currentSession.user.email?.split('@')[0] || 'Usuario',
-          role: (currentSession.user.email === 'claus@nailsandco.com.ar' || 
-                 currentSession.user.email === 'paula@nailsandco.com.ar') 
-                ? 'superadmin' : 'employee'
+          role: determineUserRole(currentSession.user.email)
         };
         setUser(userData);
+        console.log("Sesión existente encontrada:", userData);
       }
       setIsLoading(false);
     });

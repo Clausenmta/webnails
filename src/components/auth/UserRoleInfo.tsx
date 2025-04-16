@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@/types/auth";
-import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 
 interface UserRoleInfoProps {
   testRoles?: UserRole[];
@@ -28,7 +28,10 @@ const UserRoleInfo = ({ testRoles = ["superadmin", "employee"] }: UserRoleInfoPr
   return (
     <Card className="mb-4 border-salon-200">
       <CardHeader className="pb-2">
-        <CardTitle className="text-salon-700">Información del Usuario</CardTitle>
+        <CardTitle className="text-salon-700 flex items-center">
+          <ShieldCheck className="h-5 w-5 mr-2" />
+          Información del Usuario
+        </CardTitle>
         <CardDescription>Verificación de roles y permisos</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -36,7 +39,7 @@ const UserRoleInfo = ({ testRoles = ["superadmin", "employee"] }: UserRoleInfoPr
           <div className="font-semibold">Nombre:</div>
           <div>{user.name}</div>
           
-          <div className="font-semibold">Usuario:</div>
+          <div className="font-semibold">Email:</div>
           <div>{user.username}</div>
           
           <div className="font-semibold">ID:</div>

@@ -1,15 +1,15 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType } from '@/types/auth';
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
 
-// Crear un mapa de correos electrónicos a roles para facilitar la gestión
+// Actualizar el mapa de correos electrónicos a roles
 const userRoleMap: Record<string, UserRole> = {
   'claus@nailsandco.com.ar': 'superadmin',
   'paula@nailsandco.com.ar': 'superadmin',
-  // Agrega más asignaciones de correo electrónico a rol según sea necesario
+  'clausnemi@gmail.com': 'superadmin',
+  'nailsandcopaula@gmail.com': 'superadmin',
 };
 
 const AuthContext = createContext<AuthContextType>({

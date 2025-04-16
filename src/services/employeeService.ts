@@ -61,7 +61,12 @@ export const employeeService = {
         .order('name', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      
+      // Convertimos el valor de status al tipo correcto
+      return (data || []).map(employee => ({
+        ...employee,
+        status: employee.status as "active" | "inactive"
+      }));
     } catch (error) {
       console.error("Error al obtener empleados:", error);
       return [];
@@ -87,7 +92,12 @@ export const employeeService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos el valor de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "active" | "inactive"
+      };
     } catch (error) {
       console.error("Error al agregar empleado:", error);
       throw error;
@@ -114,7 +124,12 @@ export const employeeService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos el valor de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "active" | "inactive"
+      };
     } catch (error) {
       console.error("Error al actualizar empleado:", error);
       throw error;

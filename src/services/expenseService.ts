@@ -1,3 +1,4 @@
+
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Expense, NewExpense } from "@/types/expenses";
 
@@ -11,7 +12,8 @@ const MOCK_EXPENSES: Expense[] = [
     category: "Insumos",
     created_by: "admin",
     details: "Datos de ejemplo cuando Supabase no está configurado",
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    status: "pending" // Aseguramos que sea "pending" | "paid" y no un string genérico
   }
 ];
 
@@ -31,8 +33,12 @@ export const expenseService = {
       
       if (error) throw error;
       
-      // Transformar los datos si es necesario para que coincidan con el tipo Expense
-      return data || [];
+      // Aseguramos que los valores de status sean del tipo correcto
+      return (data || []).map(expense => ({
+        ...expense,
+        // Aseguramos que status sea "pending" o "paid"
+        status: (expense.status as "pending" | "paid" | null) || undefined
+      }));
     } catch (error) {
       console.error("Error al obtener gastos:", error);
       return [];
@@ -59,7 +65,12 @@ export const expenseService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Aseguramos que status sea del tipo correcto
+      return {
+        ...data,
+        status: (data.status as "pending" | "paid" | null) || undefined
+      };
     } catch (error) {
       console.error("Error al agregar gasto:", error);
       throw error;
@@ -107,7 +118,12 @@ export const expenseService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Aseguramos que status sea del tipo correcto
+      return {
+        ...data,
+        status: (data.status as "pending" | "paid" | null) || undefined
+      };
     } catch (error) {
       console.error("Error al actualizar gasto:", error);
       throw error;

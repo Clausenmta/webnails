@@ -61,7 +61,13 @@ export const arreglosService = {
         .order('date', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      
+      // Convertimos los valores de status al tipo correcto
+      return (data || []).map(arreglo => ({
+        ...arreglo,
+        status: arreglo.status as "pendiente" | "en_proceso" | "completado" | "cancelado",
+        payment_status: arreglo.payment_status as "pendiente" | "pagado"
+      }));
     } catch (error) {
       console.error("Error al obtener arreglos:", error);
       return [];
@@ -87,7 +93,13 @@ export const arreglosService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos los valores de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "pendiente" | "en_proceso" | "completado" | "cancelado",
+        payment_status: data.payment_status as "pendiente" | "pagado"
+      };
     } catch (error) {
       console.error("Error al agregar arreglo:", error);
       throw error;
@@ -114,7 +126,13 @@ export const arreglosService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos los valores de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "pendiente" | "en_proceso" | "completado" | "cancelado",
+        payment_status: data.payment_status as "pendiente" | "pagado"
+      };
     } catch (error) {
       console.error("Error al actualizar arreglo:", error);
       throw error;

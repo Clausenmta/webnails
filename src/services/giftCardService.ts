@@ -49,7 +49,12 @@ export const giftCardService = {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      
+      // Convertimos el valor de status al tipo correcto
+      return (data || []).map(giftCard => ({
+        ...giftCard,
+        status: giftCard.status as "active" | "redeemed" | "expired"
+      }));
     } catch (error) {
       console.error("Error al obtener gift cards:", error);
       return [];
@@ -75,7 +80,12 @@ export const giftCardService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos el valor de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "active" | "redeemed" | "expired"
+      };
     } catch (error) {
       console.error("Error al agregar gift card:", error);
       throw error;
@@ -102,7 +112,12 @@ export const giftCardService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Convertimos el valor de status al tipo correcto
+      return {
+        ...data,
+        status: data.status as "active" | "redeemed" | "expired"
+      };
     } catch (error) {
       console.error("Error al actualizar gift card:", error);
       throw error;

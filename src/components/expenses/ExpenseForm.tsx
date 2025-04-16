@@ -37,7 +37,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
   }, [user]);
 
   const handleSubmit = () => {
-    const formattedExpense = {
+    const formattedExpense: NewExpense = {
       ...newExpense,
       // If the category is Fijos or Proveedores, ensure it has a "pending" status by default
       status: (newExpense.category === "Fijos" || newExpense.category === "Proveedores") 

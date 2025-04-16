@@ -6,8 +6,6 @@ import { toast } from '@/hooks/use-toast';
 
 // Actualizar el mapa de correos electrónicos a roles
 const userRoleMap: Record<string, UserRole> = {
-  'claus@nailsandco.com.ar': 'superadmin',
-  'paula@nailsandco.com.ar': 'superadmin',
   'clausnemi@gmail.com': 'superadmin',
   'nailsandcopaula@gmail.com': 'superadmin',
 };

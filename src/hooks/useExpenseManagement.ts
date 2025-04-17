@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Expense, NewExpense } from "@/types/expenses";
@@ -84,10 +85,11 @@ export function useExpenseManagement() {
       Fecha: expense.date,
       Concepto: expense.concept,
       Categoría: expense.category,
+      Proveedor: expense.provider || '',
+      Medio_de_Pago: expense.payment_method || '',
       Monto: expense.amount,
       Registrado_por: expense.created_by,
       Detalles: expense.details || '',
-      Proveedor: expense.provider || '',
       Estado: expense.status || ''
     }));
 

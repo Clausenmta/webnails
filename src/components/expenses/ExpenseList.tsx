@@ -33,6 +33,8 @@ export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: Expens
                 <th className="py-3 px-4 text-left">Fecha</th>
                 <th className="py-3 px-4 text-left">Concepto</th>
                 <th className="py-3 px-4 text-left">Categoría</th>
+                <th className="py-3 px-4 text-left">Proveedor</th>
+                <th className="py-3 px-4 text-left">Medio de Pago</th>
                 <th className="py-3 px-4 text-right">Monto</th>
                 {isSuperAdmin && <th className="py-3 px-4 text-left">Registrado por</th>}
                 <th className="py-3 px-4 text-right">Acciones</th>
@@ -44,6 +46,8 @@ export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: Expens
                   <td className="py-3 px-4">{expense.date}</td>
                   <td className="py-3 px-4">{expense.concept}</td>
                   <td className="py-3 px-4">{expense.category}</td>
+                  <td className="py-3 px-4">{expense.provider || "-"}</td>
+                  <td className="py-3 px-4">{expense.payment_method || "-"}</td>
                   <td className="py-3 px-4 text-right">${expense.amount.toLocaleString()}</td>
                   {isSuperAdmin && <td className="py-3 px-4">{expense.created_by}</td>}
                   <td className="py-3 px-4 text-right">
@@ -73,7 +77,7 @@ export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: Expens
               ))}
               {expenses.length === 0 && (
                 <tr>
-                  <td colSpan={isSuperAdmin ? 6 : 5} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={isSuperAdmin ? 8 : 7} className="py-8 text-center text-muted-foreground">
                     No hay gastos registrados
                   </td>
                 </tr>

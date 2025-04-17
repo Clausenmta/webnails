@@ -1,5 +1,4 @@
 
-import { Card } from "@/components/ui/card";
 import { ExpenseHeader } from "@/components/expenses/ExpenseHeader";
 import { ExpenseDialogs } from "@/components/expenses/ExpenseDialogs";
 import { ExpenseTabs } from "@/components/expenses/ExpenseTabs";

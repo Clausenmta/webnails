@@ -10,7 +10,7 @@ export interface GiftCard {
   amount: number;
   status: "active" | "redeemed" | "expired";
   customer_name?: string;
-  customer_email?: string;
+  service?: string; // Changed from customer_email to service
   purchase_date: string;
   expiry_date: string;
   redeemed_date?: string;
@@ -49,7 +49,7 @@ const MOCK_GIFT_CARDS: GiftCard[] = [
     amount: 2000,
     status: "active",
     customer_name: "Cliente de Ejemplo",
-    customer_email: "cliente@example.com",
+    service: "Corte y Color", // Changed from customer_email to service
     purchase_date: "01/04/2025",
     expiry_date: "01/05/2025",
     created_by: "admin",
@@ -108,6 +108,7 @@ export const giftCardService = {
         ...giftCard,
         status: giftCard.status as "active" | "redeemed" | "expired",
         is_redeemed: giftCard.status === "redeemed" || giftCard.redeemed_date != null,
+        service: giftCard.customer_email, // Map customer_email to service for backward compatibility
         branch: undefined // Initialize branch as undefined for all fetched records
       }));
     } catch (error) {
@@ -136,12 +137,16 @@ export const giftCardService = {
       // Extract fields that don't exist in the database
       const { branch: _, ...giftCardData } = newGiftCard;
       
+      // Map service to customer_email for database storage
+      const dbGiftCardData = {
+        ...giftCardData,
+        customer_email: giftCardData.service, // Map service to customer_email for database
+        status
+      };
+      
       const { data, error } = await supabase
         .from('gift_cards')
-        .insert([{
-          ...giftCardData,
-          status
-        }])
+        .insert([dbGiftCardData])
         .select()
         .single();
       
@@ -152,6 +157,7 @@ export const giftCardService = {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
         is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
+        service: data.customer_email, // Map customer_email to service for UI
         branch // Reintegrate branch for UI purposes
       };
     } catch (error) {
@@ -180,12 +186,18 @@ export const giftCardService = {
       const branch = updates.branch;
       
       // Extract fields that don't exist in the database
-      const { branch: _, ...updatedData } = updates;
+      const { branch: _, service, ...otherUpdates } = updates;
+      
+      // Prepare database updates with mapping service to customer_email
+      const dbUpdates = {
+        ...otherUpdates,
+        ...(service !== undefined ? { customer_email: service } : {})
+      };
       
       // Combinar la gift card actual con las actualizaciones
       const updatedGiftCard = {
         ...currentCard,
-        ...updatedData
+        ...dbUpdates
       };
       
       // Determinar estado basado en fechas si no se especifica en las actualizaciones
@@ -211,6 +223,7 @@ export const giftCardService = {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
         is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
+        service: data.customer_email, // Map customer_email to service for UI
         branch // Reintegrate branch for UI purposes
       };
     } catch (error) {

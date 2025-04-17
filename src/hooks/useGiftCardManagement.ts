@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -9,6 +8,8 @@ import {
   determineStatus
 } from "@/services/giftCardService";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { exportReport } from "@/utils/reportExport";
 
 export function useGiftCardManagement() {
   const queryClient = useQueryClient();
@@ -158,6 +159,42 @@ export function useGiftCardManagement() {
     return determineStatus(purchaseDate, expiryDate, redeemedDate);
   };
 
+  // Export function
+  const handleExportToExcel = () => {
+    const formattedGiftCards = giftCards.map(card => ({
+      Código: card.code,
+      Monto: card.amount,
+      Cliente: card.customer_name || '',
+      Servicio: card.service || '',
+      Fecha_Compra: card.purchase_date,
+      Fecha_Vencimiento: card.expiry_date,
+      Estado: card.status === 'active' ? 'Activa' : card.status === 'redeemed' ? 'Canjeada' : 'Vencida',
+      Fecha_Canje: card.redeemed_date || '',
+      Notas: card.notes || '',
+      Creado_Por: card.created_by
+    }));
+
+    exportReport(formattedGiftCards, {
+      filename: `Tarjetas_Regalo_${format(new Date(), 'yyyy-MM-dd')}`,
+      format: 'excel'
+    });
+  };
+
+  // Import template data
+  const getImportTemplateData = () => {
+    return [
+      {
+        Código: 'GC-12345',
+        Monto: 2000,
+        Cliente: 'Nombre del Cliente',
+        Servicio: 'Tipo de Servicio',
+        Fecha_Compra: format(new Date(), 'yyyy-MM-dd'),
+        Fecha_Vencimiento: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        Notas: 'Información adicional'
+      }
+    ];
+  };
+
   return {
     // Estado y datos
     giftCards,
@@ -211,6 +248,10 @@ export function useGiftCardManagement() {
     updateStatusFromDates,
     
     // Otros
-    dialogsEnabled
+    dialogsEnabled,
+    
+    // Add new functions to export
+    handleExportToExcel,
+    getImportTemplateData
   };
 }

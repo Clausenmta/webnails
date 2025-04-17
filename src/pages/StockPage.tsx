@@ -41,6 +41,8 @@ export default function StockPage() {
   const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
     product_name: "",
     category: stockCategories[0],
+    brand: "",
+    supplier: "",
     quantity: 0,
     min_stock_level: 1,
     unit_price: 0,
@@ -114,6 +116,8 @@ export default function StockPage() {
     setNewProduct({
       product_name: "",
       category: stockCategories[0],
+      brand: "",
+      supplier: "",
       quantity: 0,
       min_stock_level: 1,
       unit_price: 0,
@@ -439,6 +443,29 @@ export default function StockPage() {
                 placeholder="Nombre completo del producto"
                 className="w-full"
               />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier">Proveedor</Label>
+                <Input
+                  id="supplier"
+                  value={newProduct.supplier || ""}
+                  onChange={(e) => setNewProduct({...newProduct, supplier: e.target.value})}
+                  placeholder="Nombre del proveedor"
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brand">Marca</Label>
+                <Input
+                  id="brand"
+                  value={newProduct.brand || ""}
+                  onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                  placeholder="Marca del producto"
+                  className="w-full"
+                />
+              </div>
             </div>
             
             <div className="space-y-2">

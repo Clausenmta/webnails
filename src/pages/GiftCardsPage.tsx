@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +55,8 @@ import {
   FileText,
   FileSpreadsheet,
   Upload,
-  GiftIcon
+  GiftIcon,
+  Building
 } from "lucide-react";
 import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,9 @@ import * as XLSX from 'xlsx';
 import { exportReport } from "@/utils/reportExport";
 import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
 import { GiftCard, NewGiftCard } from "@/services/giftCardService";
+
+// Opciones de sucursales
+const branchOptions = ["Fisherton", "Alto Rosario", "Moreno", "Tucuman"];
 
 export default function GiftCardsPage() {
   const {
@@ -104,7 +107,9 @@ export default function GiftCardsPage() {
     safeAction,
     handleDialogOpenChange,
     resetImportState,
-    dialogsEnabled
+    dialogsEnabled,
+    branchFilter,
+    setBranchFilter
   } = useGiftCardManagement();
 
   const [newGiftCard, setNewGiftCard] = useState<Partial<NewGiftCard>>({
@@ -113,7 +118,6 @@ export default function GiftCardsPage() {
   });
 
   const [editGiftCard, setEditGiftCard] = useState<Partial<NewGiftCard>>({});
-  const [branchFilter, setBranchFilter] = useState<string>("all");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -302,8 +306,9 @@ export default function GiftCardsPage() {
                          false);
 
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
+    const matchesBranch = branchFilter === "all" || card.branch === branchFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesBranch;
   });
 
   const renderStatusBadge = (status: GiftCard['status']) => {
@@ -644,6 +649,23 @@ export default function GiftCardsPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Sucursal</Label>
+                      <Select
+                        value={branchFilter}
+                        onValueChange={(value) => setBranchFilter(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas las sucursales" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="all">Todas las sucursales</SelectItem>
+                          {branchOptions.map((branch) => (
+                            <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -658,6 +680,7 @@ export default function GiftCardsPage() {
                   <TableHead>Código Gift Card</TableHead>
                   <TableHead>Monto</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Sucursal</TableHead>
                   <TableHead>F. Compra</TableHead>
                   <TableHead>F. Vencimiento</TableHead>
                   <TableHead>Estado</TableHead>
@@ -667,7 +690,7 @@ export default function GiftCardsPage() {
               <TableBody>
                 {filteredGiftCards.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center h-24">
+                    <TableCell colSpan={8} className="text-center h-24">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <GiftIcon className="h-8 w-8 mb-2" />
                         <p>No se encontraron gift cards</p>
@@ -680,6 +703,7 @@ export default function GiftCardsPage() {
                       <TableCell className="font-medium">{card.code}</TableCell>
                       <TableCell>${card.amount.toLocaleString()}</TableCell>
                       <TableCell>{card.customer_name || '-'}</TableCell>
+                      <TableCell>{card.branch || '-'}</TableCell>
                       <TableCell>{card.purchase_date}</TableCell>
                       <TableCell>{card.expiry_date}</TableCell>
                       <TableCell>{renderStatusBadge(card.status)}</TableCell>
@@ -838,6 +862,22 @@ export default function GiftCardsPage() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="branch">Sucursal</Label>
+              <Select
+                value={newGiftCard.branch}
+                onValueChange={(value) => handleNewGiftCardChange("branch", value)}
+              >
+                <SelectTrigger id="branch">
+                  <SelectValue placeholder="Seleccionar sucursal" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {branchOptions.map((branch) => (
+                    <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="notes">Notas</Label>
               <Input
                 id="notes"
@@ -891,344 +931,4 @@ export default function GiftCardsPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium mb-1">Cliente:</p>
-                  <p className="text-lg">{selectedGiftCard.customer_name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Email:</p>
-                  <p className="text-lg">{selectedGiftCard.customer_email || '-'}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium mb-1">Estado:</p>
-                  <div className="text-lg">{renderStatusBadge(selectedGiftCard.status)}</div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Creada por:</p>
-                  <p className="text-lg">{selectedGiftCard.created_by}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium mb-1">Fecha de compra:</p>
-                  <p className="text-lg">{selectedGiftCard.purchase_date}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Fecha de vencimiento:</p>
-                  <p className="text-lg">{selectedGiftCard.expiry_date}</p>
-                </div>
-              </div>
-              
-              {selectedGiftCard.redeemed_date && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Fecha de canje:</p>
-                  <p className="text-lg">{selectedGiftCard.redeemed_date}</p>
-                </div>
-              )}
-              
-              {selectedGiftCard.notes && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Notas:</p>
-                  <p className="text-lg">{selectedGiftCard.notes}</p>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsViewDetailsDialogOpen(false)}
-            >
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog 
-        open={isEditDialogOpen} 
-        onOpenChange={(open) => handleDialogOpenChange(open, setIsEditDialogOpen, () => {
-          setSelectedGiftCard(null);
-          setEditGiftCard({});
-        })}
-      >
-        <DialogContent className="sm:max-w-[550px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Editar Gift Card</DialogTitle>
-            <DialogDescription>
-              Modifique la información de la gift card seleccionada.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedGiftCard && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editGiftCardCode">Código Gift Card</Label>
-                  <Input
-                    id="editGiftCardCode"
-                    placeholder="GC-001"
-                    value={editGiftCard.code || ""}
-                    onChange={(e) => handleEditGiftCardChange("code", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editGiftCardAmount">Monto</Label>
-                  <Input
-                    id="editGiftCardAmount"
-                    type="number"
-                    placeholder="2000"
-                    value={editGiftCard.amount || ""}
-                    onChange={(e) => handleEditGiftCardChange("amount", Number(e.target.value))}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editCustomerName">Nombre Cliente</Label>
-                  <Input
-                    id="editCustomerName"
-                    placeholder="Nombre del cliente"
-                    value={editGiftCard.customer_name || ""}
-                    onChange={(e) => handleEditGiftCardChange("customer_name", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editCustomerEmail">Email Cliente</Label>
-                  <Input
-                    id="editCustomerEmail"
-                    placeholder="cliente@ejemplo.com"
-                    value={editGiftCard.customer_email || ""}
-                    onChange={(e) => handleEditGiftCardChange("customer_email", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editPurchaseDate">Fecha de Compra</Label>
-                  <Input
-                    id="editPurchaseDate"
-                    type="date"
-                    value={editGiftCard.purchase_date || ""}
-                    onChange={(e) => handleEditGiftCardChange("purchase_date", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editExpiryDate">Fecha de Vencimiento</Label>
-                  <Input
-                    id="editExpiryDate"
-                    type="date"
-                    value={editGiftCard.expiry_date || ""}
-                    onChange={(e) => handleEditGiftCardChange("expiry_date", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editStatus">Estado</Label>
-                <Select
-                  value={editGiftCard.status}
-                  onValueChange={(value) => handleEditGiftCardChange("status", value)}
-                >
-                  <SelectTrigger id="editStatus">
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Pendiente</SelectItem>
-                    <SelectItem value="redeemed">Canjeada</SelectItem>
-                    <SelectItem value="expired">Vencida</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {editGiftCard.status === "redeemed" && (
-                <div className="space-y-2">
-                  <Label htmlFor="editRedeemedDate">Fecha de Canje</Label>
-                  <Input
-                    id="editRedeemedDate"
-                    type="date"
-                    value={editGiftCard.redeemed_date || ""}
-                    onChange={(e) => handleEditGiftCardChange("redeemed_date", e.target.value)}
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="editNotes">Notas</Label>
-                <Input
-                  id="editNotes"
-                  placeholder="Notas adicionales"
-                  value={editGiftCard.notes || ""}
-                  onChange={(e) => handleEditGiftCardChange("notes", e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              className="bg-salon-400 hover:bg-salon-500"
-              onClick={handleSaveEdit}
-              disabled={!dialogsEnabled}
-            >
-              Guardar Cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog 
-        open={isConfirmRedeemDialogOpen} 
-        onOpenChange={(open) => handleDialogOpenChange(open, setIsConfirmRedeemDialogOpen, () => setSelectedGiftCard(null))}
-      >
-        <DialogContent className="sm:max-w-[450px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Marcar como Canjeada</DialogTitle>
-            <DialogDescription>
-              ¿Está seguro que desea marcar esta gift card como canjeada?
-            </DialogDescription>
-          </DialogHeader>
-          {selectedGiftCard && (
-            <div className="py-4">
-              <div className="p-4 border rounded-md mb-4">
-                <p><span className="font-medium">Código:</span> {selectedGiftCard.code}</p>
-                <p><span className="font-medium">Monto:</span> ${selectedGiftCard.amount.toLocaleString()}</p>
-                <p><span className="font-medium">Cliente:</span> {selectedGiftCard.customer_name || '-'}</p>
-                <p><span className="font-medium">Fecha actual:</span> {new Date().toLocaleDateString()}</p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfirmRedeemDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              className="bg-salon-400 hover:bg-salon-500"
-              onClick={handleConfirmRedeem}
-              disabled={!dialogsEnabled}
-            >
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog 
-        open={isImportDialogOpen} 
-        onOpenChange={(open) => handleDialogOpenChange(open, setIsImportDialogOpen, () => {
-          if (importStatus !== "processing") {
-            resetImportState();
-          }
-        })}
-      >
-        <DialogContent className="sm:max-w-[550px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Importar Gift Cards</DialogTitle>
-            <DialogDescription>
-              Importe gift cards desde un archivo Excel.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {importStatus === "idle" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="importFile">Archivo Excel</Label>
-                  <Input
-                    id="importFile"
-                    type="file"
-                    accept=".xlsx, .xls"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                  />
-                </div>
-                <div>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={downloadExcelTemplate}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Descargar plantilla
-                  </Button>
-                </div>
-              </>
-            )}
-            
-            {importStatus === "processing" && (
-              <div className="space-y-4">
-                <p className="text-center">Procesando archivo...</p>
-                <Progress value={importProgress} className="w-full" />
-              </div>
-            )}
-            
-            {importStatus === "success" && (
-              <div className="space-y-4">
-                <Alert className="bg-green-50 border-green-300">
-                  <BadgeCheck className="h-4 w-4 text-green-700" />
-                  <AlertDescription className="text-green-700">
-                    Se importaron <strong>{importResults.successful}</strong> gift cards correctamente.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="p-4 border rounded-md">
-                  <h4 className="text-sm font-medium mb-2">Resumen de importación</h4>
-                  <p>Total: {importResults.total}</p>
-                  <p>Importadas: {importResults.successful}</p>
-                  <p>Errores: {importResults.failed}</p>
-                </div>
-              </div>
-            )}
-            
-            {importStatus === "error" && (
-              <div className="space-y-4">
-                <Alert className="bg-red-50 border-red-300">
-                  <BadgeAlert className="h-4 w-4 text-red-700" />
-                  <AlertDescription className="text-red-700">
-                    Ocurrieron errores durante la importación.
-                  </AlertDescription>
-                </Alert>
-                
-                {importErrors.length > 0 && (
-                  <div className="p-4 border rounded-md max-h-48 overflow-y-auto">
-                    <h4 className="text-sm font-medium mb-2">Errores encontrados:</h4>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {importErrors.map((error, index) => (
-                        <li key={index} className="text-sm text-red-600">{error}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            {importStatus === "idle" ? (
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
-                Cancelar
-              </Button>
-            ) : (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  if (importStatus === "processing") {
-                    return;
-                  }
-                  if (importStatus === "success") {
-                    setIsImportDialogOpen(false);
-                    resetImportState();
-                  } else {
-                    resetImportState();
-                  }
-                }}
-                disabled={importStatus === "processing" || !dialogsEnabled}
-              >
-                {importStatus === "success" ? "Cerrar" : "Volver"}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                  <p className="

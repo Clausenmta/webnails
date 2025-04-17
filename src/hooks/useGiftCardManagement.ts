@@ -17,6 +17,7 @@ export function useGiftCardManagement() {
   const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "redeemed" | "expired" | "all">("all");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [dialogsEnabled, setDialogsEnabled] = useState(true);
   
   // Estado para importación
@@ -159,6 +160,8 @@ export function useGiftCardManagement() {
     setSearchTerm,
     statusFilter,
     setStatusFilter,
+    branchFilter,
+    setBranchFilter,
     
     // Mutaciones
     addGiftCardMutation,

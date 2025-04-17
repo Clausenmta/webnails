@@ -16,25 +16,10 @@ export interface GiftCard {
   redeemed_date?: string;
   created_by: string;
   notes?: string;
+  branch?: string; // Nueva propiedad para sucursal
 }
 
 export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at'>;
-
-// Datos de muestra para cuando Supabase no está configurado
-const MOCK_GIFT_CARDS: GiftCard[] = [
-  {
-    id: 1,
-    created_at: new Date().toISOString(),
-    code: "GC-12345",
-    amount: 2000,
-    status: "active",
-    customer_name: "Cliente de Ejemplo",
-    customer_email: "cliente@example.com",
-    purchase_date: "01/04/2025",
-    expiry_date: "01/04/2026",
-    created_by: "admin"
-  }
-];
 
 // Helper function to handle Supabase errors
 const handleSupabaseError = (error: any, operation: string = "operación") => {
@@ -50,6 +35,23 @@ const handleSupabaseError = (error: any, operation: string = "operación") => {
   
   return error;
 };
+
+// Datos de muestra para cuando Supabase no está configurado
+const MOCK_GIFT_CARDS: GiftCard[] = [
+  {
+    id: 1,
+    created_at: new Date().toISOString(),
+    code: "GC-12345",
+    amount: 2000,
+    status: "active",
+    customer_name: "Cliente de Ejemplo",
+    customer_email: "cliente@example.com",
+    purchase_date: "01/04/2025",
+    expiry_date: "01/04/2026",
+    created_by: "admin",
+    branch: "Fisherton"
+  }
+];
 
 export const giftCardService = {
   async fetchGiftCards(): Promise<GiftCard[]> {

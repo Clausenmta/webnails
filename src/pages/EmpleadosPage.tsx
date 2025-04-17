@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
-import { Users, BriefcaseBusiness, UserRound, UserCheck } from "lucide-react";
+import { Users, BriefcaseBusiness, UserRound, UserCheck, UserPlus, Trash2 } from "lucide-react";
 import { EmployeeStatusToggle } from "@/components/employees/EmployeeStatusToggle";
 
 export interface Employee {
@@ -130,6 +130,20 @@ export default function EmpleadosPage() {
     setIsProfileOpen(false);
   };
 
+  const handleDeleteEmployee = async (employeeId: number) => {
+    try {
+      await employeeService.deleteEmployee(employeeId);
+      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+    } catch (error) {
+      console.error("Error al eliminar empleado:", error);
+    }
+  };
+
+  const handleAddEmployee = () => {
+    setSelectedEmployee(null);
+    setIsProfileOpen(true);
+  };
+
   const filteredEmployees = employees.filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,6 +197,13 @@ export default function EmpleadosPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-[300px]"
           />
+          <Button
+            onClick={handleAddEmployee}
+            className="bg-salon-600 hover:bg-salon-700"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Agregar Empleado
+          </Button>
         </div>
       </div>
 
@@ -244,6 +265,14 @@ export default function EmpleadosPage() {
                                 Calcular Sueldo
                               </Button>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteEmployee(employee.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -348,7 +377,7 @@ export default function EmpleadosPage() {
         </TabsContent>
       </Tabs>
 
-      {selectedEmployee && (
+      {selectedEmployee !== null && (
         <>
           <EmployeeProfileDialog
             open={isProfileOpen}

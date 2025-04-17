@@ -1,5 +1,5 @@
-
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // Interfaz para Empleados
 export interface Employee {
@@ -81,6 +81,7 @@ export const employeeService = {
         id: Math.floor(Math.random() * 1000) + 10,
         created_at: new Date().toISOString()
       };
+      toast.success("Empleado agregado exitosamente");
       return Promise.resolve(mockEmployee);
     }
 
@@ -91,9 +92,12 @@ export const employeeService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        toast.error("Error al agregar empleado: " + error.message);
+        throw error;
+      }
       
-      // Convertimos el valor de status al tipo correcto
+      toast.success("Empleado agregado exitosamente");
       return {
         ...data,
         status: data.status as "active" | "inactive"
@@ -139,6 +143,7 @@ export const employeeService = {
   async deleteEmployee(id: number): Promise<void> {
     if (!isSupabaseConfigured()) {
       console.warn("Supabase no está configurado. Simulando eliminación.");
+      toast.success("Empleado eliminado exitosamente");
       return Promise.resolve();
     }
 
@@ -148,7 +153,12 @@ export const employeeService = {
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        toast.error("Error al eliminar empleado: " + error.message);
+        throw error;
+      }
+
+      toast.success("Empleado eliminado exitosamente");
     } catch (error) {
       console.error("Error al eliminar empleado:", error);
       throw error;

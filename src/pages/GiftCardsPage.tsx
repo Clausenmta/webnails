@@ -921,4 +921,663 @@ export default function GiftCardsPage() {
       {/* Delete Dialog */}
       <Dialog 
         open={isDeleteDialogOpen} 
-        onOpenChange={(open) => handleDialogOpenChange(open, setIsDeleteDialogOpen, () => setSelectedGiftCard(null
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsDeleteDialogOpen, () => setSelectedGiftCard(null))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar Gift Card</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas eliminar la gift card {selectedGiftCard?.code}?
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmDelete}
+              disabled={deleteGiftCardMutation.isPending}
+            >
+              {deleteGiftCardMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Redeem Dialog */}
+      <Dialog 
+        open={isConfirmRedeemDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsConfirmRedeemDialogOpen, () => setSelectedGiftCard(null))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marcar como Canjeada</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas marcar la gift card {selectedGiftCard?.code} como canjeada?
+              Esta acción registrará la fecha actual como fecha de canje.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmRedeemDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmRedeem}
+              disabled={updateGiftCardMutation.isPending}
+            >
+              {updateGiftCardMutation.isPending ? 'Procesando...' : 'Confirmar Canje'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog 
+        open={isViewDetailsDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsViewDetailsDialogOpen, () => setSelectedGiftCard(null))}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Detalles de Gift Card</DialogTitle>
+            <DialogDescription>
+              Información completa de la gift card
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedGiftCard && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Código</Label>
+                <div className="col-span-3 font-medium">{selectedGiftCard.code}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Monto</Label>
+                <div className="col-span-3">${selectedGiftCard.amount.toLocaleString()}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Estado</Label>
+                <div className="col-span-3">{renderStatusBadge(selectedGiftCard.status)}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Cliente</Label>
+                <div className="col-span-3">{selectedGiftCard.customer_name || '-'}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Email</Label>
+                <div className="col-span-3">{selectedGiftCard.customer_email || '-'}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Sucursal</Label>
+                <div className="col-span-3">{selectedGiftCard.branch || '-'}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">F. Compra</Label>
+                <div className="col-span-3">{selectedGiftCard.purchase_date}</div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">F. Vencimiento</Label>
+                <div className="col-span-3">{selectedGiftCard.expiry_date}</div>
+              </div>
+              {selectedGiftCard.redeemed_date && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">F. Canje</Label>
+                  <div className="col-span-3">{selectedGiftCard.redeemed_date}</div>
+                </div>
+              )}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Creado por</Label>
+                <div className="col-span-3">{selectedGiftCard.created_by}</div>
+              </div>
+              {selectedGiftCard.notes && (
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right">Notas</Label>
+                  <div className="col-span-3">{selectedGiftCard.notes}</div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDetailsDialogOpen(false)}>
+              Cerrar
+            </Button>
+            <Button onClick={() => {
+              setIsViewDetailsDialogOpen(false);
+              setTimeout(() => {
+                if (selectedGiftCard) {
+                  handleEdit(selectedGiftCard);
+                }
+              }, 300);
+            }}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Dialog */}
+      <Dialog 
+        open={isAddDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsAddDialogOpen, () => {
+          setNewGiftCard({
+            status: "active",
+            purchase_date: new Date().toISOString().split('T')[0]
+          });
+          setNewCardIsRedeemed(false);
+        })}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Nueva Gift Card</DialogTitle>
+            <DialogDescription>
+              Completa los datos para crear una nueva gift card
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="code" className="text-right">
+                Código *
+              </Label>
+              <Input
+                id="code"
+                value={newGiftCard.code || ''}
+                onChange={(e) => handleNewGiftCardChange('code', e.target.value)}
+                className="col-span-3"
+                placeholder="GC-12345"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">
+                Monto *
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                value={newGiftCard.amount || ''}
+                onChange={(e) => handleNewGiftCardChange('amount', Number(e.target.value))}
+                className="col-span-3"
+                placeholder="2000"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="branch" className="text-right">
+                Sucursal
+              </Label>
+              <Select
+                value={newGiftCard.branch || ''}
+                onValueChange={(value) => handleNewGiftCardChange('branch', value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccionar sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branchOptions.map((branch) => (
+                    <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer_name" className="text-right">
+                Cliente
+              </Label>
+              <Input
+                id="customer_name"
+                value={newGiftCard.customer_name || ''}
+                onChange={(e) => handleNewGiftCardChange('customer_name', e.target.value)}
+                className="col-span-3"
+                placeholder="Nombre del cliente"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer_email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="customer_email"
+                type="email"
+                value={newGiftCard.customer_email || ''}
+                onChange={(e) => handleNewGiftCardChange('customer_email', e.target.value)}
+                className="col-span-3"
+                placeholder="cliente@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="purchase_date" className="text-right">
+                F. Compra
+              </Label>
+              <Input
+                id="purchase_date"
+                type="date"
+                value={newGiftCard.purchase_date || ''}
+                onChange={(e) => handleNewGiftCardChange('purchase_date', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expiry_date" className="text-right">
+                F. Vencimiento
+              </Label>
+              <Input
+                id="expiry_date"
+                type="date"
+                value={newGiftCard.expiry_date || ''}
+                onChange={(e) => handleNewGiftCardChange('expiry_date', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-right">
+                <Label htmlFor="is_redeemed" className="text-right">
+                  Canjeada
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Checkbox 
+                  id="is_redeemed" 
+                  checked={newCardIsRedeemed}
+                  onCheckedChange={(checked) => setNewCardIsRedeemed(checked === true)}
+                />
+                <label
+                  htmlFor="is_redeemed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Marcar como canjeada
+                </label>
+              </div>
+            </div>
+            {newCardIsRedeemed && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="redeemed_date" className="text-right">
+                  F. Canje
+                </Label>
+                <Input
+                  id="redeemed_date"
+                  type="date"
+                  value={newGiftCard.redeemed_date || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => handleNewGiftCardChange('redeemed_date', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notas
+              </Label>
+              <textarea
+                id="notes"
+                value={newGiftCard.notes || ''}
+                onChange={(e) => handleNewGiftCardChange('notes', e.target.value)}
+                className="col-span-3 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Información adicional"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCreateGiftCard}
+              disabled={addGiftCardMutation.isPending}
+            >
+              {addGiftCardMutation.isPending ? 'Creando...' : 'Crear Gift Card'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsEditDialogOpen, () => {
+          setSelectedGiftCard(null);
+          setEditGiftCard({});
+          setIsRedeemed(false);
+        })}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Editar Gift Card</DialogTitle>
+            <DialogDescription>
+              Modifica los datos de la gift card
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-code" className="text-right">
+                Código *
+              </Label>
+              <Input
+                id="edit-code"
+                value={editGiftCard.code || ''}
+                onChange={(e) => handleEditGiftCardChange('code', e.target.value)}
+                className="col-span-3"
+                placeholder="GC-12345"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-amount" className="text-right">
+                Monto *
+              </Label>
+              <Input
+                id="edit-amount"
+                type="number"
+                value={editGiftCard.amount || ''}
+                onChange={(e) => handleEditGiftCardChange('amount', Number(e.target.value))}
+                className="col-span-3"
+                placeholder="2000"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-branch" className="text-right">
+                Sucursal
+              </Label>
+              <Select
+                value={editGiftCard.branch || ''}
+                onValueChange={(value) => handleEditGiftCardChange('branch', value)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccionar sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branchOptions.map((branch) => (
+                    <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-customer_name" className="text-right">
+                Cliente
+              </Label>
+              <Input
+                id="edit-customer_name"
+                value={editGiftCard.customer_name || ''}
+                onChange={(e) => handleEditGiftCardChange('customer_name', e.target.value)}
+                className="col-span-3"
+                placeholder="Nombre del cliente"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-customer_email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="edit-customer_email"
+                type="email"
+                value={editGiftCard.customer_email || ''}
+                onChange={(e) => handleEditGiftCardChange('customer_email', e.target.value)}
+                className="col-span-3"
+                placeholder="cliente@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-purchase_date" className="text-right">
+                F. Compra
+              </Label>
+              <Input
+                id="edit-purchase_date"
+                type="date"
+                value={editGiftCard.purchase_date || ''}
+                onChange={(e) => handleEditGiftCardChange('purchase_date', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-expiry_date" className="text-right">
+                F. Vencimiento
+              </Label>
+              <Input
+                id="edit-expiry_date"
+                type="date"
+                value={editGiftCard.expiry_date || ''}
+                onChange={(e) => handleEditGiftCardChange('expiry_date', e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-right">
+                <Label htmlFor="edit-is_redeemed" className="text-right">
+                  Canjeada
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Checkbox 
+                  id="edit-is_redeemed" 
+                  checked={isRedeemed}
+                  onCheckedChange={(checked) => setIsRedeemed(checked === true)}
+                />
+                <label
+                  htmlFor="edit-is_redeemed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Marcar como canjeada
+                </label>
+              </div>
+            </div>
+            {isRedeemed && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-redeemed_date" className="text-right">
+                  F. Canje
+                </Label>
+                <Input
+                  id="edit-redeemed_date"
+                  type="date"
+                  value={editGiftCard.redeemed_date || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => handleEditGiftCardChange('redeemed_date', e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="edit-notes" className="text-right">
+                Notas
+              </Label>
+              <textarea
+                id="edit-notes"
+                value={editGiftCard.notes || ''}
+                onChange={(e) => handleEditGiftCardChange('notes', e.target.value)}
+                className="col-span-3 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Información adicional"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveEdit}
+              disabled={updateGiftCardMutation.isPending}
+            >
+              {updateGiftCardMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog 
+        open={isImportDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsImportDialogOpen, resetImportState)}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Importar Gift Cards</DialogTitle>
+            <DialogDescription>
+              Importa gift cards desde un archivo Excel
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {importStatus === "idle" && (
+              <>
+                <div className="flex flex-col items-center justify-center gap-4 p-4 border-2 border-dashed rounded-md">
+                  <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
+                  <div className="flex flex-col items-center text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Selecciona un archivo Excel para importar gift cards
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Formatos soportados: .xlsx, .xls
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Seleccionar Archivo
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    ¿No tienes una plantilla?
+                  </p>
+                  <Button
+                    variant="link"
+                    onClick={downloadExcelTemplate}
+                    className="p-0 h-auto"
+                  >
+                    Descargar plantilla
+                  </Button>
+                </div>
+              </>
+            )}
+            
+            {importStatus === "processing" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-center p-4">
+                  <div className="w-full space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Procesando archivo...</span>
+                      <span>{importProgress}%</span>
+                    </div>
+                    <Progress value={importProgress} className="w-full" />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {importStatus === "success" && (
+              <div className="space-y-4">
+                <Alert className="bg-green-50 border-green-200">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-600">
+                    Importación completada correctamente
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="rounded-md border p-4">
+                  <h4 className="text-sm font-medium mb-2">Resumen de importación</h4>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Total</p>
+                      <p className="font-medium">{importResults.total}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Exitosos</p>
+                      <p className="font-medium text-green-600">{importResults.successful}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Fallidos</p>
+                      <p className="font-medium text-red-600">{importResults.failed}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {importErrors.length > 0 && (
+                  <div className="rounded-md border border-red-200 p-4">
+                    <h4 className="text-sm font-medium mb-2 text-red-600">Errores encontrados</h4>
+                    <ul className="text-sm space-y-1 max-h-[200px] overflow-y-auto">
+                      {importErrors.map((error, index) => (
+                        <li key={index} className="text-red-600">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {importStatus === "error" && (
+              <div className="space-y-4">
+                <Alert className="bg-red-50 border-red-200">
+                  <AlertDescription className="text-red-600">
+                    Error al importar gift cards
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="rounded-md border border-red-200 p-4">
+                    <h4 className="text-sm font-medium mb-2 text-red-600">Errores encontrados</h4>
+                    <ul className="text-sm space-y-1 max-h-[200px] overflow-y-auto">
+                      {importErrors.map((error, index) => (
+                        <li key={index} className="text-red-600">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed rounded-md">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      resetImportState();
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Intentar nuevamente
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            {importStatus === "idle" && (
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                Cancelar
+              </Button>
+            )}
+            
+            {(importStatus === "success" || importStatus === "error") && (
+              <Button onClick={() => setIsImportDialogOpen(false)}>
+                Cerrar
+              </Button>
+            )}
+            
+            {importStatus === "processing" && (
+              <Button disabled>
+                Procesando...
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

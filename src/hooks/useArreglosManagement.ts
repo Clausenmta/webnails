@@ -1,351 +1,108 @@
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { arreglosService, Arreglo, NewArreglo, serviceTypes } from "@/services/arreglosService";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { exportReport } from "@/utils/reportExport";
+import { useArreglosDialogs } from "./arreglos/useArreglosDialogs";
+import { useArreglosFilters } from "./arreglos/useArreglosFilters";
+import { useArreglosData } from "./arreglos/useArreglosData";
+import { useArreglosImportExport } from "./arreglos/useArreglosImportExport";
 
 export function useArreglosManagement() {
-  const queryClient = useQueryClient();
+  const dialogs = useArreglosDialogs();
+  const filters = useArreglosFilters();
+  const data = useArreglosData();
+  const importExport = useArreglosImportExport();
   
-  // Estados para diálogos y gestión
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-  const [currentArreglo, setCurrentArreglo] = useState<Arreglo | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [vistaActiva, setVistaActiva] = useState("todos");
-  
-  // Estados para filtros
-  const [filtros, setFiltros] = useState({
-    estados: [] as string[],
-    manicuristasOriginal: [] as string[],
-    manicuristasArreglo: [] as string[],
-    fechaDesde: null as string | null,
-    fechaHasta: null as string | null,
-    descuenta: "",
-    precioMinimo: "",
-    precioMaximo: ""
-  });
-  
-  const [filtrosAplicados, setFiltrosAplicados] = useState({...filtros});
-  const [cantidadFiltrosAplicados, setCantidadFiltrosAplicados] = useState(0);
-  
-  // Calendario
-  const [fechaComandaDate, setFechaComandaDate] = useState<Date | undefined>(undefined);
-  const [fechaArregloDate, setFechaArregloDate] = useState<Date | undefined>(undefined);
-  const [fechaDesdeDate, setFechaDesdeDate] = useState<Date | undefined>(undefined);
-  const [fechaHastaDate, setFechaHastaDate] = useState<Date | undefined>(undefined);
-  
-  // Otros estados
   const [mismaManicura, setMismaManicura] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof Arreglo;
-    direction: "asc" | "desc";
-  }>({
-    key: "date",
-    direction: "desc"
-  });
-  
-  // Query para obtener arreglos
-  const { data: arreglos = [], isLoading } = useQuery({
-    queryKey: ['arreglos'],
-    queryFn: arreglosService.fetchArreglos,
-    meta: {
-      onError: (error: any) => {
-        console.error("Error al obtener arreglos:", error);
-        toast.error(`Error al cargar arreglos: ${error.message}`);
-      }
-    }
-  });
 
-  // Mutaciones
-  const addArregloMutation = useMutation({
-    mutationFn: arreglosService.addArreglo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['arreglos'] });
-      setIsAddDialogOpen(false);
-      resetForm();
-      toast.success("Arreglo registrado correctamente");
-    },
-    onError: (error: any) => {
-      console.error("Error al registrar el arreglo:", error);
-      toast.error(`Error al registrar el arreglo: ${error.message}`);
-    }
-  });
-
-  const updateArregloMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: number, updates: Partial<NewArreglo> }) => 
-      arreglosService.updateArreglo(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['arreglos'] });
-      setIsEditDialogOpen(false);
-      resetForm();
-      toast.success("Arreglo actualizado correctamente");
-    },
-    onError: (error: any) => {
-      console.error("Error al actualizar el arreglo:", error);
-      toast.error(`Error al actualizar el arreglo: ${error.message}`);
-    }
-  });
-
-  const deleteArregloMutation = useMutation({
-    mutationFn: (id: number) => arreglosService.deleteArreglo(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['arreglos'] });
-      toast.success("Arreglo eliminado correctamente");
-    },
-    onError: (error: any) => {
-      console.error("Error al eliminar el arreglo:", error);
-      toast.error(`Error al eliminar el arreglo: ${error.message}`);
-    }
-  });
-
-  // Filtrar arreglos según criterios
-  const filteredArreglos = arreglos.filter(arreglo => {
-    // Basic search filter
+  // Apply filters to arreglos
+  const filteredArreglos = data.arreglos.filter(arreglo => {
     const matchesSearch = 
-      arreglo.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      arreglo.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (arreglo.assigned_to && arreglo.assigned_to.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (arreglo.notes && arreglo.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+      arreglo.client_name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      arreglo.description.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      arreglo.status.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      (arreglo.assigned_to && arreglo.assigned_to.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
+      (arreglo.notes && arreglo.notes.toLowerCase().includes(filters.searchTerm.toLowerCase()));
 
     if (!matchesSearch) return false;
     
-    // Applied filters
-    if (filtrosAplicados.estados.length > 0 && 
-        !filtrosAplicados.estados.includes(arreglo.status)) {
+    if (filters.filtrosAplicados.estados.length > 0 && 
+        !filters.filtrosAplicados.estados.includes(arreglo.status)) {
       return false;
     }
     
-    if (filtrosAplicados.manicuristasOriginal.length > 0 && 
-        !filtrosAplicados.manicuristasOriginal.includes(arreglo.created_by)) {
+    if (filters.filtrosAplicados.manicuristasOriginal.length > 0 && 
+        !filters.filtrosAplicados.manicuristasOriginal.includes(arreglo.created_by)) {
       return false;
     }
     
-    if (filtrosAplicados.manicuristasArreglo.length > 0 && 
+    if (filters.filtrosAplicados.manicuristasArreglo.length > 0 && 
         arreglo.assigned_to &&
-        !filtrosAplicados.manicuristasArreglo.includes(arreglo.assigned_to)) {
+        !filters.filtrosAplicados.manicuristasArreglo.includes(arreglo.assigned_to)) {
       return false;
     }
     
-    if (filtrosAplicados.fechaDesde) {
+    if (filters.filtrosAplicados.fechaDesde) {
       const fechaArreglo = new Date(arreglo.date);
-      const fechaDesde = new Date(filtrosAplicados.fechaDesde);
+      const fechaDesde = new Date(filters.filtrosAplicados.fechaDesde);
       if (fechaArreglo < fechaDesde) return false;
     }
     
-    if (filtrosAplicados.fechaHasta) {
+    if (filters.filtrosAplicados.fechaHasta) {
       const fechaArreglo = new Date(arreglo.date);
-      const fechaHasta = new Date(filtrosAplicados.fechaHasta);
+      const fechaHasta = new Date(filters.filtrosAplicados.fechaHasta);
       if (fechaArreglo > fechaHasta) return false;
     }
     
-    if (filtrosAplicados.precioMinimo && arreglo.price < parseInt(filtrosAplicados.precioMinimo)) {
+    if (filters.filtrosAplicados.precioMinimo && arreglo.price < parseInt(filters.filtrosAplicados.precioMinimo)) {
       return false;
     }
     
-    if (filtrosAplicados.precioMaximo && arreglo.price > parseInt(filtrosAplicados.precioMaximo)) {
+    if (filters.filtrosAplicados.precioMaximo && arreglo.price > parseInt(filters.filtrosAplicados.precioMaximo)) {
       return false;
     }
 
-    // Vista activa filter
-    if (vistaActiva === "pendientes" && arreglo.status !== "pendiente") return false;
-    if (vistaActiva === "proceso" && arreglo.status !== "en_proceso") return false;
-    if (vistaActiva === "completados" && arreglo.status !== "completado") return false;
-    if (vistaActiva === "cancelados" && arreglo.status !== "cancelado") return false;
+    if (filters.vistaActiva === "pendientes" && arreglo.status !== "pendiente") return false;
+    if (filters.vistaActiva === "proceso" && arreglo.status !== "en_proceso") return false;
+    if (filters.vistaActiva === "completados" && arreglo.status !== "completado") return false;
+    if (filters.vistaActiva === "cancelados" && arreglo.status !== "cancelado") return false;
     
     return true;
   });
 
   // Sort arreglos based on sortConfig
   const sortedArreglos = [...filteredArreglos].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? -1 : 1;
+    if (a[filters.sortConfig.key] < b[filters.sortConfig.key]) {
+      return filters.sortConfig.direction === "asc" ? -1 : 1;
     }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "asc" ? 1 : -1;
+    if (a[filters.sortConfig.key] > b[filters.sortConfig.key]) {
+      return filters.sortConfig.direction === "asc" ? 1 : -1;
     }
     return 0;
   });
-
-  // Reset form fields
-  const resetForm = () => {
-    setCurrentArreglo(null);
-    setFechaComandaDate(undefined);
-    setFechaArregloDate(undefined);
-    setMismaManicura(false);
-  };
-
-  // Handle applying filters
-  const handleApplyFilters = () => {
-    setFiltrosAplicados({...filtros});
-    setIsFilterDialogOpen(false);
-    toast.success("Filtros aplicados");
-  };
-
-  // Handle resetting filters
-  const handleResetFilters = () => {
-    const emptyFilters = {
-      estados: [],
-      manicuristasOriginal: [],
-      manicuristasArreglo: [],
-      fechaDesde: null,
-      fechaHasta: null,
-      descuenta: "",
-      precioMinimo: "",
-      precioMaximo: ""
-    };
-    
-    setFiltros(emptyFilters);
-    setFechaDesdeDate(undefined);
-    setFechaHastaDate(undefined);
-    setFiltrosAplicados(emptyFilters);
-    setCantidadFiltrosAplicados(0);
-    setIsFilterDialogOpen(false);
-    toast.success("Filtros restablecidos");
-  };
-
-  // Helper function to map status to user-friendly text
-  const mapStatus = (status: string) => {
-    switch (status) {
-      case 'pendiente': return 'Pendiente';
-      case 'en_proceso': return 'En proceso';
-      case 'completado': return 'Completado';
-      case 'cancelado': return 'Cancelado';
-      default: return status;
-    }
-  };
-
-  const handleExportReport = () => {
-    const exportData = sortedArreglos.map(arreglo => ({
-      Cliente: arreglo.client_name,
-      Descripción: arreglo.description,
-      Estado: mapStatus(arreglo.status),
-      'Comanda Original': arreglo.created_by,
-      'Arreglado Por': arreglo.assigned_to || 'N/A',
-      Fecha: arreglo.date,
-      Precio: arreglo.price,
-      'Estado de Pago': arreglo.payment_status === 'pagado' ? 'Pagado' : 'Pendiente',
-      Notas: arreglo.notes || ''
-    }));
-
-    exportReport(exportData, {
-      filename: `Arreglos_${format(new Date(), 'yyyy-MM-dd')}`,
-      format: 'excel'
-    });
-  };
-
-  // Template data for import
-  const templateData = [
-    {
-      client_name: "Cliente Ejemplo",
-      service_type: serviceTypes[0],
-      description: "Descripción del arreglo",
-      status: "pendiente",
-      assigned_to: "",
-      price: 1000,
-      payment_status: "pendiente",
-      notes: "Notas adicionales"
-    }
-  ];
-
-  // Validation function for imported data
-  const validateArregloImport = (row: any) => {
-    if (!row.client_name) {
-      return { isValid: false, error: "El nombre del cliente es requerido" };
-    }
-    if (!row.service_type || !serviceTypes.includes(row.service_type)) {
-      return { isValid: false, error: "El tipo de servicio no es válido" };
-    }
-    if (!row.description) {
-      return { isValid: false, error: "La descripción es requerida" };
-    }
-    if (typeof row.price !== 'number' && isNaN(Number(row.price))) {
-      return { isValid: false, error: "El precio debe ser un número" };
-    }
-    return { isValid: true };
-  };
 
   // Handle import function
   const handleImportArreglos = async (data: any[]) => {
     try {
       for (const item of data) {
-        await addArregloMutation.mutateAsync({
+        await data.addArregloMutation.mutateAsync({
           ...item,
           date: new Date().toLocaleDateString(),
           created_by: "admin" // This should be the current user
         });
       }
-      toast.success(`${data.length} arreglos importados correctamente`);
     } catch (error) {
       console.error('Error importing arreglos:', error);
       toast.error('Error al importar arreglos');
     }
   };
 
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-
   return {
-    // Estado y datos
-    arreglos,
+    ...dialogs,
+    ...filters,
+    ...data,
+    ...importExport,
     filteredArreglos: sortedArreglos,
-    isLoading,
-    
-    // Estado de diálogos
-    isAddDialogOpen,
-    setIsAddDialogOpen,
-    isEditDialogOpen,
-    setIsEditDialogOpen,
-    isFilterDialogOpen,
-    setIsFilterDialogOpen,
-    currentArreglo,
-    setCurrentArreglo,
-    
-    // Filtros
-    searchTerm,
-    setSearchTerm,
-    filtros,
-    setFiltros,
-    filtrosAplicados,
-    cantidadFiltrosAplicados,
-    
-    // Vista
-    vistaActiva, 
-    setVistaActiva,
-    
-    // Mutaciones
-    addArregloMutation,
-    updateArregloMutation,
-    deleteArregloMutation,
-    
-    // Fecha y Calendar
-    fechaComandaDate,
-    setFechaComandaDate,
-    fechaArregloDate,
-    setFechaArregloDate,
-    fechaDesdeDate,
-    setFechaDesdeDate,
-    fechaHastaDate,
-    setFechaHastaDate,
-    
-    // Otros
     mismaManicura,
     setMismaManicura,
-    sortConfig,
-    setSortConfig,
-    
-    // Funciones
-    handleApplyFilters,
-    handleResetFilters,
-    handleExportReport,
-    resetForm,
-    isImportDialogOpen,
-    setIsImportDialogOpen,
-    templateData,
-    handleImportArreglos,
-    validateArregloImport
+    handleImportArreglos
   };
 }

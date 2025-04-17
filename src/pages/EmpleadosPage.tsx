@@ -11,6 +11,7 @@ import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDia
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
 import { Users, BriefcaseBusiness, UserRound, UserCheck, UserPlus, Trash2 } from "lucide-react";
 import { EmployeeStatusToggle } from "@/components/employees/EmployeeStatusToggle";
+import { employeeService } from "@/services/employeeService";
 
 export interface Employee {
   id: number;

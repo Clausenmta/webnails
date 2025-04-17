@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,12 +55,10 @@ export default function EmpleadosPage() {
     documents: []
   });
   
-  // Fetch employees from Supabase
   const { data: employees = [], isLoading, error } = useQuery({
     queryKey: ['employees'],
     queryFn: employeeService.fetchEmployees,
     select: (data) => {
-      // Map Supabase data to the Employee interface used in the frontend
       return data.map(emp => ({
         id: emp.id,
         name: emp.name,
@@ -91,7 +88,6 @@ export default function EmpleadosPage() {
   const handleSaveEmployee = async (employeeData: Employee | Partial<Employee>) => {
     try {
       if ('id' in employeeData && employeeData.id) {
-        // Update existing employee
         await employeeService.updateEmployee(employeeData.id, {
           name: employeeData.name || '',
           email: employeeData.email || '',
@@ -105,7 +101,6 @@ export default function EmpleadosPage() {
         });
         toast.success("Empleado actualizado correctamente");
       } else {
-        // Create new employee
         await employeeService.addEmployee({
           name: employeeData.name || '',
           email: employeeData.email || 'empleado@nailsandco.com',
@@ -120,7 +115,6 @@ export default function EmpleadosPage() {
         toast.success("Empleado creado correctamente");
       }
       
-      // Refresh employee data
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       setIsProfileOpen(false);
     } catch (error) {
@@ -133,7 +127,6 @@ export default function EmpleadosPage() {
     try {
       await employeeService.deleteEmployee(employeeId);
       toast.success("Empleado eliminado correctamente");
-      // Refresh employee data
       queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (error) {
       console.error("Error al eliminar empleado:", error);
@@ -183,7 +176,6 @@ export default function EmpleadosPage() {
     positionSummary[position].avgBilling = count > 0 ? totalBilling / count : 0;
   });
 
-  // Show loading state while fetching employees
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -192,7 +184,6 @@ export default function EmpleadosPage() {
     );
   }
 
-  // Show error state if fetching employees fails
   if (error) {
     return (
       <div className="flex items-center justify-center h-full text-red-500">

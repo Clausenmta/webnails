@@ -1,17 +1,18 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
 import { Users, BriefcaseBusiness, UserRound, UserCheck, UserPlus, Trash2 } from "lucide-react";
 import { EmployeeStatusToggle } from "@/components/employees/EmployeeStatusToggle";
 import { employeeService } from "@/services/employeeService";
+import { toast } from "sonner";
 
 export interface Employee {
   id: number;
@@ -43,54 +44,6 @@ export default function EmpleadosPage() {
   const isSuperAdmin = isAuthorized('superadmin');
   const queryClient = useQueryClient();
   
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: 1,
-      name: "María García",
-      position: "Estilista",
-      joinDate: "10/01/2023",
-      contact: "11-1234-5678",
-      email: "maria@nailsandco.com",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Laura Martínez",
-      position: "Manicurista",
-      joinDate: "15/03/2023",
-      contact: "11-2345-6789",
-      email: "laura@nailsandco.com",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Juan Pérez",
-      position: "Estilista",
-      joinDate: "05/05/2023",
-      contact: "11-3456-7890",
-      email: "juan@nailsandco.com",
-      status: "active",
-    },
-    {
-      id: 4,
-      name: "Ana López",
-      position: "Recepcionista",
-      joinDate: "20/06/2023",
-      contact: "11-4567-8901",
-      email: "ana@nailsandco.com",
-      status: "active",
-    },
-    {
-      id: 5,
-      name: "Carlos Rodríguez",
-      position: "Manicurista",
-      joinDate: "12/08/2023",
-      contact: "11-5678-9012",
-      email: "carlos@nailsandco.com",
-      status: "inactive",
-    },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -101,6 +54,28 @@ export default function EmpleadosPage() {
     position: "Estilista",
     status: "active",
     documents: []
+  });
+  
+  // Fetch employees from Supabase
+  const { data: employees = [], isLoading, error } = useQuery({
+    queryKey: ['employees'],
+    queryFn: employeeService.fetchEmployees,
+    select: (data) => {
+      // Map Supabase data to the Employee interface used in the frontend
+      return data.map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        position: emp.position,
+        joinDate: emp.hire_date,
+        email: emp.email,
+        status: emp.status as "active" | "inactive",
+        contact: emp.phone,
+        salary: emp.salary,
+        phone: emp.phone,
+        address: emp.address,
+        documents: []
+      }));
+    }
   });
 
   const handleEmployeeClick = (employee: Employee) => {
@@ -113,30 +88,56 @@ export default function EmpleadosPage() {
     setIsSalaryOpen(true);
   };
 
-  const handleSaveEmployee = (employeeData: Employee | Partial<Employee>) => {
-    if ('id' in employeeData && employeeData.id) {
-      setEmployees(prev => 
-        prev.map(emp => emp.id === employeeData.id ? { ...emp, ...employeeData } as Employee : emp)
-      );
-    } else {
-      const newEmployee = {
-        ...employeeData,
-        id: Math.max(0, ...employees.map(e => e.id)) + 1,
-        joinDate: new Date().toLocaleDateString('es-AR'),
-        status: 'active',
-      } as Employee;
+  const handleSaveEmployee = async (employeeData: Employee | Partial<Employee>) => {
+    try {
+      if ('id' in employeeData && employeeData.id) {
+        // Update existing employee
+        await employeeService.updateEmployee(employeeData.id, {
+          name: employeeData.name || '',
+          email: employeeData.email || '',
+          position: employeeData.position || 'Estilista',
+          phone: employeeData.phone,
+          address: employeeData.address,
+          status: employeeData.status || 'active',
+          hire_date: employeeData.joinDate || new Date().toLocaleDateString('es-AR'),
+          salary: employeeData.salary || 0,
+          created_by: 'admin'
+        });
+        toast.success("Empleado actualizado correctamente");
+      } else {
+        // Create new employee
+        await employeeService.addEmployee({
+          name: employeeData.name || '',
+          email: employeeData.email || 'empleado@nailsandco.com',
+          position: employeeData.position || 'Estilista',
+          phone: employeeData.phone,
+          address: employeeData.address,
+          status: 'active',
+          hire_date: new Date().toLocaleDateString('es-AR'),
+          salary: employeeData.salary || 0,
+          created_by: 'admin'
+        });
+        toast.success("Empleado creado correctamente");
+      }
       
-      setEmployees(prev => [newEmployee, ...prev]);
+      // Refresh employee data
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setIsProfileOpen(false);
+    } catch (error) {
+      console.error("Error al guardar empleado:", error);
+      toast.error("Error al guardar el empleado");
     }
-    setIsProfileOpen(false);
   };
 
   const handleDeleteEmployee = async (employeeId: number) => {
     try {
       await employeeService.deleteEmployee(employeeId);
-      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+      toast.success("Empleado eliminado correctamente");
+      // Refresh employee data
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (error) {
       console.error("Error al eliminar empleado:", error);
+      toast.error("Error al eliminar el empleado");
     }
   };
 
@@ -145,22 +146,22 @@ export default function EmpleadosPage() {
     setIsProfileOpen(true);
   };
 
-  const filteredEmployees = employees.filter(
+  const filteredEmployees = (employees || []).filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const employeesByPosition = employees.reduce((acc, employee) => {
+  const employeesByPosition = (employees || []).reduce((acc, employee) => {
     if (employee.status === "active") {
       acc[employee.position] = (acc[employee.position] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
 
-  const activeEmployees = employees.filter(emp => emp.status === "active").length;
+  const activeEmployees = (employees || []).filter(emp => emp.status === "active").length;
 
-  const positionSummary = employees.reduce((acc, employee) => {
+  const positionSummary = (employees || []).reduce((acc, employee) => {
     const position = employee.position;
     
     if (!acc[position]) {
@@ -181,6 +182,24 @@ export default function EmpleadosPage() {
     const { count, totalBilling } = positionSummary[position];
     positionSummary[position].avgBilling = count > 0 ? totalBilling / count : 0;
   });
+
+  // Show loading state while fetching employees
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Cargando empleados...</p>
+      </div>
+    );
+  }
+
+  // Show error state if fetching employees fails
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-red-500">
+        <p>Error al cargar empleados. Por favor intente de nuevo.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

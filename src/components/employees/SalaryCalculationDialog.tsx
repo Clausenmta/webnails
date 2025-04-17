@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Employee } from "@/pages/EmpleadosPage";
+import { Employee } from "@/types/employees";
 import { toast } from "sonner";
 import { Calculator, Download, Save, List } from "lucide-react";
 import { jsPDF } from "jspdf";

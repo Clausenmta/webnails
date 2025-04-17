@@ -25,7 +25,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Employee } from "@/pages/EmpleadosPage";
+import { Employee } from "@/types/employees";
 import {
   Form,
   FormControl,

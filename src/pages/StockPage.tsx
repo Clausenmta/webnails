@@ -26,7 +26,7 @@ import UserRoleInfo from "@/components/auth/UserRoleInfo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { stockService } from "@/services/stock";
 import type { StockItem, NewStockItem } from "@/types/stock";
-import { stockCategories } from "@/types/stock";
+import { stockCategories, stockLocations } from "@/types/stock";
 
 interface StockLocation {
   id: number;
@@ -56,6 +56,7 @@ export default function StockPage() {
     min_stock_level: 1,
     unit_price: 0,
     purchase_date: new Date().toLocaleDateString(),
+    location: stockLocations[0]
   });
 
   const [stockUpdate, setStockUpdate] = useState({
@@ -128,6 +129,7 @@ export default function StockPage() {
       min_stock_level: 1,
       unit_price: 0,
       purchase_date: new Date().toLocaleDateString(),
+      location: stockLocations[0]
     });
   };
 
@@ -299,6 +301,7 @@ export default function StockPage() {
                         <th className="py-3 px-4 text-left">Categoría</th>
                         <th className="py-3 px-4 text-center">Stock</th>
                         <th className="py-3 px-4 text-center">Mínimo</th>
+                        <th className="py-3 px-4 text-left">Ubicación</th>
                         {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
                         <th className="py-3 px-4 text-right">Acciones</th>
                       </tr>
@@ -313,6 +316,7 @@ export default function StockPage() {
                             {product.quantity}
                           </td>
                           <td className="py-3 px-4 text-center">{product.min_stock_level || 3}</td>
+                          <td className="py-3 px-4">{product.location}</td>
                           {isSuperAdmin && (
                             <td className="py-3 px-4 text-right">${product.unit_price.toLocaleString()}</td>
                           )}
@@ -437,13 +441,32 @@ export default function StockPage() {
                 value={newProduct.category} 
                 onValueChange={(value) => setNewProduct({...newProduct, category: value})}
               >
-                <SelectTrigger className="w-full border-[#9b87f5] focus:ring-[#9b87f5]">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar categoría" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent>
                   {stockCategories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">Ubicación</Label>
+              <Select 
+                value={newProduct.location || ''} 
+                onValueChange={(value) => setNewProduct({...newProduct, location: value})}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar ubicación" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stockLocations.map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -689,14 +712,23 @@ export default function StockPage() {
 
             <div className="space-y-2">
               <Label htmlFor="location">Ubicación</Label>
-              <Input
-                id="location"
-                value={editingProduct?.location || ""}
-                onChange={(e) => setEditingProduct(prev => 
-                  prev ? { ...prev, location: e.target.value } : null
+              <Select 
+                value={editingProduct?.location || ''} 
+                onValueChange={(value) => setEditingProduct(prev => 
+                  prev ? { ...prev, location: value } : null
                 )}
-                className="w-full"
-              />
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar ubicación" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stockLocations.map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           

@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Arreglo } from "@/services/arreglosService";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 interface ArreglosTableProps {
   arreglos: Arreglo[];
   onViewClick: (arreglo: Arreglo) => void;
+  onDeleteClick?: (arreglo: Arreglo) => void;
   sortConfig: {
     key: keyof Arreglo;
     direction: "asc" | "desc";
@@ -19,6 +19,7 @@ interface ArreglosTableProps {
 export default function ArreglosTable({
   arreglos,
   onViewClick,
+  onDeleteClick,
   sortConfig,
   onSortChange
 }: ArreglosTableProps) {
@@ -74,13 +75,25 @@ export default function ArreglosTable({
             <TableCell>{arreglo.date}</TableCell>
             <TableCell>{arreglo.repair_date || '-'}</TableCell>
             <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onViewClick(arreglo)}
-              >
-                Ver detalles
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onViewClick(arreglo)}
+                >
+                  Ver detalles
+                </Button>
+                {onDeleteClick && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDeleteClick(arreglo)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

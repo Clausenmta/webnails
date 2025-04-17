@@ -106,33 +106,30 @@ export default function EmployeeProfileDialog({
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
-      name: employee?.name || newEmployeeData.name || "",
-      position: employee?.position || newEmployeeData.position || "Estilista",
-      phone: employee?.phone || newEmployeeData.phone || "",
-      email: employee?.email || newEmployeeData.email || "",
-      address: employee?.address || newEmployeeData.address || "",
+      name: employee?.name || "",
+      position: employee?.position || "Estilista",
+      phone: employee?.phone || "",
+      email: employee?.email || "",
+      address: employee?.address || "",
       emergency_contact: employee?.contact || "",
-      documentId: employee?.documentId || newEmployeeData.documentId || "",
-      birthday: employee?.birthday || newEmployeeData.birthday || "",
-      bankAccount: employee?.bankAccount || newEmployeeData.bankAccount || "",
+      documentId: employee?.documentId || "",
+      birthday: employee?.birthday || "",
+      bankAccount: employee?.bankAccount || "",
     },
   });
 
   const handleSave = (values: z.infer<typeof employeeFormSchema>) => {
-    if (employee) {
-      // Update existing employee
-      onSave({
-        ...employee,
-        ...values,
-        documents,
-      });
-    } else {
-      // Create new employee
-      onSave({
-        ...newEmployeeData,
-        ...values,
-      });
-    }
+    const employeeData = employee 
+      ? { ...employee, ...values }
+      : {
+          ...values,
+          status: "active",
+          joinDate: new Date().toLocaleDateString("es-AR"),
+          documents: [],
+        };
+    
+    onSave(employeeData);
+    onOpenChange(false);
   };
 
   const handleAddDocument = () => {
@@ -301,5 +298,5 @@ export default function EmployeeProfileDialog({
         </Form>
       </DialogContent>
     </Dialog>
-);
+  );
 }

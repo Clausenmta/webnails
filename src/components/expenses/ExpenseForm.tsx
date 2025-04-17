@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
-import { NewExpense, expenseCategories } from "@/types/expenses";
+import { NewExpense, expenseCategories, paymentMethods } from "@/types/expenses";
 import { format } from "date-fns";
 import { FileImage, File, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -29,7 +28,8 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
     created_by: user?.username || "",
     details: "",
     due_date: "",
-    provider: ""
+    provider: "",
+    payment_method: "Efectivo"
   });
 
   useEffect(() => {
@@ -142,6 +142,25 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
           </div>
         </>
       )}
+      
+      <div className="space-y-2">
+        <Label>Medio de Pago</Label>
+        <Select 
+          value={newExpense.payment_method} 
+          onValueChange={(value) => setNewExpense({...newExpense, payment_method: value as PaymentMethod})}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Seleccionar medio de pago" />
+          </SelectTrigger>
+          <SelectContent>
+            {paymentMethods.map(method => (
+              <SelectItem key={method} value={method}>
+                {method}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       
       <div className="space-y-2">
         <Label>Adjuntos (opcional)</Label>

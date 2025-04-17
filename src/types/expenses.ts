@@ -1,3 +1,4 @@
+export type PaymentMethod = "Efectivo" | "Transferencia" | "Cuenta Corriente";
 
 export interface Expense {
   id: number;
@@ -11,6 +12,7 @@ export interface Expense {
   provider?: string; // opcional para gastos con vencimiento
   status?: "pending" | "paid"; // opcional para gastos con vencimiento
   created_at: string;
+  payment_method?: PaymentMethod;
 }
 
 export type NewExpense = Omit<Expense, 'id' | 'created_at'>;
@@ -23,4 +25,10 @@ export const expenseCategories = [
   "Marketing", 
   "Personal", 
   "Otros"
+];
+
+export const paymentMethods: PaymentMethod[] = [
+  "Efectivo", 
+  "Transferencia", 
+  "Cuenta Corriente"
 ];

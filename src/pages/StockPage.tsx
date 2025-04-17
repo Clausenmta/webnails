@@ -24,8 +24,9 @@ import { Package, Pencil, Trash2, PlusCircle, RefreshCw, ShieldCheck } from "luc
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleInfo from "@/components/auth/UserRoleInfo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { stockService, stockCategories } from "@/services/stock";
-import type { StockItem, NewStockItem } from "@/services/stock";
+import { stockService } from "@/services/stock";
+import type { StockItem, NewStockItem } from "@/types/stock";
+import { stockCategories } from "@/types/stock";
 
 interface StockLocation {
   id: number;

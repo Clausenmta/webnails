@@ -21,13 +21,11 @@ export type NewStockItem = Omit<StockItem, 'id' | 'created_at'>;
 
 // Categorías de productos para stock
 export const stockCategories = [
-  "Productos para cabello",
-  "Productos para uñas",
-  "Cosméticos",
-  "Cuidado facial",
-  "Equipamiento",
-  "Herramientas",
-  "Otros"
+  "SEMI OPI",
+  "SEMI NAILS",
+  "SHINE",
+  "TRADICIONAL",
+  "VARIOS"
 ];
 
 // Datos de muestra para cuando Supabase no está configurado
@@ -36,7 +34,7 @@ export const MOCK_STOCK: StockItem[] = [
     id: 1,
     created_at: new Date().toISOString(),
     product_name: "Shampoo profesional",
-    category: "Productos para cabello",
+    category: "VARIOS",
     brand: "Marca Ejemplo",
     quantity: 10,
     unit_price: 1800,

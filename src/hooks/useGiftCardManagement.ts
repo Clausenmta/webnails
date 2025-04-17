@@ -1,7 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { giftCardService, GiftCard, NewGiftCard } from "@/services/giftCardService";
+import { 
+  giftCardService, 
+  GiftCard, 
+  NewGiftCard, 
+  calculateExpiryDate,
+  determineStatus
+} from "@/services/giftCardService";
 import { toast } from "sonner";
 
 export function useGiftCardManagement() {
@@ -134,6 +140,16 @@ export function useGiftCardManagement() {
     setImportResults({ total: 0, successful: 0, failed: 0 });
   };
 
+  // Función para calcular automáticamente la fecha de vencimiento
+  const updateExpiryDate = (purchaseDate: string): string => {
+    return calculateExpiryDate(purchaseDate);
+  };
+
+  // Función para determinar el estado basado en fechas
+  const updateStatusFromDates = (purchaseDate: string, expiryDate: string, redeemedDate?: string): GiftCard["status"] => {
+    return determineStatus(purchaseDate, expiryDate, redeemedDate);
+  };
+
   return {
     // Estado y datos
     giftCards,
@@ -183,6 +199,8 @@ export function useGiftCardManagement() {
     closeAllDialogs,
     handleDialogOpenChange,
     resetImportState,
+    updateExpiryDate,
+    updateStatusFromDates,
     
     // Otros
     dialogsEnabled

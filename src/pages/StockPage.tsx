@@ -45,7 +45,9 @@ export default function StockPage() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(false);
-  
+  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
+
   const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
     product_name: "",
     category: stockCategories[0],
@@ -93,6 +95,21 @@ export default function StockPage() {
     mutationFn: stockService.deleteStockItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock'] });
+    }
+  });
+
+  const editProductMutation = useMutation({
+    mutationFn: (data: { id: number, updates: Partial<NewStockItem> }) => 
+      stockService.updateStockItem(data.id, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      setIsEditProductOpen(false);
+      setEditingProduct(null);
+      toast.success("Producto actualizado correctamente");
+    },
+    onError: (error: any) => {
+      console.error("Error al actualizar el producto:", error);
+      toast.error(`Error al actualizar el producto: ${error.message}`);
     }
   });
 
@@ -147,6 +164,31 @@ export default function StockPage() {
     if (window.confirm("¿Está seguro que desea eliminar este producto?")) {
       deleteProductMutation.mutate(id);
     }
+  };
+
+  const handleEditProduct = (product: StockItem) => {
+    setEditingProduct(product);
+    setIsEditProductOpen(true);
+  };
+
+  const handleSaveEditedProduct = () => {
+    if (!editingProduct) return;
+
+    const { id, ...updates } = editingProduct;
+    editProductMutation.mutate({ 
+      id, 
+      updates: {
+        product_name: updates.product_name,
+        category: updates.category,
+        quantity: updates.quantity,
+        min_stock_level: updates.min_stock_level,
+        unit_price: updates.unit_price,
+        purchase_date: updates.purchase_date,
+        supplier: updates.supplier,
+        brand: updates.brand,
+        location: updates.location
+      }
+    });
   };
 
   const stockLocations: StockLocation[] = [
@@ -278,9 +320,7 @@ export default function StockPage() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => {
-                                  toast.info("Función de edición será implementada pronto");
-                                }}
+                                onClick={() => handleEditProduct(product)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -530,6 +570,148 @@ export default function StockPage() {
               disabled={stockUpdate.quantity <= 0 || !stockUpdate.productId || updateStockMutation.isPending}
             >
               {updateStockMutation.isPending ? "Actualizando..." : "Actualizar Stock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Editar Producto</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del producto en el inventario
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre del Producto</Label>
+              <Input
+                id="name"
+                value={editingProduct?.product_name || ""}
+                onChange={(e) => setEditingProduct(prev => 
+                  prev ? { ...prev, product_name: e.target.value } : null
+                )}
+                placeholder="Nombre completo del producto"
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoría</Label>
+              <Select 
+                value={editingProduct?.category || ""} 
+                onValueChange={(value) => setEditingProduct(prev => 
+                  prev ? { ...prev, category: value } : null
+                )}
+              >
+                <SelectTrigger className="w-full border-[#9b87f5] focus:ring-[#9b87f5]">
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {stockCategories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  value={editingProduct?.quantity || ""}
+                  onChange={(e) => setEditingProduct(prev => 
+                    prev ? { ...prev, quantity: Number(e.target.value) } : null
+                  )}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minStock">Stock Mínimo</Label>
+                <Input
+                  id="minStock"
+                  type="number"
+                  min="1"
+                  value={editingProduct?.min_stock_level || ""}
+                  onChange={(e) => setEditingProduct(prev => 
+                    prev ? { ...prev, min_stock_level: Number(e.target.value) } : null
+                  )}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Precio</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  value={editingProduct?.unit_price || ""}
+                  onChange={(e) => setEditingProduct(prev => 
+                    prev ? { ...prev, unit_price: Number(e.target.value) } : null
+                  )}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier">Proveedor</Label>
+                <Input
+                  id="supplier"
+                  value={editingProduct?.supplier || ""}
+                  onChange={(e) => setEditingProduct(prev => 
+                    prev ? { ...prev, supplier: e.target.value } : null
+                  )}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brand">Marca</Label>
+                <Input
+                  id="brand"
+                  value={editingProduct?.brand || ""}
+                  onChange={(e) => setEditingProduct(prev => 
+                    prev ? { ...prev, brand: e.target.value } : null
+                  )}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Ubicación</Label>
+              <Input
+                id="location"
+                value={editingProduct?.location || ""}
+                onChange={(e) => setEditingProduct(prev => 
+                  prev ? { ...prev, location: e.target.value } : null
+                )}
+                className="w-full"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditProductOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveEditedProduct}
+              disabled={!editingProduct?.product_name || editProductMutation.isPending}
+              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
+            >
+              {editProductMutation.isPending ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>

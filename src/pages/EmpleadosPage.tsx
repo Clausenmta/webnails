@@ -1,46 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { Employee } from "@/types/employees";
+import { employeeService } from "@/services/employeeService";
+import { EmployeeList } from "@/components/employees/EmployeeList";
+import { EmployeeStats } from "@/components/employees/EmployeeStats";
+import { SalarySummary } from "@/components/employees/SalarySummary";
 import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
-import { Users, BriefcaseBusiness, UserRound, UserCheck, UserPlus, Trash2 } from "lucide-react";
-import { EmployeeStatusToggle } from "@/components/employees/EmployeeStatusToggle";
-import { employeeService } from "@/services/employeeService";
-import { toast } from "sonner";
-
-export interface Employee {
-  id: number;
-  name: string;
-  position: string;
-  email: string;
-  status: "active" | "inactive";
-  joinDate: string;
-  contact?: string;
-  salary?: number;
-  billingAverage?: number;
-  currentMonthBilling?: number;
-  phone?: string;
-  address?: string;
-  documentId?: string;
-  birthday?: string;
-  bankAccount?: string;
-  documents?: {
-    id: number;
-    name: string;
-    date: string;
-    type: "salary" | "contract" | "other";
-    url: string;
-  }[];
-}
 
 export default function EmpleadosPage() {
   const { isAuthorized } = useAuth();
-  const isSuperAdmin = isAuthorized('superadmin');
   const queryClient = useQueryClient();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,7 +31,7 @@ export default function EmpleadosPage() {
     status: "active",
     documents: []
   });
-  
+
   const { data: employees = [], isLoading, error } = useQuery({
     queryKey: ['employees'],
     queryFn: employeeService.fetchEmployees,
@@ -74,16 +51,6 @@ export default function EmpleadosPage() {
       }));
     }
   });
-
-  const handleEmployeeClick = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsProfileOpen(true);
-  };
-
-  const handleSalaryCalculation = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsSalaryOpen(true);
-  };
 
   const handleSaveEmployee = async (employeeData: Employee | Partial<Employee>) => {
     try {
@@ -134,27 +101,22 @@ export default function EmpleadosPage() {
     }
   };
 
-  const handleAddEmployee = () => {
-    setSelectedEmployee(null);
-    setIsProfileOpen(true);
-  };
-
-  const filteredEmployees = (employees || []).filter(
+  const filteredEmployees = employees.filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const employeesByPosition = (employees || []).reduce((acc, employee) => {
+  const employeesByPosition = employees.reduce((acc, employee) => {
     if (employee.status === "active") {
       acc[employee.position] = (acc[employee.position] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
 
-  const activeEmployees = (employees || []).filter(emp => emp.status === "active").length;
+  const activeEmployees = employees.filter(emp => emp.status === "active").length;
 
-  const positionSummary = (employees || []).reduce((acc, employee) => {
+  const positionSummary = employees.reduce((acc, employee) => {
     const position = employee.position;
     
     if (!acc[position]) {
@@ -209,7 +171,10 @@ export default function EmpleadosPage() {
             className="max-w-[300px]"
           />
           <Button
-            onClick={handleAddEmployee}
+            onClick={() => {
+              setSelectedEmployee(null);
+              setIsProfileOpen(true);
+            }}
             className="bg-salon-600 hover:bg-salon-700"
           >
             <UserPlus className="mr-2 h-4 w-4" />
@@ -234,153 +199,32 @@ export default function EmpleadosPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="py-3 px-4 text-left">Nombre</th>
-                      <th className="py-3 px-4 text-left">Posición</th>
-                      <th className="py-3 px-4 text-left">Contacto</th>
-                      <th className="py-3 px-4 text-center">Estado</th>
-                      <th className="py-3 px-4 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEmployees.map((employee) => (
-                      <tr key={employee.id} className="border-b">
-                        <td className="py-3 px-4">{employee.name}</td>
-                        <td className="py-3 px-4">{employee.position}</td>
-                        <td className="py-3 px-4">{employee.contact}</td>
-                        <td className="py-3 px-4 text-center">
-                          <EmployeeStatusToggle
-                            employeeId={employee.id}
-                            currentStatus={employee.status}
-                            onStatusChange={() => queryClient.invalidateQueries({ queryKey: ['employees'] })}
-                          />
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEmployeeClick(employee)}
-                            >
-                              Ver Perfil
-                            </Button>
-                            {employee.status === "active" && employee.position !== "Recepcionista" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleSalaryCalculation(employee)}
-                              >
-                                Calcular Sueldo
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteEmployee(employee.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <EmployeeList
+                employees={filteredEmployees}
+                onViewProfile={(employee) => {
+                  setSelectedEmployee(employee);
+                  setIsProfileOpen(true);
+                }}
+                onCalculateSalary={(employee) => {
+                  setSelectedEmployee(employee);
+                  setIsSalaryOpen(true);
+                }}
+                onDeleteEmployee={handleDeleteEmployee}
+              />
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="summary">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Empleados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{employees.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {employees.filter(e => e.status === "active").length} activos, {employees.filter(e => e.status === "inactive").length} inactivos
-                </p>
-              </CardContent>
-            </Card>
-            
-            {Object.entries(positionSummary).map(([position, data]) => (
-              <Card key={position}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {position}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{data.count}</div>
-                  <div className="flex flex-col mt-1">
-                    <p className="text-xs text-muted-foreground">
-                      Facturación Total: ${data.totalBilling.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Promedio: ${data.avgBilling.toLocaleString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Desglose de Sueldos</CardTitle>
-              <CardDescription>
-                Resumen de sueldos por posición
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="py-3 px-4 text-left">Posición</th>
-                      <th className="py-3 px-4 text-center">Cantidad</th>
-                      <th className="py-3 px-4 text-right">Promedio Mensual</th>
-                      <th className="py-3 px-4 text-right">Total Mensual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="py-3 px-4">Estilista</td>
-                      <td className="py-3 px-4 text-center">{employeesByPosition["Estilista"] || 0}</td>
-                      <td className="py-3 px-4 text-right">$42,000</td>
-                      <td className="py-3 px-4 text-right">$84,000</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-3 px-4">Manicurista</td>
-                      <td className="py-3 px-4 text-center">{employeesByPosition["Manicurista"] || 0}</td>
-                      <td className="py-3 px-4 text-right">$38,000</td>
-                      <td className="py-3 px-4 text-right">$76,000</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="py-3 px-4">Recepcionista</td>
-                      <td className="py-3 px-4 text-center">{employeesByPosition["Recepcionista"] || 0}</td>
-                      <td className="py-3 px-4 text-right">$25,000</td>
-                      <td className="py-3 px-4 text-right">$25,000</td>
-                    </tr>
-                    <tr className="font-bold">
-                      <td className="py-3 px-4">TOTAL</td>
-                      <td className="py-3 px-4 text-center">{activeEmployees}</td>
-                      <td className="py-3 px-4 text-right">-</td>
-                      <td className="py-3 px-4 text-right">$185,000</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          <EmployeeStats
+            employees={employees}
+            positionSummary={positionSummary}
+          />
+          <SalarySummary
+            employees={employees}
+            employeesByPosition={employeesByPosition}
+            activeEmployees={activeEmployees}
+          />
         </TabsContent>
         
         <TabsContent value="absences">

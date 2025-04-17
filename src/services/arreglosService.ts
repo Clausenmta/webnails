@@ -17,6 +17,7 @@ export interface Arreglo {
   payment_status: "pendiente" | "pagado";
   created_by: string;
   notes?: string;
+  repair_date?: string; // Add missing repair_date property
 }
 
 export type NewArreglo = Omit<Arreglo, 'id' | 'created_at'>;

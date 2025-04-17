@@ -72,7 +72,7 @@ export default function ArreglosTable({
             </TableCell>
             <TableCell>${arreglo.price}</TableCell>
             <TableCell>{arreglo.date}</TableCell>
-            <TableCell>{arreglo.repair_date}</TableCell>
+            <TableCell>{arreglo.repair_date || '-'}</TableCell>
             <TableCell>
               <Button
                 variant="ghost"

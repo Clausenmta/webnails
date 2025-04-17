@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useArreglosData } from "@/hooks/arreglos/useArreglosData";
-import { Arreglo } from "@/services/arreglosService";
+import { Arreglo, serviceTypes } from "@/services/arreglosService";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,6 +37,7 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
     date: format(new Date(), "dd/MM/yyyy"), // Fecha Comanda
     repair_date: format(new Date(), "dd/MM/yyyy"), // Fecha Arreglo
     payment_status: "pendiente" as "pendiente" | "pagado",
+    service_type: "Manicura", // Default service type
   });
 
   const [mismaManicura, setMismaManicura] = useState(false);
@@ -56,6 +57,7 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
         date: arreglo.date,
         repair_date: arreglo.repair_date || format(new Date(), "dd/MM/yyyy"),
         payment_status: arreglo.payment_status,
+        service_type: arreglo.service_type,
       });
     }
   }, [arreglo]);

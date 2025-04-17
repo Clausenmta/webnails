@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Dialog,
@@ -119,16 +120,22 @@ export default function EmployeeProfileDialog({
   });
 
   const handleSave = (values: z.infer<typeof employeeFormSchema>) => {
-    const employeeData = employee 
-      ? { ...employee, ...values }
-      : {
-          ...values,
-          status: "active",
-          joinDate: new Date().toLocaleDateString("es-AR"),
-          documents: [],
-        };
-    
-    onSave(employeeData);
+    if (employee) {
+      // Update existing employee
+      onSave({
+        ...employee,
+        ...values,
+        documents,
+      });
+    } else {
+      // Create new employee with properly typed status
+      onSave({
+        ...values,
+        status: "active" as "active" | "inactive", // Explicitly cast to the union type
+        joinDate: new Date().toLocaleDateString("es-AR"),
+        documents: [],
+      });
+    }
     onOpenChange(false);
   };
 

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,12 +115,17 @@ export default function GiftCardsPage() {
     updateStatusFromDates
   } = useGiftCardManagement();
 
-  const [newGiftCard, setNewGiftCard] = useState<Partial<NewGiftCard>>({
+  // Definir newGiftCard como una versión parcial de NewGiftCard con branch
+  interface GiftCardFormState extends Partial<NewGiftCard> {
+    branch?: string;
+  }
+
+  const [newGiftCard, setNewGiftCard] = useState<GiftCardFormState>({
     status: "active",
     purchase_date: new Date().toISOString().split('T')[0]
   });
 
-  const [editGiftCard, setEditGiftCard] = useState<Partial<NewGiftCard>>({});
+  const [editGiftCard, setEditGiftCard] = useState<GiftCardFormState>({});
   const [isRedeemed, setIsRedeemed] = useState<boolean>(false);
   const [newCardIsRedeemed, setNewCardIsRedeemed] = useState<boolean>(false);
 
@@ -212,14 +218,14 @@ export default function GiftCardsPage() {
     }
   }, [newCardIsRedeemed, updateStatusFromDates]);
 
-  const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
+  const handleNewGiftCardChange = (field: keyof (GiftCard & {branch?: string}), value: any) => {
     setNewGiftCard(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleEditGiftCardChange = (field: keyof GiftCard, value: any) => {
+  const handleEditGiftCardChange = (field: keyof (GiftCard & {branch?: string}), value: any) => {
     setEditGiftCard(prev => ({
       ...prev,
       [field]: value
@@ -270,23 +276,19 @@ export default function GiftCardsPage() {
       );
 
       // Crear un objeto que cumpla explícitamente con los requisitos de NewGiftCard
-      const giftCardToAdd: any = {
+      const giftCardToAdd: NewGiftCard = {
         code: newGiftCard.code, // Esta propiedad es requerida
-        amount: newGiftCard.amount || 0, // Esta propiedad es requerida
+        amount: newGiftCard.amount, // Esta propiedad es requerida
         status: status,
         purchase_date: newGiftCard.purchase_date || new Date().toISOString().split('T')[0],
         expiry_date: expiryDate,
         created_by: "admin",
-        customer_name: newGiftCard.customer_name,
-        customer_email: newGiftCard.customer_email,
-        redeemed_date: newGiftCard.redeemed_date,
-        notes: newGiftCard.notes
+        branch: newGiftCard.branch,
+        ...(newGiftCard.customer_name && { customer_name: newGiftCard.customer_name }),
+        ...(newGiftCard.customer_email && { customer_email: newGiftCard.customer_email }),
+        ...(newGiftCard.redeemed_date && { redeemed_date: newGiftCard.redeemed_date }),
+        ...(newGiftCard.notes && { notes: newGiftCard.notes })
       };
-
-      // La propiedad branch será filtrada en la mutación
-      if (newGiftCard.branch) {
-        giftCardToAdd.branch = newGiftCard.branch;
-      }
 
       addGiftCardMutation.mutate(giftCardToAdd);
 

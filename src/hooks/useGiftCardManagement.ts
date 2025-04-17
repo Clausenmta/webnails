@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -51,9 +50,7 @@ export function useGiftCardManagement() {
   // Mutaciones
   const addGiftCardMutation = useMutation({
     mutationFn: (newGiftCard: NewGiftCard) => {
-      // Eliminar campo branch antes de enviar a la API
-      const { branch, ...giftCardData } = newGiftCard as any;
-      return giftCardService.addGiftCard(giftCardData);
+      return giftCardService.addGiftCard(newGiftCard);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['giftCards'] });
@@ -68,9 +65,7 @@ export function useGiftCardManagement() {
 
   const updateGiftCardMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number, updates: Partial<NewGiftCard> }) => {
-      // Eliminar campo branch antes de enviar a la API
-      const { branch, ...updatesData } = updates as any;
-      return giftCardService.updateGiftCard(id, updatesData);
+      return giftCardService.updateGiftCard(id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['giftCards'] });
@@ -105,7 +100,6 @@ export function useGiftCardManagement() {
     try {
       action();
     } finally {
-      // Re-habilitar acciones después de un breve tiempo
       setTimeout(() => {
         setDialogsEnabled(true);
       }, 500);

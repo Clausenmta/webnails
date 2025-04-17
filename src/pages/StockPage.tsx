@@ -35,7 +35,6 @@ export default function StockPage() {
   
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
-  const [showRoleInfo, setShowRoleInfo] = useState(false);
   const [isEditProductOpen, setIsEditProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
 
@@ -184,7 +183,6 @@ export default function StockPage() {
     });
   };
 
-  // Define physical stock locations
   const physicalStockLocations: PhysicalStockLocation[] = [
     {
       id: 1,
@@ -257,17 +255,8 @@ export default function StockPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Actualizar Stock
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowRoleInfo(!showRoleInfo)}
-          >
-            <ShieldCheck className="mr-2 h-4 w-4" />
-            {showRoleInfo ? "Ocultar Roles" : "Verificar Roles"}
-          </Button>
         </div>
       </div>
-
-      {showRoleInfo && <UserRoleInfo />}
 
       {isLoading && (
         <Card>

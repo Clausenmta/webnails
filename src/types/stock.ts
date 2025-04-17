@@ -1,4 +1,3 @@
-
 // Stock-related type definitions
 
 export interface StockItem {
@@ -42,7 +41,11 @@ export interface PhysicalStockLocation {
   items: {
     productId: number;
     productName: string;
+    category: string;
+    brand?: string;
     quantity: number;
+    unit_price: number;
+    min_stock_level?: number;
   }[];
 }
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -189,37 +188,47 @@ export default function StockPage() {
   const physicalStockLocations: PhysicalStockLocation[] = [
     {
       id: 1,
-      name: "Salón Principal",
+      name: "Stock Casa",
       items: stockItems
-        .filter(item => item.location === "Salón Principal" || !item.location)
-        .slice(0, 5)
+        .filter(item => item.location === "Stock Casa")
         .map(item => ({
           productId: item.id,
           productName: item.product_name,
-          quantity: Math.ceil(item.quantity * 0.6)
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
         }))
     },
     {
       id: 2,
-      name: "Depósito",
+      name: "Stock Local",
       items: stockItems
-        .slice(0, 6)
+        .filter(item => item.location === "Stock Local")
         .map(item => ({
           productId: item.id,
           productName: item.product_name,
-          quantity: Math.ceil(item.quantity * 0.4)
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
         }))
     },
     {
       id: 3,
-      name: "Sala de Manicura",
+      name: "Stock en Uso",
       items: stockItems
-        .filter(item => item.category === "Productos para uñas" || item.category === "Esmaltes")
-        .slice(0, 3)
+        .filter(item => item.location === "Stock en Uso")
         .map(item => ({
           productId: item.id,
           productName: item.product_name,
-          quantity: Math.floor(item.quantity * 0.3)
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
         }))
     }
   ];
@@ -375,20 +384,36 @@ export default function StockPage() {
                             <thead>
                               <tr className="border-b bg-muted/50">
                                 <th className="py-2 px-3 text-left">Producto</th>
-                                <th className="py-2 px-3 text-right">Cantidad</th>
+                                <th className="py-2 px-3 text-left">Categoría</th>
+                                <th className="py-2 px-3 text-right">Stock</th>
+                                {isSuperAdmin && (
+                                  <th className="py-2 px-3 text-right">Precio</th>
+                                )}
                               </tr>
                             </thead>
                             <tbody>
                               {location.items.map((item, index) => (
                                 <tr key={index} className="border-b last:border-0">
-                                  <td className="py-2 px-3">{item.productName}</td>
-                                  <td className="py-2 px-3 text-right">{item.quantity}</td>
+                                  <td className="py-2 px-3">
+                                    {item.brand ? `${item.productName} (${item.brand})` : item.productName}
+                                  </td>
+                                  <td className="py-2 px-3">{item.category}</td>
+                                  <td className={`py-2 px-3 text-right ${
+                                    item.quantity < (item.min_stock_level || 3) ? "text-red-500 font-medium" : ""
+                                  }`}>
+                                    {item.quantity}
+                                  </td>
+                                  {isSuperAdmin && (
+                                    <td className="py-2 px-3 text-right">
+                                      ${item.unit_price.toLocaleString()}
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                               
                               {location.items.length === 0 && (
                                 <tr>
-                                  <td colSpan={2} className="py-4 text-center text-muted-foreground">
+                                  <td colSpan={isSuperAdmin ? 4 : 3} className="py-4 text-center text-muted-foreground">
                                     No hay productos en esta ubicación
                                   </td>
                                 </tr>

@@ -9,6 +9,7 @@ import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog"
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
 import { Users, BriefcaseBusiness, UserRound, UserCheck } from "lucide-react";
+import { EmployeeStatusToggle } from "@/components/employees/EmployeeStatusToggle";
 
 export interface Employee {
   id: number;
@@ -217,15 +218,11 @@ export default function EmpleadosPage() {
                         <td className="py-3 px-4">{employee.position}</td>
                         <td className="py-3 px-4">{employee.contact}</td>
                         <td className="py-3 px-4 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              employee.status === "active"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {employee.status === "active" ? "Activo" : "Inactivo"}
-                          </span>
+                          <EmployeeStatusToggle
+                            employeeId={employee.id}
+                            currentStatus={employee.status}
+                            onStatusChange={() => queryClient.invalidateQueries({ queryKey: ['employees'] })}
+                          />
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">

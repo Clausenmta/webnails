@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { arreglosService, Arreglo, NewArreglo } from "@/services/arreglosService";
@@ -238,6 +237,56 @@ export function useArreglosManagement() {
     });
   };
 
+  // Template data for import
+  const templateData = [
+    {
+      client_name: "Cliente Ejemplo",
+      service_type: serviceTypes[0],
+      description: "Descripción del arreglo",
+      status: "pendiente",
+      assigned_to: "",
+      price: 1000,
+      payment_status: "pendiente",
+      notes: "Notas adicionales"
+    }
+  ];
+
+  // Validation function for imported data
+  const validateArregloImport = (row: any) => {
+    if (!row.client_name) {
+      return { isValid: false, error: "El nombre del cliente es requerido" };
+    }
+    if (!row.service_type || !serviceTypes.includes(row.service_type)) {
+      return { isValid: false, error: "El tipo de servicio no es válido" };
+    }
+    if (!row.description) {
+      return { isValid: false, error: "La descripción es requerida" };
+    }
+    if (typeof row.price !== 'number' || row.price < 0) {
+      return { isValid: false, error: "El precio debe ser un número positivo" };
+    }
+    return { isValid: true };
+  };
+
+  // Handle import function
+  const handleImportArreglos = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await addArregloMutation.mutateAsync({
+          ...item,
+          date: new Date().toLocaleDateString(),
+          created_by: "admin" // This should be the current user
+        });
+      }
+      toast.success(`${data.length} arreglos importados correctamente`);
+    } catch (error) {
+      console.error('Error importing arreglos:', error);
+      toast.error('Error al importar arreglos');
+    }
+  };
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
   return {
     // Estado y datos
     arreglos,
@@ -291,6 +340,11 @@ export function useArreglosManagement() {
     handleApplyFilters,
     handleResetFilters,
     handleExportReport,
-    resetForm
+    resetForm,
+    isImportDialogOpen,
+    setIsImportDialogOpen,
+    templateData,
+    handleImportArreglos,
+    validateArregloImport
   };
 }

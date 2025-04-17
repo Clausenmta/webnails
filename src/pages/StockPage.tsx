@@ -29,6 +29,7 @@ import type { StockItem, NewStockItem, PhysicalStockLocation } from "@/types/sto
 import { stockCategories, stockLocations } from "@/types/stock";
 import { FileSpreadsheet } from "lucide-react";
 import { exportReport } from "@/utils/reportExport";
+import { ImportExcelDialog } from "@/components/common/ImportExcelDialog";
 
 export default function StockPage() {
   const { isAuthorized } = useAuth();
@@ -39,6 +40,7 @@ export default function StockPage() {
   const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
   const [isEditProductOpen, setIsEditProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
     product_name: "",
@@ -107,6 +109,117 @@ export default function StockPage() {
       toast.error(`Error al actualizar el producto: ${error.message}`);
     }
   });
+
+  const physicalStockLocations: PhysicalStockLocation[] = [
+    {
+      id: 1,
+      name: "Stock Casa",
+      items: stockItems
+        .filter(item => item.location === "Stock Casa")
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
+        }))
+    },
+    {
+      id: 2,
+      name: "Stock Local",
+      items: stockItems
+        .filter(item => item.location === "Stock Local")
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
+        }))
+    },
+    {
+      id: 3,
+      name: "Stock en Uso",
+      items: stockItems
+        .filter(item => item.location === "Stock en Uso")
+        .map(item => ({
+          productId: item.id,
+          productName: item.product_name,
+          category: item.category,
+          brand: item.brand,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          min_stock_level: item.min_stock_level
+        }))
+    }
+  ];
+
+  const handleExportExcel = () => {
+    const exportData = stockItems.map(item => ({
+      Código: item.id,
+      Producto: item.product_name,
+      Categoría: item.category,
+      Stock: item.quantity,
+      Mínimo: item.min_stock_level || 3,
+      Ubicación: item.location,
+      Marca: item.brand || 'N/A',
+      Proveedor: item.supplier || 'N/A',
+      Precio: item.unit_price
+    }));
+
+    exportReport(exportData, {
+      filename: 'inventario',
+      format: 'excel'
+    });
+  };
+
+  const templateData = [
+    {
+      product_name: "Producto Ejemplo",
+      category: stockCategories[0],
+      brand: "Marca",
+      supplier: "Proveedor",
+      quantity: 10,
+      min_stock_level: 5,
+      unit_price: 1000,
+      location: stockLocations[0]
+    }
+  ];
+
+  const validateStockImport = (row: any) => {
+    if (!row.product_name) {
+      return { isValid: false, error: "El nombre del producto es requerido" };
+    }
+    if (!row.category || !stockCategories.includes(row.category)) {
+      return { isValid: false, error: "La categoría no es válida" };
+    }
+    if (typeof row.quantity !== 'number' || row.quantity < 0) {
+      return { isValid: false, error: "La cantidad debe ser un número positivo" };
+    }
+    if (typeof row.unit_price !== 'number' || row.unit_price < 0) {
+      return { isValid: false, error: "El precio debe ser un número positivo" };
+    }
+    return { isValid: true };
+  };
+
+  const handleImportStock = async (data: any[]) => {
+    try {
+      for (const item of data) {
+        await addProductMutation.mutateAsync({
+          ...item,
+          purchase_date: new Date().toLocaleDateString()
+        });
+      }
+      toast.success(`${data.length} productos importados correctamente`);
+    } catch (error) {
+      console.error('Error importing stock:', error);
+      toast.error('Error al importar productos');
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -189,73 +302,6 @@ export default function StockPage() {
     });
   };
 
-  const physicalStockLocations: PhysicalStockLocation[] = [
-    {
-      id: 1,
-      name: "Stock Casa",
-      items: stockItems
-        .filter(item => item.location === "Stock Casa")
-        .map(item => ({
-          productId: item.id,
-          productName: item.product_name,
-          category: item.category,
-          brand: item.brand,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          min_stock_level: item.min_stock_level
-        }))
-    },
-    {
-      id: 2,
-      name: "Stock Local",
-      items: stockItems
-        .filter(item => item.location === "Stock Local")
-        .map(item => ({
-          productId: item.id,
-          productName: item.product_name,
-          category: item.category,
-          brand: item.brand,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          min_stock_level: item.min_stock_level
-        }))
-    },
-    {
-      id: 3,
-      name: "Stock en Uso",
-      items: stockItems
-        .filter(item => item.location === "Stock en Uso")
-        .map(item => ({
-          productId: item.id,
-          productName: item.product_name,
-          category: item.category,
-          brand: item.brand,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          min_stock_level: item.min_stock_level
-        }))
-    }
-  ];
-
-  const handleExportExcel = () => {
-    const exportData = stockItems.map(item => ({
-      Código: item.id,
-      Producto: item.product_name,
-      Categoría: item.category,
-      Stock: item.quantity,
-      Mínimo: item.min_stock_level || 3,
-      Ubicación: item.location,
-      Marca: item.brand || 'N/A',
-      Proveedor: item.supplier || 'N/A',
-      Precio: item.unit_price
-    }));
-
-    exportReport(exportData, {
-      filename: 'inventario',
-      format: 'excel'
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -272,6 +318,13 @@ export default function StockPage() {
           >
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             Exportar Excel
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setIsImportDialogOpen(true)}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Importar Excel
           </Button>
           <Button 
             className="bg-salon-400 hover:bg-salon-500"
@@ -812,6 +865,16 @@ export default function StockPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportExcelDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        onImport={handleImportStock}
+        templateData={templateData}
+        templateFilename="plantilla_stock"
+        title="Importar Stock"
+        description="Descargue la plantilla y complete los datos según el formato requerido"
+      />
     </div>
   );
 }

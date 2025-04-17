@@ -263,8 +263,8 @@ export function useArreglosManagement() {
     if (!row.description) {
       return { isValid: false, error: "La descripción es requerida" };
     }
-    if (typeof row.price !== 'number' || row.price < 0) {
-      return { isValid: false, error: "El precio debe ser un número positivo" };
+    if (typeof row.price !== 'number' && isNaN(Number(row.price))) {
+      return { isValid: false, error: "El precio debe ser un número" };
     }
     return { isValid: true };
   };

@@ -1,13 +1,13 @@
-
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { employeeService } from "@/services/employeeService";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EmployeeStatusToggleProps {
   employeeId: number;
   currentStatus: "active" | "inactive";
-  onStatusChange: () => void;
+  onStatusChange?: () => void;
 }
 
 export function EmployeeStatusToggle({ 
@@ -15,11 +15,21 @@ export function EmployeeStatusToggle({
   currentStatus, 
   onStatusChange 
 }: EmployeeStatusToggleProps) {
+  const queryClient = useQueryClient();
+  
   const handleToggleStatus = async () => {
     try {
       const newStatus = currentStatus === "active" ? "inactive" : "active";
       await employeeService.updateEmployee(employeeId, { status: newStatus });
-      onStatusChange();
+      
+      // Call the provided callback if it exists
+      if (onStatusChange) {
+        onStatusChange();
+      } else {
+        // Otherwise, invalidate the employees query directly
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+      }
+      
       toast.success(`Estado actualizado a ${newStatus === "active" ? "Activo" : "Inactivo"}`);
     } catch (error) {
       console.error('Error toggling employee status:', error);

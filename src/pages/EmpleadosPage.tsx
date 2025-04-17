@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
@@ -39,6 +40,7 @@ export interface Employee {
 export default function EmpleadosPage() {
   const { isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
+  const queryClient = useQueryClient();
   
   const [employees, setEmployees] = useState<Employee[]>([
     {

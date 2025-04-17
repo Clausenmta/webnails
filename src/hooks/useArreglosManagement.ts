@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { arreglosService, Arreglo, NewArreglo } from "@/services/arreglosService";
+import { arreglosService, Arreglo, NewArreglo, serviceTypes } from "@/services/arreglosService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { exportReport } from "@/utils/reportExport";

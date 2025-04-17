@@ -50,7 +50,11 @@ export function useGiftCardManagement() {
 
   // Mutaciones
   const addGiftCardMutation = useMutation({
-    mutationFn: giftCardService.addGiftCard,
+    mutationFn: (newGiftCard: NewGiftCard) => {
+      // Eliminar campo branch antes de enviar a la API
+      const { branch, ...giftCardData } = newGiftCard as any;
+      return giftCardService.addGiftCard(giftCardData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['giftCards'] });
       setIsAddDialogOpen(false);
@@ -63,8 +67,11 @@ export function useGiftCardManagement() {
   });
 
   const updateGiftCardMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: number, updates: Partial<NewGiftCard> }) => 
-      giftCardService.updateGiftCard(id, updates),
+    mutationFn: ({ id, updates }: { id: number, updates: Partial<NewGiftCard> }) => {
+      // Eliminar campo branch antes de enviar a la API
+      const { branch, ...updatesData } = updates as any;
+      return giftCardService.updateGiftCard(id, updatesData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['giftCards'] });
       setIsEditDialogOpen(false);

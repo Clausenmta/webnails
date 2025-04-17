@@ -16,11 +16,11 @@ export interface GiftCard {
   redeemed_date?: string;
   created_by: string;
   notes?: string;
-  branch?: string; // Propiedad para sucursal
+  branch?: string; // Mantenemos esto como propiedad de UI, pero no se guardará en la BD
   is_redeemed?: boolean; // Nueva propiedad para indicar si ha sido canjeada
 }
 
-export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at'>;
+export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at' | 'branch' | 'is_redeemed'>;
 
 // Helper function to handle Supabase errors
 const handleSupabaseError = (error: any, operation: string = "operación") => {
@@ -126,10 +126,13 @@ export const giftCardService = {
         newGiftCard.redeemed_date
       );
       
+      // Extraemos branch si existe, ya que no es parte del esquema de la base de datos
+      const { branch, is_redeemed, ...giftCardData } = newGiftCard as any;
+      
       const { data, error } = await supabase
         .from('gift_cards')
         .insert([{
-          ...newGiftCard,
+          ...giftCardData,
           status
         }])
         .select()
@@ -141,7 +144,8 @@ export const giftCardService = {
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
-        is_redeemed: data.status === "redeemed" || data.redeemed_date != null
+        is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
+        branch: branch // Reintegramos branch solo para la UI
       };
     } catch (error) {
       handleSupabaseError(error, "agregar tarjeta de regalo");
@@ -165,10 +169,13 @@ export const giftCardService = {
       
       if (fetchError) throw fetchError;
       
+      // Extraemos branch si existe, ya que no es parte del esquema de la base de datos
+      const { branch, is_redeemed, ...updatedData } = updates as any;
+      
       // Combinar la gift card actual con las actualizaciones
       const updatedGiftCard = {
         ...currentCard,
-        ...updates
+        ...updatedData
       };
       
       // Determinar estado basado en fechas si no se especifica en las actualizaciones
@@ -189,11 +196,12 @@ export const giftCardService = {
       
       if (error) throw error;
       
-      // Convertimos los valores de status al tipo correcto
+      // Convertimos los valores de status al tipo correcto y reintegramos branch solo para la UI
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
-        is_redeemed: data.status === "redeemed" || data.redeemed_date != null
+        is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
+        branch: branch || currentCard.branch // Mantener el valor anterior de branch si existe
       };
     } catch (error) {
       handleSupabaseError(error, "actualizar tarjeta de regalo");

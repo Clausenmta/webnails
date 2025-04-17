@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +69,6 @@ import { exportReport } from "@/utils/reportExport";
 import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
 import { GiftCard, NewGiftCard } from "@/services/giftCardService";
 
-// Opciones de sucursales
 const branchOptions = ["Fisherton", "Alto Rosario", "Moreno", "Tucuman"];
 
 export default function GiftCardsPage() {
@@ -272,7 +270,7 @@ export default function GiftCardsPage() {
       );
 
       // Crear un objeto que cumpla explícitamente con los requisitos de NewGiftCard
-      const giftCardToAdd: NewGiftCard = {
+      const giftCardToAdd: any = {
         code: newGiftCard.code, // Esta propiedad es requerida
         amount: newGiftCard.amount || 0, // Esta propiedad es requerida
         status: status,
@@ -282,9 +280,13 @@ export default function GiftCardsPage() {
         customer_name: newGiftCard.customer_name,
         customer_email: newGiftCard.customer_email,
         redeemed_date: newGiftCard.redeemed_date,
-        notes: newGiftCard.notes,
-        branch: newGiftCard.branch
+        notes: newGiftCard.notes
       };
+
+      // La propiedad branch será filtrada en la mutación
+      if (newGiftCard.branch) {
+        giftCardToAdd.branch = newGiftCard.branch;
+      }
 
       addGiftCardMutation.mutate(giftCardToAdd);
 

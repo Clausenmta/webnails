@@ -1,3 +1,4 @@
+
 // Stock-related type definitions
 
 export interface StockItem {
@@ -33,6 +34,17 @@ export const stockLocations = [
   "Stock Local",
   "Stock en Uso"
 ];
+
+// Interface for physical stock locations
+export interface PhysicalStockLocation {
+  id: number;
+  name: string;
+  items: {
+    productId: number;
+    productName: string;
+    quantity: number;
+  }[];
+}
 
 // Datos de muestra para cuando Supabase no está configurado
 export const MOCK_STOCK: StockItem[] = [

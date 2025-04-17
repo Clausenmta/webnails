@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -25,18 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleInfo from "@/components/auth/UserRoleInfo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { stockService } from "@/services/stock";
-import type { StockItem, NewStockItem } from "@/types/stock";
+import type { StockItem, NewStockItem, PhysicalStockLocation } from "@/types/stock";
 import { stockCategories, stockLocations } from "@/types/stock";
-
-interface StockLocation {
-  id: number;
-  name: string;
-  items: {
-    productId: number;
-    productName: string;
-    quantity: number;
-  }[];
-}
 
 export default function StockPage() {
   const { isAuthorized } = useAuth();
@@ -194,7 +185,8 @@ export default function StockPage() {
     });
   };
 
-  const stockLocations: StockLocation[] = [
+  // Define physical stock locations
+  const physicalStockLocations: PhysicalStockLocation[] = [
     {
       id: 1,
       name: "Salón Principal",
@@ -366,7 +358,7 @@ export default function StockPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {stockLocations.map(location => (
+                  {physicalStockLocations.map(location => (
                     <Card key={location.id} className="shadow-sm">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -49,10 +48,13 @@ const employeeFormSchema = z.object({
   phone: z.string().min(1, {
     message: "El teléfono es requerido.",
   }),
+  address: z.string().min(1, {
+    message: "La dirección es requerida.",
+  }),
+  emergency_contact: z.string().optional(),
   email: z.string().email({
     message: "Por favor ingresa un correo electrónico válido.",
   }).optional().or(z.literal("")),
-  address: z.string().optional(),
   documentId: z.string().optional(),
   birthday: z.string().optional(),
   bankAccount: z.string().optional(),
@@ -109,6 +111,7 @@ export default function EmployeeProfileDialog({
       phone: employee?.phone || newEmployeeData.phone || "",
       email: employee?.email || newEmployeeData.email || "",
       address: employee?.address || newEmployeeData.address || "",
+      emergency_contact: employee?.contact || "",
       documentId: employee?.documentId || newEmployeeData.documentId || "",
       birthday: employee?.birthday || newEmployeeData.birthday || "",
       bankAccount: employee?.bankAccount || newEmployeeData.bankAccount || "",
@@ -183,258 +186,120 @@ export default function EmployeeProfileDialog({
             {employee ? `Editar Empleado: ${employee.name}` : "Nuevo Empleado"}
           </DialogTitle>
           <DialogDescription>
-            Completa la información del empleado. Todos los campos marcados con * son obligatorios.
+            Completa la información del empleado. Los campos marcados con * son obligatorios.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSave)}>
-            <Tabs defaultValue="personal" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="personal">Información Personal</TabsTrigger>
-                <TabsTrigger value="documents">Documentos</TabsTrigger>
-              </TabsList>
+          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nombre del empleado" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <TabsContent value="personal" className="space-y-4 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre Completo *</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nombre del empleado" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="position"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Posición *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar posición" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Estilista">Estilista</SelectItem>
-                            <SelectItem value="Manicurista">Manicurista</SelectItem>
-                            <SelectItem value="Recepcionista">Recepcionista</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Teléfono *</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="11-1234-5678" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correo Electrónico</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="email@ejemplo.com" type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="documentId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>DNI</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="30123456" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="birthday"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha de Nacimiento</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="DD/MM/AAAA" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dirección</FormLabel>
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Posición *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <Input {...field} placeholder="Dirección completa" />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar posición" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        <SelectItem value="Estilista">Estilista</SelectItem>
+                        <SelectItem value="Manicurista">Manicurista</SelectItem>
+                        <SelectItem value="Recepcionista">Recepcionista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="bankAccount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cuenta Bancaria</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Banco y número de cuenta" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Teléfono *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="11-1234-5678" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <TabsContent value="documents" className="py-4">
-                <div className="space-y-4">
-                  <div className="border rounded-md p-4">
-                    <h3 className="text-sm font-medium mb-3">Subir nuevo documento</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="document-name">Nombre del documento</Label>
-                        <Input
-                          id="document-name"
-                          value={fileUpload.name}
-                          onChange={(e) => setFileUpload({ ...fileUpload, name: e.target.value })}
-                          placeholder="Recibo de sueldo Mayo 2023"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="document-type">Tipo de documento</Label>
-                        <Select
-                          value={fileUpload.type}
-                          onValueChange={(value: "salary" | "contract" | "other") => 
-                            setFileUpload({ ...fileUpload, type: value })
-                          }
-                        >
-                          <SelectTrigger id="document-type">
-                            <SelectValue placeholder="Seleccionar tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="salary">Recibo de sueldo</SelectItem>
-                            <SelectItem value="contract">Contrato</SelectItem>
-                            <SelectItem value="other">Otro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="document-file">Archivo</Label>
-                        <Input
-                          id="document-file"
-                          type="file"
-                          className="cursor-pointer"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button 
-                          type="button" 
-                          onClick={handleAddDocument}
-                          className="w-full md:w-auto mt-4 md:mt-0"
-                        >
-                          <FileUp className="mr-2 h-4 w-4" />
-                          Subir documento
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="email@ejemplo.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Documentos subidos</h3>
-                    {documents.length > 0 ? (
-                      <div className="border rounded-md divide-y">
-                        {documents.map((doc) => (
-                          <div key={doc.id} className="flex items-center justify-between p-3">
-                            <div>
-                              <p className="font-medium">{doc.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {doc.type === "salary" 
-                                  ? "Recibo de sueldo" 
-                                  : doc.type === "contract" 
-                                  ? "Contrato" 
-                                  : "Otro"}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                type="button"
-                                onClick={() => handleRemoveDocument(doc.id)}
-                                className="text-red-500"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 border rounded-md">
-                        <p className="text-muted-foreground">No hay documentos subidos</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Domicilio *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Dirección completa" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <DialogFooter className="mt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
+            <FormField
+              control={form.control}
+              name="emergency_contact"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contacto de Emergencia</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Nombre y teléfono de contacto" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Guardar</Button>
+              <Button type="submit">
+                {employee ? "Actualizar" : "Guardar"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  );
+);
 }

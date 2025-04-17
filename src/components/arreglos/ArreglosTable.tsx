@@ -49,9 +49,12 @@ export default function ArreglosTable({
             </Button>
           </TableHead>
           <TableHead>Descripción</TableHead>
+          <TableHead>Comanda Original</TableHead>
+          <TableHead>Arreglado Por</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Precio</TableHead>
-          <TableHead>Fecha</TableHead>
+          <TableHead>F. Comanda</TableHead>
+          <TableHead>F. Arreglo</TableHead>
           <TableHead>Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -60,6 +63,8 @@ export default function ArreglosTable({
           <TableRow key={arreglo.id}>
             <TableCell className="font-medium">{arreglo.client_name}</TableCell>
             <TableCell>{arreglo.description}</TableCell>
+            <TableCell>{arreglo.created_by}</TableCell>
+            <TableCell>{arreglo.assigned_to}</TableCell>
             <TableCell>
               <Badge variant={getStatusBadgeVariant(arreglo.status)}>
                 {arreglo.status}
@@ -67,6 +72,7 @@ export default function ArreglosTable({
             </TableCell>
             <TableCell>${arreglo.price}</TableCell>
             <TableCell>{arreglo.date}</TableCell>
+            <TableCell>{arreglo.repair_date}</TableCell>
             <TableCell>
               <Button
                 variant="ghost"

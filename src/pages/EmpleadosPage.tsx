@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,8 @@ export default function EmpleadosPage() {
         salary: emp.salary,
         phone: emp.phone,
         address: emp.address,
+        currentMonthBilling: 0, // Adding the missing property with a default value
+        billingAverage: 0, // Also adding this as it's used in positionSummary
         documents: []
       }));
     }

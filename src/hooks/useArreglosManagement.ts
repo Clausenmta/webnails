@@ -40,7 +40,7 @@ export function useArreglosManagement() {
   // Otros estados
   const [mismaManicura, setMismaManicura] = useState(false);
   const [sortConfig, setSortConfig] = useState({
-    key: "fecha" as keyof Arreglo,
+    key: "date" as keyof Arreglo,
     direction: "desc" as "asc" | "desc"
   });
   

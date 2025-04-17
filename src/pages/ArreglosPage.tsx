@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -22,26 +21,18 @@ import { useArreglosManagement } from "@/hooks/useArreglosManagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewArreglo } from "@/services/arreglosService";
 
-// Estado options
 const estadoOptions = ["pendiente", "en_proceso", "completado", "cancelado"];
-
-// Manicuristas options
 const manicuristasOptions = [
   "Cecilia", "Lourdes", "Ludmila", "Analia", "Rocio", 
   "Graciela", "Samanta", "Belen", "Daiana", "Agostina", "Daniela"
 ];
-
-// Descuenta options
 const descuentaOptions = ["SI", "NO"];
 
 export default function ArreglosPage() {
   const { user } = useAuth();
   const {
-    // Estado y datos
     filteredArreglos,
     isLoading,
-    
-    // Estado de diálogos
     isAddDialogOpen,
     setIsAddDialogOpen,
     isEditDialogOpen,
@@ -50,25 +41,17 @@ export default function ArreglosPage() {
     setIsFilterDialogOpen,
     currentArreglo,
     setCurrentArreglo,
-    
-    // Filtros
     searchTerm,
     setSearchTerm,
     filtros,
     setFiltros,
     filtrosAplicados,
     cantidadFiltrosAplicados,
-    
-    // Vista
-    vistaActiva, 
+    vistaActiva,
     setVistaActiva,
-    
-    // Mutaciones
     addArregloMutation,
     updateArregloMutation,
     deleteArregloMutation,
-    
-    // Fecha y Calendar
     fechaComandaDate,
     setFechaComandaDate,
     fechaArregloDate,
@@ -77,21 +60,16 @@ export default function ArreglosPage() {
     setFechaDesdeDate,
     fechaHastaDate,
     setFechaHastaDate,
-    
-    // Otros
     mismaManicura,
     setMismaManicura,
     sortConfig,
     setSortConfig,
-    
-    // Funciones
     handleApplyFilters,
     handleResetFilters,
     handleExportReport,
     resetForm
   } = useArreglosManagement();
 
-  // Nuevo estado para el formulario
   const [formData, setFormData] = useState<Partial<NewArreglo>>({
     client_name: "",
     description: "",
@@ -104,7 +82,6 @@ export default function ArreglosPage() {
     notes: ""
   });
 
-  // Update form data when currentArreglo changes
   useEffect(() => {
     if (currentArreglo) {
       setFormData(currentArreglo);
@@ -126,7 +103,6 @@ export default function ArreglosPage() {
     }
   }, [currentArreglo, user]);
 
-  // Handle toggle changes for multi-select filters
   const handleToggleFilter = (field: keyof typeof filtros, value: string) => {
     if (field === 'estados' || field === 'manicuristasOriginal' || field === 'manicuristasArreglo') {
       const currentValues = filtros[field] || [];
@@ -145,7 +121,6 @@ export default function ArreglosPage() {
     }
   };
 
-  // Handle filter changes
   const handleFilterChange = (field: keyof typeof filtros, value: any) => {
     setFiltros({
       ...filtros,
@@ -153,20 +128,17 @@ export default function ArreglosPage() {
     });
   };
 
-  // Open add dialog
   const handleAddClick = () => {
     setCurrentArreglo(null);
     resetForm();
     setIsAddDialogOpen(true);
   };
 
-  // Open edit dialog
   const handleEditClick = (arreglo: any) => {
     setCurrentArreglo(arreglo);
     setIsEditDialogOpen(true);
   };
 
-  // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -175,14 +147,12 @@ export default function ArreglosPage() {
     });
   };
 
-  // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
     setFormData({
       ...formData,
       [name]: value,
     });
 
-    // If changing comanda original and "misma manicura" is checked, auto-fill arregladoPor
     if (name === "created_by" && mismaManicura) {
       setFormData(prev => ({
         ...prev,
@@ -191,11 +161,9 @@ export default function ArreglosPage() {
     }
   };
 
-  // Handle checkbox change
   const handleMismaManicuraChange = (checked: boolean) => {
     setMismaManicura(checked);
     
-    // If checked and there's a comanda original selected, auto-fill arregladoPor
     if (checked && formData.created_by) {
       setFormData(prev => ({
         ...prev,
@@ -204,7 +172,6 @@ export default function ArreglosPage() {
     }
   };
 
-  // Handle date changes
   const handleDateChange = (name: string, date: Date | undefined) => {
     if (name === "date") {
       setFechaComandaDate(date);
@@ -233,7 +200,6 @@ export default function ArreglosPage() {
     }
   };
 
-  // Save new arreglo
   const handleSaveNew = () => {
     if (!formData.client_name || !formData.description || !formData.date) {
       toast.error("Por favor complete todos los campos requeridos");
@@ -243,7 +209,6 @@ export default function ArreglosPage() {
     addArregloMutation.mutate(formData as NewArreglo);
   };
 
-  // Update existing arreglo
   const handleUpdate = () => {
     if (!currentArreglo) return;
     
@@ -258,17 +223,15 @@ export default function ArreglosPage() {
     });
   };
 
-  // Delete arreglo
   const handleDelete = (id: number) => {
     if (confirm("¿Está seguro de que desea eliminar este arreglo?")) {
       deleteArregloMutation.mutate(id);
     }
   };
 
-  // Handle sorting
-  const handleSort = (key: string) => {
+  const handleSort = (key: keyof Arreglo) => {
     setSortConfig({
-      key: key as keyof typeof sortConfig.key,
+      key: key,
       direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc",
     });
   };
@@ -283,7 +246,6 @@ export default function ArreglosPage() {
     }
   };
 
-  // Mapeo de DB valores a display format
   const mapStatus = (status: string) => {
     switch (status) {
       case 'pendiente': return 'Pendiente';
@@ -501,7 +463,6 @@ export default function ArreglosPage() {
         </CardContent>
       </Card>
 
-      {/* Add Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -713,7 +674,6 @@ export default function ArreglosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -925,7 +885,6 @@ export default function ArreglosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Filter Dialog */}
       <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

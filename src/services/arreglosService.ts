@@ -1,5 +1,5 @@
 
-import { supabase, getActiveSession, handleSupabaseError } from "@/lib/supabase";
+import { supabase, getActiveSession } from "@/lib/supabase";
 import { toast } from "sonner";
 
 // Interfaz para Arreglos
@@ -47,6 +47,21 @@ const MOCK_ARREGLOS: Arreglo[] = [
     created_by: "admin"
   }
 ];
+
+// Helper function to handle Supabase errors
+const handleSupabaseError = (error: any, operation: string = "operación") => {
+  console.error(`Error en ${operation}:`, error);
+  
+  if (error.message?.includes("JWT expired") || error.message?.includes("session")) {
+    toast.error(`Su sesión ha expirado, por favor inicie sesión nuevamente`);
+  } else if (error.message?.includes("violates")) {
+    toast.error(`Error: La operación viola restricciones de la base de datos`);
+  } else {
+    toast.error(`Error en ${operation}: ${error.message}`);
+  }
+  
+  return error;
+};
 
 export const arreglosService = {
   async fetchArreglos(): Promise<Arreglo[]> {

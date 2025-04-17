@@ -133,7 +133,10 @@ export function useGiftCardManagement() {
         }, 300);
       }
     } else if (dialogsEnabled) {
-      setOpenFn(open);
+      closeAllDialogs(); // Cerrar todos los diálogos antes de abrir uno nuevo
+      setTimeout(() => {
+        setOpenFn(open);
+      }, 100);
     }
   };
 

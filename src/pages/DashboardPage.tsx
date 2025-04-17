@@ -16,14 +16,60 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MonthSelector from "@/components/dashboard/MonthSelector";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { giftCardService } from "@/services/giftCardService";
+import { arreglosService } from "@/services/arreglosService";
+import { stockService } from "@/services/stock";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Consultas para obtener datos reales
+  const { data: giftCards = [] } = useQuery({
+    queryKey: ['giftCards'],
+    queryFn: giftCardService.fetchGiftCards,
+  });
+  
+  const { data: arreglos = [] } = useQuery({
+    queryKey: ['arreglos'],
+    queryFn: arreglosService.fetchArreglos,
+  });
+  
+  const { data: stockItems = [] } = useQuery({
+    queryKey: ['stock'],
+    queryFn: stockService.fetchStockItems,
+  });
+
+  // Calcular estadísticas basadas en datos reales
+  const activeGiftCards = giftCards.filter(card => card.status === 'active');
+  const expiringGiftCards = activeGiftCards.filter(card => {
+    const expiryDate = new Date(card.expiry_date);
+    const today = new Date();
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 30 && diffDays > 0; // Próximas a vencer en 30 días
+  });
+  
+  const pendingArreglos = arreglos.filter(arreglo => arreglo.status === 'pendiente');
+  const oldPendingArreglos = pendingArreglos.filter(arreglo => {
+    const arregloDate = new Date(arreglo.date);
+    const today = new Date();
+    const diffTime = today.getTime() - arregloDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 5;
+  });
+  
+  const lowStockItems = stockItems.filter(item => 
+    item.quantity < (item.min_stock_level || 10)
+  );
+  const criticalStockItems = lowStockItems.filter(item => 
+    item.quantity <= (item.min_stock_level || 10) / 2
+  );
 
   // Filtrar accesos rápidos según el rol del usuario
   const quickAccessLinks = [
@@ -52,42 +98,71 @@ export default function DashboardPage() {
       requiredRole: 'superadmin' as const,
     },
   ].filter(link => {
-    if (!link.requiredRole) return true;
-    if (isSuperAdmin) return true;
-    return user?.role === link.requiredRole;
+    if (!link.requiredRole) return true; // Si no hay rol requerido, mostrar a todos
+    if (isSuperAdmin) return true; // Superadmin puede ver todo
+    return user?.role === link.requiredRole; // Verificar si el rol del usuario coincide con el requerido
   });
 
-  // Filtrar alertas según el rol del usuario
-  const alertItems = [
-    {
-      icon: AlertTriangle,
-      title: "Stock Bajo: Semi OPI Gel Base Coat",
-      description: "Quedan 2 unidades en inventario",
-      requiredRole: undefined,
-    },
-    {
-      icon: Clock,
-      title: "Vencimiento de Gift Card #G0082",
-      description: "Vence el 15/04/2025 (5 días)",
-      requiredRole: undefined,
-    },
-    {
-      icon: DollarSign,
-      title: "Pago de Alquiler Pendiente",
-      description: "Vence el 10/04/2025 (mañana)",
-      requiredRole: 'superadmin' as const,
-    },
-    {
-      icon: Wrench,
-      title: "Arreglo pendiente: Cliente Martínez, Laura",
-      description: "Registrado hace 7 días",
-      requiredRole: undefined,
-    },
-  ].filter(alert => {
-    if (!alert.requiredRole) return true;
-    if (isSuperAdmin) return true;
-    return user?.role === alert.requiredRole;
-  });
+  // Generar alertas dinámicas basadas en los datos reales
+  const generateAlerts = () => {
+    const alerts = [];
+    
+    // Alerta de stock bajo
+    if (lowStockItems.length > 0) {
+      const criticalItem = lowStockItems[0];
+      alerts.push({
+        icon: AlertTriangle,
+        title: `Stock Bajo: ${criticalItem.product_name}`,
+        description: `Quedan ${criticalItem.quantity} unidades en inventario`,
+        requiredRole: undefined,
+      });
+    }
+    
+    // Alerta de vencimiento de gift card
+    if (expiringGiftCards.length > 0) {
+      const nextExpiringCard = expiringGiftCards[0];
+      const expiryDate = new Date(nextExpiringCard.expiry_date);
+      const today = new Date();
+      const diffTime = expiryDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      alerts.push({
+        icon: Clock,
+        title: `Vencimiento de Gift Card #${nextExpiringCard.code}`,
+        description: `Vence el ${nextExpiringCard.expiry_date} (${diffDays} días)`,
+        requiredRole: undefined,
+      });
+    }
+    
+    // Alerta de pago pendiente (simulada para superadmin)
+    if (isSuperAdmin) {
+      alerts.push({
+        icon: DollarSign,
+        title: "Pago de Alquiler Pendiente",
+        description: "Vence el 10/05/2025 (en 3 días)",
+        requiredRole: 'superadmin' as const,
+      });
+    }
+    
+    // Alerta de arreglo pendiente
+    if (pendingArreglos.length > 0) {
+      const oldestArreglo = pendingArreglos[0];
+      alerts.push({
+        icon: Wrench,
+        title: `Arreglo pendiente: Cliente ${oldestArreglo.client_name}`,
+        description: `Registrado hace 7 días`,
+        requiredRole: undefined,
+      });
+    }
+    
+    return alerts.filter(alert => {
+      if (!alert.requiredRole) return true;
+      if (isSuperAdmin) return true;
+      return user?.role === alert.requiredRole;
+    });
+  };
+  
+  const alertItems = generateAlerts();
 
   // Función para cambiar el mes
   const handleMonthChange = (date: Date) => {
@@ -154,9 +229,9 @@ export default function DashboardPage() {
             <CreditCard className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">25</div>
+            <div className="text-2xl font-bold">{activeGiftCards.length}</div>
             <p className="text-xs text-muted-foreground">
-              8 próximas a vencer
+              {expiringGiftCards.length} próximas a vencer
             </p>
           </CardContent>
         </Card>
@@ -166,9 +241,9 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{lowStockItems.length}</div>
             <p className="text-xs text-muted-foreground">
-              5 críticos para reponer
+              {criticalStockItems.length} críticos para reponer
             </p>
           </CardContent>
         </Card>
@@ -178,9 +253,9 @@ export default function DashboardPage() {
             <Wrench className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{pendingArreglos.length}</div>
             <p className="text-xs text-muted-foreground">
-              3 con más de 5 días
+              {oldPendingArreglos.length} con más de 5 días
             </p>
           </CardContent>
         </Card>

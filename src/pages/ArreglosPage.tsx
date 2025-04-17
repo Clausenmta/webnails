@@ -266,21 +266,14 @@ export default function ArreglosPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto">
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Exportar
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleExportReport}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Exportar a Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button 
+            variant="outline" 
+            className="w-full sm:w-auto"
+            onClick={handleExportReport}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
           <Button className="bg-salon-400 hover:bg-salon-500 w-full sm:w-auto" onClick={handleAddClick}>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo Arreglo

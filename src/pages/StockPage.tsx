@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -296,6 +296,7 @@ export default function StockPage() {
                         <th className="py-3 px-4 text-center">Stock</th>
                         <th className="py-3 px-4 text-center">Mínimo</th>
                         <th className="py-3 px-4 text-left">Ubicación</th>
+                        <th className="py-3 px-4 text-left">Marca</th>
                         {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
                         <th className="py-3 px-4 text-right">Acciones</th>
                       </tr>
@@ -311,6 +312,7 @@ export default function StockPage() {
                           </td>
                           <td className="py-3 px-4 text-center">{product.min_stock_level || 3}</td>
                           <td className="py-3 px-4">{product.location}</td>
+                          <td className="py-3 px-4">{product.brand || 'N/A'}</td>
                           {isSuperAdmin && (
                             <td className="py-3 px-4 text-right">${product.unit_price.toLocaleString()}</td>
                           )}
@@ -338,7 +340,7 @@ export default function StockPage() {
                       
                       {stockItems.length === 0 && (
                         <tr>
-                          <td colSpan={isSuperAdmin ? 7 : 6} className="py-6 text-center text-muted-foreground">
+                          <td colSpan={isSuperAdmin ? 8 : 7} className="py-6 text-center text-muted-foreground">
                             No hay productos en el inventario
                           </td>
                         </tr>

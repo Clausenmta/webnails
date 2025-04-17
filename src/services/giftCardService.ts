@@ -23,6 +23,7 @@ export interface GiftCard {
 // Necesitamos que NewGiftCard tenga la propiedad branch para el UI
 export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at' | 'is_redeemed'> & {
   branch?: string; // Ensure branch is explicitly defined here
+  service?: string; // Explicitly define service to replace customer_email
 };
 
 // Helper function to handle Supabase errors

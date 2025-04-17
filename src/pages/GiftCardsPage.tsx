@@ -111,12 +111,14 @@ export default function GiftCardsPage() {
     branchFilter,
     setBranchFilter,
     updateExpiryDate,
-    updateStatusFromDates
+    updateStatusFromDates,
+    handleExportToExcel
   } = useGiftCardManagement();
 
   // Definir newGiftCard como una versión parcial de NewGiftCard con branch
   interface GiftCardFormState extends Partial<NewGiftCard> {
     branch?: string;
+    service?: string; // Updated to use service instead of customer_email
   }
 
   const [newGiftCard, setNewGiftCard] = useState<GiftCardFormState>({
@@ -261,18 +263,6 @@ export default function GiftCardsPage() {
     }
   };
 
-  const handleExportExcel = () => {
-    try {
-      exportReport(giftCards, {
-        filename: "gift-cards",
-        format: "excel"
-      });
-    } catch (error) {
-      console.error("Error al exportar a Excel:", error);
-      toast.error("No se pudo exportar a Excel. Intente nuevamente.");
-    }
-  };
-
   const handleCreateGiftCard = () => {
     if (!dialogsEnabled) return;
     
@@ -302,7 +292,7 @@ export default function GiftCardsPage() {
         created_by: "admin",
         branch: newGiftCard.branch,
         ...(newGiftCard.customer_name && { customer_name: newGiftCard.customer_name }),
-        ...(newGiftCard.customer_email && { customer_email: newGiftCard.customer_email }),
+        ...(newGiftCard.service && { service: newGiftCard.service }),
         ...(newGiftCard.redeemed_date && { redeemed_date: newGiftCard.redeemed_date }),
         ...(newGiftCard.notes && { notes: newGiftCard.notes })
       };
@@ -578,7 +568,7 @@ export default function GiftCardsPage() {
                 amount: row.amount,
                 status: row.status || "active",
                 customer_name: row.customer_name,
-                customer_email: row.customer_email,
+                service: row.service, // Changed from customer_email to service
                 purchase_date: row.purchase_date,
                 expiry_date: row.expiry_date || expiryDate.toISOString().split('T')[0],
                 redeemed_date: row.redeemed_date,
@@ -664,7 +654,7 @@ export default function GiftCardsPage() {
       const workbook = XLSX.utils.book_new();
       
       const headers = [
-        "code", "amount", "status", "customer_name", "customer_email", "purchase_date", "expiry_date"
+        "code", "amount", "status", "customer_name", "service", "purchase_date", "expiry_date"
       ];
       
       const sampleData = [
@@ -673,7 +663,7 @@ export default function GiftCardsPage() {
           amount: 2000,
           status: "active",
           customer_name: "Nombre Cliente",
-          customer_email: "cliente@example.com",
+          service: "Tipo de Servicio",
           purchase_date: "2025-04-10",
           expiry_date: "2025-05-10"
         },
@@ -682,7 +672,7 @@ export default function GiftCardsPage() {
           amount: 3000,
           status: "redeemed",
           customer_name: "Otro Cliente",
-          customer_email: "otro@example.com",
+          service: "Otro Servicio",
           purchase_date: "2025-04-10",
           expiry_date: "2025-05-10"
         }
@@ -735,26 +725,14 @@ export default function GiftCardsPage() {
             Nueva Gift Card
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={!dialogsEnabled}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-50 bg-white">
-              <DropdownMenuLabel>Formato de exportación</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleExportPDF}>
-                <FileText className="mr-2 h-4 w-4" />
-                <span>Exportar como PDF</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportExcel}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                <span>Exportar como Excel</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button 
+            variant="outline"
+            onClick={handleExportToExcel}
+            disabled={!dialogsEnabled}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
           
           <Button
             variant="outline"
@@ -1005,8 +983,8 @@ export default function GiftCardsPage() {
                 <div className="col-span-3">{selectedGiftCard.customer_name || '-'}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Email</Label>
-                <div className="col-span-3">{selectedGiftCard.customer_email || '-'}</div>
+                <Label className="text-right">Servicio</Label>
+                <div className="col-span-3">{selectedGiftCard.service || '-'}</div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Sucursal</Label>
@@ -1134,16 +1112,15 @@ export default function GiftCardsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer_email" className="text-right">
-                Email
+              <Label htmlFor="service" className="text-right">
+                Servicio
               </Label>
               <Input
-                id="customer_email"
-                type="email"
-                value={newGiftCard.customer_email || ''}
-                onChange={(e) => handleNewGiftCardChange('customer_email', e.target.value)}
+                id="service"
+                value={newGiftCard.service || ''}
+                onChange={(e) => handleNewGiftCardChange('service', e.target.value)}
                 className="col-span-3"
-                placeholder="cliente@example.com"
+                placeholder="Tipo de servicio"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1306,16 +1283,15 @@ export default function GiftCardsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-customer_email" className="text-right">
-                Email
+              <Label htmlFor="edit-service" className="text-right">
+                Servicio
               </Label>
               <Input
-                id="edit-customer_email"
-                type="email"
-                value={editGiftCard.customer_email || ''}
-                onChange={(e) => handleEditGiftCardChange('customer_email', e.target.value)}
+                id="edit-service"
+                value={editGiftCard.service || ''}
+                onChange={(e) => handleEditGiftCardChange('service', e.target.value)}
                 className="col-span-3"
-                placeholder="cliente@example.com"
+                placeholder="Tipo de servicio"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">

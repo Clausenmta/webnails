@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -250,7 +251,7 @@ export function useGiftCardManagement() {
     // Otros
     dialogsEnabled,
     
-    // Add new functions to export
+    // Export functions
     handleExportToExcel,
     getImportTemplateData
   };

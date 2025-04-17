@@ -42,7 +42,7 @@ export default function DashboardPage() {
   
   const { data: stockItems = [] } = useQuery({
     queryKey: ['stock'],
-    queryFn: stockService.fetchStockItems,
+    queryFn: stockService.fetchStock,
   });
 
   // Calcular estadísticas basadas en datos reales

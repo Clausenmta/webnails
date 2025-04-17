@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileText, PlusCircle } from "lucide-react";
-import { format } from "date-fns";
+import { FileSpreadsheet, PlusCircle } from "lucide-react";
 
 interface ExpenseHeaderProps {
   isSuperAdmin: boolean;
@@ -33,8 +32,8 @@ export function ExpenseHeader({ isSuperAdmin, onAddExpense, onExportReport }: Ex
             variant="outline"
             onClick={onExportReport}
           >
-            <FileText className="mr-2 h-4 w-4" />
-            Exportar Reporte
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Exportar Excel
           </Button>
         )}
       </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewExpense, expenseCategories } from "@/types/expenses";
 import { format } from "date-fns";
+import { FileImage, FilePdf, Loader2, Upload, X } from "lucide-react";
 
 interface ExpenseFormProps {
   onSubmit: (expense: NewExpense) => void;
@@ -17,6 +17,7 @@ interface ExpenseFormProps {
 
 export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormProps) {
   const { user } = useAuth();
+  const [attachments, setAttachments] = useState<File[]>([]);
   
   const [newExpense, setNewExpense] = useState<NewExpense>({
     date: format(new Date(), 'dd/MM/yyyy'),
@@ -29,23 +30,28 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
     provider: ""
   });
 
-  // Update created_by when user changes
   useEffect(() => {
     if (user) {
       setNewExpense(prev => ({ ...prev, created_by: user.username }));
     }
   }, [user]);
 
-  const handleSubmit = () => {
-    const formattedExpense: NewExpense = {
-      ...newExpense,
-      // If the category is Fijos or Proveedores, ensure it has a "pending" status by default
-      status: (newExpense.category === "Fijos" || newExpense.category === "Proveedores") 
-        ? "pending" 
-        : undefined
-    };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => 
+      file.type.startsWith('image/') || file.type === 'application/pdf'
+    );
     
-    onSubmit(formattedExpense);
+    if (validFiles.length !== files.length) {
+      toast.error("Solo se permiten archivos de imagen o PDF");
+      return;
+    }
+    
+    setAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -134,16 +140,71 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
           </div>
         </>
       )}
+      
+      <div className="space-y-2">
+        <Label>Adjuntos (opcional)</Label>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+              multiple
+            />
+            <Label
+              htmlFor="file-upload"
+              className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-md"
+            >
+              <Upload className="h-4 w-4" />
+              Subir archivos
+            </Label>
+            <span className="text-sm text-muted-foreground">
+              Imágenes o PDF
+            </span>
+          </div>
+          
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 p-2 bg-muted rounded-md"
+                >
+                  {file.type.startsWith('image/') ? (
+                    <FileImage className="h-4 w-4" />
+                  ) : (
+                    <FilePdf className="h-4 w-4" />
+                  )}
+                  <span className="text-sm truncate max-w-[150px]">
+                    {file.name}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => removeAttachment(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
         <Button 
-          onClick={handleSubmit}
+          onClick={() => onSubmit(newExpense)}
           disabled={!newExpense.concept || !newExpense.amount || isSubmitting}
           className="bg-salon-400 hover:bg-salon-500"
         >
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Registrar Gasto
         </Button>
       </div>

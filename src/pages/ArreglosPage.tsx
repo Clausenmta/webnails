@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -942,4 +943,137 @@ export default function ArreglosPage() {
                     <Badge
                       key={estado}
                       variant={filtros.estados.includes(estado) ? "default" : "outline"}
-                      className={filtros.estados.includes(estado) ? "bg-salon-400 hover:bg-salon
+                      className={filtros.estados.includes(estado) ? "bg-salon-400 hover:bg-salon-500" : ""}
+                      onClick={() => handleToggleFilter('estados', estado)}
+                    >
+                      {mapStatus(estado)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>Comanda Original</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {manicuristasOptions.map((manicurista) => (
+                    <Badge
+                      key={manicurista}
+                      variant={filtros.manicuristasOriginal.includes(manicurista) ? "default" : "outline"}
+                      className={filtros.manicuristasOriginal.includes(manicurista) ? "bg-salon-400 hover:bg-salon-500" : ""}
+                      onClick={() => handleToggleFilter('manicuristasOriginal', manicurista)}
+                    >
+                      {manicurista}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label>Arreglado Por</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {manicuristasOptions.map((manicurista) => (
+                    <Badge
+                      key={manicurista}
+                      variant={filtros.manicuristasArreglo.includes(manicurista) ? "default" : "outline"}
+                      className={filtros.manicuristasArreglo.includes(manicurista) ? "bg-salon-400 hover:bg-salon-500" : ""}
+                      onClick={() => handleToggleFilter('manicuristasArreglo', manicurista)}
+                    >
+                      {manicurista}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Fecha Desde</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !fechaDesdeDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {fechaDesdeDate ? format(fechaDesdeDate, "dd/MM/yyyy") : <span>Seleccionar fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaDesdeDate}
+                        onSelect={(date) => handleDateChange("fechaDesde", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Fecha Hasta</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !fechaHastaDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {fechaHastaDate ? format(fechaHastaDate, "dd/MM/yyyy") : <span>Seleccionar fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={fechaHastaDate}
+                        onSelect={(date) => handleDateChange("fechaHasta", date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="precioMinimo">Precio Mínimo</Label>
+                  <Input
+                    id="precioMinimo"
+                    type="number"
+                    placeholder="0"
+                    value={filtros.precioMinimo}
+                    onChange={(e) => handleFilterChange('precioMinimo', e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="precioMaximo">Precio Máximo</Label>
+                  <Input
+                    id="precioMaximo"
+                    type="number"
+                    placeholder="0"
+                    value={filtros.precioMaximo}
+                    onChange={(e) => handleFilterChange('precioMaximo', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleResetFilters}>
+              Restablecer
+            </Button>
+            <Button
+              className="bg-salon-400 hover:bg-salon-500"
+              onClick={handleApplyFilters}
+            >
+              Aplicar Filtros
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

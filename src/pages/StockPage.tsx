@@ -27,6 +27,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { stockService } from "@/services/stock";
 import type { StockItem, NewStockItem, PhysicalStockLocation } from "@/types/stock";
 import { stockCategories, stockLocations } from "@/types/stock";
+import { FileSpreadsheet } from "lucide-react";
+import { exportReport } from "@/utils/reportExport";
 
 export default function StockPage() {
   const { isAuthorized } = useAuth();
@@ -235,6 +237,25 @@ export default function StockPage() {
     }
   ];
 
+  const handleExportExcel = () => {
+    const exportData = stockItems.map(item => ({
+      Código: item.id,
+      Producto: item.product_name,
+      Categoría: item.category,
+      Stock: item.quantity,
+      Mínimo: item.min_stock_level || 3,
+      Ubicación: item.location,
+      Marca: item.brand || 'N/A',
+      Proveedor: item.supplier || 'N/A',
+      Precio: item.unit_price
+    }));
+
+    exportReport(exportData, {
+      filename: 'inventario',
+      format: 'excel'
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -245,6 +266,13 @@ export default function StockPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleExportExcel}
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
           <Button 
             className="bg-salon-400 hover:bg-salon-500"
             onClick={() => setIsAddProductOpen(true)}

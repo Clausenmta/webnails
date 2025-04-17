@@ -5,6 +5,7 @@ import { Arreglo } from "@/services/arreglosService";
 export function useArreglosFilters() {
   const [searchTerm, setSearchTerm] = useState("");
   const [vistaActiva, setVistaActiva] = useState("todos");
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Arreglo;
     direction: "asc" | "desc";
@@ -36,6 +37,17 @@ export function useArreglosFilters() {
   const handleApplyFilters = () => {
     setFiltrosAplicados({...filtros});
     setIsFilterDialogOpen(false);
+    
+    // Count applied filters
+    let count = 0;
+    if (filtros.estados.length > 0) count++;
+    if (filtros.manicuristasOriginal.length > 0) count++;
+    if (filtros.manicuristasArreglo.length > 0) count++;
+    if (filtros.fechaDesde) count++;
+    if (filtros.fechaHasta) count++;
+    if (filtros.precioMinimo) count++;
+    if (filtros.precioMaximo) count++;
+    setCantidadFiltrosAplicados(count);
   };
 
   const handleResetFilters = () => {
@@ -77,6 +89,8 @@ export function useArreglosFilters() {
     fechaHastaDate,
     setFechaHastaDate,
     handleApplyFilters,
-    handleResetFilters
+    handleResetFilters,
+    isFilterDialogOpen,
+    setIsFilterDialogOpen
   };
 }

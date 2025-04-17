@@ -4,6 +4,7 @@ import { useArreglosDialogs } from "./arreglos/useArreglosDialogs";
 import { useArreglosFilters } from "./arreglos/useArreglosFilters";
 import { useArreglosData } from "./arreglos/useArreglosData";
 import { useArreglosImportExport } from "./arreglos/useArreglosImportExport";
+import { toast } from "sonner";
 
 export function useArreglosManagement() {
   const dialogs = useArreglosDialogs();
@@ -80,9 +81,9 @@ export function useArreglosManagement() {
   });
 
   // Handle import function
-  const handleImportArreglos = async (data: any[]) => {
+  const handleImportArreglos = async (importData: any[]) => {
     try {
-      for (const item of data) {
+      for (const item of importData) {
         await data.addArregloMutation.mutateAsync({
           ...item,
           date: new Date().toLocaleDateString(),

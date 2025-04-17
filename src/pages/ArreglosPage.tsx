@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ArregloViewControls from "@/components/arreglos/ArregloViewControls";
 import { useAuth } from "@/contexts/AuthContext";
 import ExcelImportDialog from "@/components/common/ExcelImportDialog";
+import { UserRole } from "@/types/auth";
 
 export default function ArreglosPage() {
   const {
@@ -41,7 +42,7 @@ export default function ArreglosPage() {
   } = useArreglosManagement();
 
   const { isAuthorized } = useAuth();
-  const canAdd = isAuthorized('admin') || isAuthorized('superadmin');
+  const canAdd = isAuthorized('superadmin') || isAuthorized('employee');
 
   const arreglosTotals = {
     pendientes: filteredArreglos.filter(arreglo => arreglo.status === 'pendiente').length,
@@ -56,6 +57,10 @@ export default function ArreglosPage() {
       key,
       direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
     });
+  };
+
+  const handleExportClick = () => {
+    handleExportReport(filteredArreglos);
   };
 
   return (
@@ -88,7 +93,7 @@ export default function ArreglosPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={handleExportReport}
+            onClick={handleExportClick}
             className="gap-1"
           >
             <FileSpreadsheet className="h-4 w-4" />

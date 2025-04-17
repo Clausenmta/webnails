@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -100,6 +101,7 @@ export function useGiftCardManagement() {
     try {
       action();
     } finally {
+      // Use a setTimeout to prevent too many re-renders in a single cycle
       setTimeout(() => {
         setDialogsEnabled(true);
       }, 500);
@@ -114,11 +116,13 @@ export function useGiftCardManagement() {
     setIsConfirmRedeemDialogOpen(false);
     setIsImportDialogOpen(false);
     
+    // Use setTimeout to ensure state updates don't conflict
     setTimeout(() => {
       setSelectedGiftCard(null);
     }, 300);
   };
 
+  // Fixed handleDialogOpenChange to prevent infinite loops
   const handleDialogOpenChange = (open: boolean, setOpenFn: React.Dispatch<React.SetStateAction<boolean>>, cleanup?: () => void) => {
     if (!open) {
       setOpenFn(false);

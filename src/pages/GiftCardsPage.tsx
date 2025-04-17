@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,7 @@ import { exportReport } from "@/utils/reportExport";
 import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
 import { GiftCard, NewGiftCard } from "@/services/giftCardService";
 
+// Opciones de sucursales
 const branchOptions = ["Fisherton", "Alto Rosario", "Moreno", "Tucuman"];
 
 export default function GiftCardsPage() {
@@ -259,22 +261,34 @@ export default function GiftCardsPage() {
         return;
       }
 
+      // Usar la fecha de vencimiento calculada o calcular una nueva
       const expiryDate = newGiftCard.expiry_date || updateExpiryDate(newGiftCard.purchase_date || new Date().toISOString().split('T')[0]);
 
+      // Determinar estado
       const status = updateStatusFromDates(
         newGiftCard.purchase_date || new Date().toISOString().split('T')[0],
         expiryDate,
         newGiftCard.redeemed_date
       );
 
-      addGiftCardMutation.mutate({
-        ...newGiftCard,
-        status,
+      // Crear un objeto que cumpla explícitamente con los requisitos de NewGiftCard
+      const giftCardToAdd: NewGiftCard = {
+        code: newGiftCard.code, // Esta propiedad es requerida
+        amount: newGiftCard.amount || 0, // Esta propiedad es requerida
+        status: status,
         purchase_date: newGiftCard.purchase_date || new Date().toISOString().split('T')[0],
         expiry_date: expiryDate,
-        created_by: "admin"
-      });
+        created_by: "admin",
+        customer_name: newGiftCard.customer_name,
+        customer_email: newGiftCard.customer_email,
+        redeemed_date: newGiftCard.redeemed_date,
+        notes: newGiftCard.notes,
+        branch: newGiftCard.branch
+      };
 
+      addGiftCardMutation.mutate(giftCardToAdd);
+
+      // Limpiar el formulario
       setNewGiftCard({
         status: "active",
         purchase_date: new Date().toISOString().split('T')[0]

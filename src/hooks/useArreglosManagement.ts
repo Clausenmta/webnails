@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { arreglosService, Arreglo, NewArreglo } from "@/services/arreglosService";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { exportReport } from "@/utils/reportExport";
 
 export function useArreglosManagement() {
   const queryClient = useQueryClient();
@@ -204,6 +206,17 @@ export function useArreglosManagement() {
     setCantidadFiltrosAplicados(0);
     setIsFilterDialogOpen(false);
     toast.success("Filtros restablecidos");
+  };
+
+  // Helper function to map status to user-friendly text
+  const mapStatus = (status: string) => {
+    switch (status) {
+      case 'pendiente': return 'Pendiente';
+      case 'en_proceso': return 'En proceso';
+      case 'completado': return 'Completado';
+      case 'cancelado': return 'Cancelado';
+      default: return status;
+    }
   };
 
   const handleExportReport = () => {

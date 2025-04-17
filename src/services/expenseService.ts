@@ -1,6 +1,6 @@
 
 import { supabase, getActiveSession } from "@/lib/supabase";
-import { Expense, NewExpense } from "@/types/expenses";
+import { Expense, NewExpense, PaymentMethod } from "@/types/expenses";
 import { toast } from "sonner";
 
 // Datos de muestra para cuando Supabase no está configurado
@@ -42,11 +42,14 @@ export const expenseService = {
       }
       
       console.log("Gastos obtenidos:", data?.length || 0);
-      // Aseguramos que los valores de status sean del tipo correcto
+      
+      // Aseguramos que los valores sean del tipo correcto
       return (data || []).map(expense => ({
         ...expense,
         // Aseguramos que status sea "pending" o "paid"
-        status: (expense.status as "pending" | "paid" | null) || undefined
+        status: (expense.status as "pending" | "paid" | null) || undefined,
+        // Aseguramos que payment_method sea del tipo PaymentMethod
+        payment_method: (expense.payment_method as PaymentMethod) || undefined
       }));
     } catch (error) {
       console.error("Error al obtener gastos:", error);
@@ -87,10 +90,11 @@ export const expenseService = {
       console.log("Gasto agregado correctamente:", data);
       toast.success("Gasto registrado correctamente");
       
-      // Aseguramos que status sea del tipo correcto
+      // Aseguramos que los valores sean del tipo correcto
       return {
         ...data,
-        status: (data.status as "pending" | "paid" | null) || undefined
+        status: (data.status as "pending" | "paid" | null) || undefined,
+        payment_method: (data.payment_method as PaymentMethod) || undefined
       };
     } catch (error) {
       console.error("Error al agregar gasto:", error);
@@ -159,10 +163,11 @@ export const expenseService = {
       console.log("Gasto actualizado correctamente:", data);
       toast.success("Gasto actualizado correctamente");
       
-      // Aseguramos que status sea del tipo correcto
+      // Aseguramos que los valores sean del tipo correcto
       return {
         ...data,
-        status: (data.status as "pending" | "paid" | null) || undefined
+        status: (data.status as "pending" | "paid" | null) || undefined,
+        payment_method: (data.payment_method as PaymentMethod) || undefined
       };
     } catch (error) {
       console.error("Error al actualizar gasto:", error);

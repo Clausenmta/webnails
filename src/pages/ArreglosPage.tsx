@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useArreglosManagement } from "@/hooks/useArreglosManagement";
 import { useAuth } from "@/contexts/AuthContext";
-import { NewArreglo } from "@/services/arreglosService";
+import { NewArreglo, Arreglo } from "@/services/arreglosService";
 
 const estadoOptions = ["pendiente", "en_proceso", "completado", "cancelado"];
 const manicuristasOptions = [

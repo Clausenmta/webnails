@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { arreglosService, Arreglo, NewArreglo } from "@/services/arreglosService";
@@ -39,9 +38,12 @@ export function useArreglosManagement() {
   
   // Otros estados
   const [mismaManicura, setMismaManicura] = useState(false);
-  const [sortConfig, setSortConfig] = useState({
-    key: "date" as keyof Arreglo,
-    direction: "desc" as "asc" | "desc"
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Arreglo;
+    direction: "asc" | "desc";
+  }>({
+    key: "date",
+    direction: "desc"
   });
   
   // Query para obtener arreglos

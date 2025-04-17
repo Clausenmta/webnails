@@ -23,26 +23,25 @@ export function DetailedExpenseInfo({ expense, onUpdate }: DetailedExpenseInfoPr
         />
       </div>
       
-      {(expense.category === "Fijos" || expense.category === "Proveedores") && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">Fecha de Vencimiento</Label>
-            <Input
-              id="dueDate"
-              value={expense.due_date || ""}
-              onChange={(e) => onUpdate({ due_date: e.target.value })}
-              placeholder="DD/MM/YYYY"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="provider">Proveedor</Label>
-            <Input
-              id="provider"
-              value={expense.provider || ""}
-              onChange={(e) => onUpdate({ provider: e.target.value })}
-              placeholder="Nombre del proveedor"
-            />
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="provider">Proveedor</Label>
+        <Input
+          id="provider"
+          value={expense.provider || ""}
+          onChange={(e) => onUpdate({ provider: e.target.value })}
+          placeholder="Nombre del proveedor"
+        />
+      </div>
+      
+      {expense.category === "Fijos" && (
+        <div className="space-y-2">
+          <Label htmlFor="dueDate">Fecha de Vencimiento</Label>
+          <Input
+            id="dueDate"
+            value={expense.due_date || ""}
+            onChange={(e) => onUpdate({ due_date: e.target.value })}
+            placeholder="DD/MM/YYYY"
+          />
         </div>
       )}
       

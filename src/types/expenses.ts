@@ -1,3 +1,4 @@
+
 export type PaymentMethod = "Efectivo" | "Transferencia" | "Cuenta Corriente";
 
 export interface Expense {

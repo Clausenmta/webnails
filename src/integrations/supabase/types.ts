@@ -119,6 +119,7 @@ export type Database = {
           details: string | null
           due_date: string | null
           id: number
+          payment_method: string | null
           provider: string | null
           status: string | null
         }
@@ -132,6 +133,7 @@ export type Database = {
           details?: string | null
           due_date?: string | null
           id?: number
+          payment_method?: string | null
           provider?: string | null
           status?: string | null
         }
@@ -145,6 +147,7 @@ export type Database = {
           details?: string | null
           due_date?: string | null
           id?: number
+          payment_method?: string | null
           provider?: string | null
           status?: string | null
         }

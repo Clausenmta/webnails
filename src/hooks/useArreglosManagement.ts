@@ -206,25 +206,23 @@ export function useArreglosManagement() {
     toast.success("Filtros restablecidos");
   };
 
-  // Export functions
   const handleExportReport = () => {
-    toast.success("Reporte de arreglos exportado correctamente");
-    
-    // Simulación de descarga de archivo
-    const dummyContent = "Reporte de Arreglos\n\n" + 
-      sortedArreglos.map(arreglo => 
-        `${arreglo.date} - ${arreglo.client_name} - ${arreglo.description} - $${arreglo.price.toLocaleString()}`
-      ).join('\n');
-    
-    const blob = new Blob([dummyContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Reporte_Arreglos_${format(new Date(), 'yyyy-MM-dd')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const exportData = sortedArreglos.map(arreglo => ({
+      Cliente: arreglo.client_name,
+      Descripción: arreglo.description,
+      Estado: mapStatus(arreglo.status),
+      'Comanda Original': arreglo.created_by,
+      'Arreglado Por': arreglo.assigned_to || 'N/A',
+      Fecha: arreglo.date,
+      Precio: arreglo.price,
+      'Estado de Pago': arreglo.payment_status === 'pagado' ? 'Pagado' : 'Pendiente',
+      Notas: arreglo.notes || ''
+    }));
+
+    exportReport(exportData, {
+      filename: `Arreglos_${format(new Date(), 'yyyy-MM-dd')}`,
+      format: 'excel'
+    });
   };
 
   return {

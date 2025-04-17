@@ -269,16 +269,12 @@ export default function ArreglosPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full sm:w-auto">
-                <FileText className="mr-2 h-4 w-4" />
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
                 Exportar
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleExportReport}>
-                <FileText className="mr-2 h-4 w-4" />
-                Exportar a PDF
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportReport}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 Exportar a Excel

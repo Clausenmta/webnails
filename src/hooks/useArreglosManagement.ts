@@ -90,6 +90,7 @@ export function useArreglosManagement() {
           created_by: "admin" // This should be the current user
         });
       }
+      toast.success('Arreglos importados correctamente');
     } catch (error) {
       console.error('Error importing arreglos:', error);
       toast.error('Error al importar arreglos');

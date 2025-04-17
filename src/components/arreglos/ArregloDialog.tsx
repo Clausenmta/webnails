@@ -25,10 +25,10 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
     client_name: "",
     service_type: "Otro",
     description: "",
-    status: "pendiente",
+    status: "pendiente" as "pendiente" | "en_proceso" | "completado" | "cancelado",
     assigned_to: "",
     price: 0,
-    payment_status: "pendiente",
+    payment_status: "pendiente" as "pendiente" | "pagado",
     notes: "",
     date: format(new Date(), "dd/MM/yyyy"),
   });
@@ -68,7 +68,19 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "status") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [name]: value as "pendiente" | "en_proceso" | "completado" | "cancelado" 
+      }));
+    } else if (name === "payment_status") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        [name]: value as "pendiente" | "pagado" 
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

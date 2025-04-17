@@ -21,7 +21,9 @@ export interface GiftCard {
 }
 
 // Necesitamos que NewGiftCard tenga la propiedad branch para el UI
-export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at' | 'is_redeemed'>;
+export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at' | 'is_redeemed'> & {
+  branch?: string; // Ensure branch is explicitly defined here
+};
 
 // Helper function to handle Supabase errors
 const handleSupabaseError = (error: any, operation: string = "operación") => {
@@ -105,7 +107,8 @@ export const giftCardService = {
       return (data || []).map(giftCard => ({
         ...giftCard,
         status: giftCard.status as "active" | "redeemed" | "expired",
-        is_redeemed: giftCard.status === "redeemed" || giftCard.redeemed_date != null
+        is_redeemed: giftCard.status === "redeemed" || giftCard.redeemed_date != null,
+        branch: undefined // Initialize branch as undefined for all fetched records
       }));
     } catch (error) {
       handleSupabaseError(error, "obtener tarjetas de regalo");
@@ -127,8 +130,11 @@ export const giftCardService = {
         newGiftCard.redeemed_date
       );
       
-      // Extraemos branch si existe, ya que no es parte del esquema de la base de datos
-      const { branch, ...giftCardData } = newGiftCard;
+      // Store branch value before removing it for database insertion
+      const branch = newGiftCard.branch;
+      
+      // Extract fields that don't exist in the database
+      const { branch: _, ...giftCardData } = newGiftCard;
       
       const { data, error } = await supabase
         .from('gift_cards')
@@ -141,12 +147,12 @@ export const giftCardService = {
       
       if (error) throw error;
       
-      // Convertimos los valores de status al tipo correcto
+      // Reintegrate the branch with the returned data
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
         is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
-        branch // Reintegramos branch solo para la UI
+        branch // Reintegrate branch for UI purposes
       };
     } catch (error) {
       handleSupabaseError(error, "agregar tarjeta de regalo");
@@ -170,8 +176,11 @@ export const giftCardService = {
       
       if (fetchError) throw fetchError;
       
-      // Extraemos branch si existe, ya que no es parte del esquema de la base de datos
-      const { branch, ...updatedData } = updates;
+      // Store branch value before removing it for database update
+      const branch = updates.branch;
+      
+      // Extract fields that don't exist in the database
+      const { branch: _, ...updatedData } = updates;
       
       // Combinar la gift card actual con las actualizaciones
       const updatedGiftCard = {
@@ -197,12 +206,12 @@ export const giftCardService = {
       
       if (error) throw error;
       
-      // Convertimos los valores de status al tipo correcto y reintegramos branch solo para la UI
+      // Add back the branch property to the returned data
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
         is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
-        branch: branch || currentCard.branch // Mantener el valor anterior de branch si existe
+        branch // Reintegrate branch for UI purposes
       };
     } catch (error) {
       handleSupabaseError(error, "actualizar tarjeta de regalo");

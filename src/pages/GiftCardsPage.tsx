@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,7 +55,8 @@ import {
   Trash,
   FileText,
   FileSpreadsheet,
-  Upload
+  Upload,
+  GiftIcon
 } from "lucide-react";
 import { BadgeInfo, BadgeCheck, BadgeAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -63,110 +65,56 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import * as XLSX from 'xlsx';
 import { exportReport } from "@/utils/reportExport";
-
-type GiftCardStatus = "Pendiente" | "Canjeada" | "Vencida";
-type GiftCardType = "Física" | "Virtual";
-type Branch = "Fisherton" | "Alto Rosario" | "Moreno" | "Tucumán";
-
-interface GiftCard {
-  id: string;
-  number: string;
-  type: GiftCardType;
-  service: string;
-  branch: Branch;
-  issueDate: string;
-  receivedDate: string | null;
-  expirationDate: string;
-  status: GiftCardStatus;
-}
+import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
+import { GiftCard, NewGiftCard } from "@/services/giftCardService";
 
 export default function GiftCardsPage() {
-  const [giftCards, setGiftCards] = useState<GiftCard[]>([
-    {
-      id: "1",
-      number: "GC-001",
-      type: "Física",
-      service: "Manicura Completa",
-      branch: "Fisherton",
-      issueDate: "2025-03-15",
-      receivedDate: null,
-      expirationDate: "2025-04-14",
-      status: "Pendiente"
-    },
-    {
-      id: "2",
-      number: "GC-002",
-      type: "Virtual",
-      service: "Corte y Peinado",
-      branch: "Alto Rosario",
-      issueDate: "2025-03-01",
-      receivedDate: "2025-03-25",
-      expirationDate: "2025-03-31",
-      status: "Canjeada"
-    },
-    {
-      id: "3",
-      number: "GC-003",
-      type: "Física",
-      service: "Spa Facial",
-      branch: "Moreno",
-      issueDate: "2025-02-10",
-      receivedDate: null,
-      expirationDate: "2025-03-12",
-      status: "Vencida"
-    },
-    {
-      id: "4",
-      number: "GC-004",
-      type: "Física",
-      service: "Depilación Completa",
-      branch: "Tucumán",
-      issueDate: "2025-03-20",
-      receivedDate: null,
-      expirationDate: "2025-04-19",
-      status: "Pendiente"
-    },
-    {
-      id: "5",
-      number: "GC-005",
-      type: "Virtual",
-      service: "Tratamiento Capilar",
-      branch: "Fisherton",
-      issueDate: "2025-03-05",
-      receivedDate: "2025-03-28",
-      expirationDate: "2025-04-04",
-      status: "Canjeada"
-    }
-  ]);
+  const {
+    giftCards,
+    isLoading,
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+    isViewDetailsDialogOpen,
+    setIsViewDetailsDialogOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    isConfirmRedeemDialogOpen,
+    setIsConfirmRedeemDialogOpen,
+    isImportDialogOpen,
+    setIsImportDialogOpen,
+    selectedGiftCard,
+    setSelectedGiftCard,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    addGiftCardMutation,
+    updateGiftCardMutation,
+    deleteGiftCardMutation,
+    importProgress,
+    setImportProgress,
+    importStatus,
+    setImportStatus,
+    importResults,
+    setImportResults,
+    importErrors,
+    setImportErrors,
+    safeAction,
+    handleDialogOpenChange,
+    resetImportState,
+    dialogsEnabled
+  } = useGiftCardManagement();
 
-  const [newGiftCard, setNewGiftCard] = useState<Partial<GiftCard>>({
-    type: "Física",
-    branch: "Fisherton",
-    issueDate: new Date().toISOString().split('T')[0]
+  const [newGiftCard, setNewGiftCard] = useState<Partial<NewGiftCard>>({
+    status: "active",
+    purchase_date: new Date().toISOString().split('T')[0]
   });
 
-  const [isNewGiftCardDialogOpen, setIsNewGiftCardDialogOpen] = useState(false);
-  const [isViewDetailsDialogOpen, setIsViewDetailsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isConfirmRedeemDialogOpen, setIsConfirmRedeemDialogOpen] = useState(false);
-  const [selectedGiftCard, setSelectedGiftCard] = useState<GiftCard | null>(null);
-  const [editGiftCard, setEditGiftCard] = useState<Partial<GiftCard>>({});
-  const [dialogsEnabled, setDialogsEnabled] = useState(true);
+  const [editGiftCard, setEditGiftCard] = useState<Partial<NewGiftCard>>({});
+  const [branchFilter, setBranchFilter] = useState<string>("all");
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<GiftCardStatus | "all">("all");
-  const [branchFilter, setBranchFilter] = useState<Branch | "all">("all");
-
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
-  const [importStatus, setImportStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
-  const [importResults, setImportResults] = useState<{ total: number; successful: number; failed: number }>({
-    total: 0,
-    successful: 0,
-    failed: 0
-  });
-  const [importErrors, setImportErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Efecto para limpiar el estado después de cada operación
@@ -176,56 +124,23 @@ export default function GiftCardsPage() {
       setSelectedGiftCard(null);
       setEditGiftCard({});
     };
-  }, []);
+  }, [setSelectedGiftCard]);
 
-  // Función para proteger contra acciones repetidas o superpuestas
-  const safeAction = useCallback((action: () => void) => {
-    if (!dialogsEnabled) return;
-    
-    setDialogsEnabled(false);
-    
-    try {
-      action();
-    } finally {
-      // Re-habilitar acciones después de un breve tiempo
-      setTimeout(() => {
-        setDialogsEnabled(true);
-      }, 500); // Aumentamos el tiempo para prevenir clics múltiples
-    }
-  }, [dialogsEnabled]);
-
-  // Función para cerrar todos los diálogos
-  const closeAllDialogs = useCallback(() => {
-    // Primero cerramos todos los diálogos
-    setIsNewGiftCardDialogOpen(false);
-    setIsViewDetailsDialogOpen(false);
-    setIsEditDialogOpen(false);
-    setIsDeleteDialogOpen(false);
-    setIsConfirmRedeemDialogOpen(false);
-    setIsImportDialogOpen(false);
-    
-    // Limpiamos los datos después de cerrar los diálogos
-    setTimeout(() => {
-      setSelectedGiftCard(null);
-      setEditGiftCard({});
-    }, 300); // Aumentado para asegurar que los diálogos se cierren completamente
-  }, []);
-
-  const handleNewGiftCardChange = useCallback((field: keyof GiftCard, value: any) => {
+  const handleNewGiftCardChange = (field: keyof GiftCard, value: any) => {
     setNewGiftCard(prev => ({
       ...prev,
       [field]: value
     }));
-  }, []);
+  };
 
-  const handleEditGiftCardChange = useCallback((field: keyof GiftCard, value: any) => {
+  const handleEditGiftCardChange = (field: keyof GiftCard, value: any) => {
     setEditGiftCard(prev => ({
       ...prev,
       [field]: value
     }));
-  }, []);
+  };
 
-  const handleExportPDF = useCallback(() => {
+  const handleExportPDF = () => {
     try {
       // Usar la función exportReport del utility
       exportReport(giftCards, {
@@ -236,9 +151,9 @@ export default function GiftCardsPage() {
       console.error("Error al exportar a PDF:", error);
       toast.error("No se pudo exportar a PDF. Intente nuevamente.");
     }
-  }, [giftCards]);
+  };
 
-  const handleExportExcel = useCallback(() => {
+  const handleExportExcel = () => {
     try {
       // Usar la función exportReport del utility
       exportReport(giftCards, {
@@ -249,278 +164,165 @@ export default function GiftCardsPage() {
       console.error("Error al exportar a Excel:", error);
       toast.error("No se pudo exportar a Excel. Intente nuevamente.");
     }
-  }, [giftCards]);
+  };
 
-  const handleCreateGiftCard = useCallback(() => {
+  const handleCreateGiftCard = () => {
     if (!dialogsEnabled) return;
     
     try {
-      if (!newGiftCard.number || !newGiftCard.service) {
+      if (!newGiftCard.code || !newGiftCard.amount) {
         toast.error("Por favor complete todos los campos requeridos.");
         return;
       }
 
-      const issueDate = new Date(newGiftCard.issueDate || new Date());
-      const expirationDate = new Date(issueDate);
-      expirationDate.setDate(expirationDate.getDate() + 30);
+      const purchaseDate = new Date(newGiftCard.purchase_date || new Date());
+      const expiryDate = new Date(purchaseDate);
+      expiryDate.setDate(expiryDate.getDate() + 30);
 
-      let status: GiftCardStatus = "Pendiente";
-      if (newGiftCard.receivedDate) {
-        status = "Canjeada";
-      } else if (new Date() > expirationDate) {
-        status = "Vencida";
-      }
+      addGiftCardMutation.mutate({
+        ...newGiftCard,
+        status: newGiftCard.status || "active",
+        purchase_date: newGiftCard.purchase_date || new Date().toISOString().split('T')[0],
+        expiry_date: newGiftCard.expiry_date || expiryDate.toISOString().split('T')[0],
+        created_by: "admin" // Se debería obtener del usuario logueado
+      } as NewGiftCard);
 
-      const newCard: GiftCard = {
-        id: (giftCards.length + 1).toString(),
-        number: newGiftCard.number || "",
-        type: newGiftCard.type || "Física",
-        service: newGiftCard.service || "",
-        branch: newGiftCard.branch || "Fisherton",
-        issueDate: newGiftCard.issueDate || new Date().toISOString().split('T')[0],
-        receivedDate: newGiftCard.receivedDate || null,
-        expirationDate: expirationDate.toISOString().split('T')[0],
-        status: status
-      };
-
-      // Cerrar diálogo primero
-      setIsNewGiftCardDialogOpen(false);
-      
-      // Pequeño retraso para asegurar que la interfaz responda
-      setTimeout(() => {
-        setGiftCards(prevCards => [...prevCards, newCard]);
-        
-        setNewGiftCard({
-          type: "Física",
-          branch: "Fisherton",
-          issueDate: new Date().toISOString().split('T')[0]
-        });
-        
-        toast.success(`La gift card ${newCard.number} ha sido creada exitosamente.`);
-      }, 300);
+      // Limpiar el formulario
+      setNewGiftCard({
+        status: "active",
+        purchase_date: new Date().toISOString().split('T')[0]
+      });
     } catch (error) {
       console.error("Error al crear gift card:", error);
-      setIsNewGiftCardDialogOpen(false);
-      
-      setTimeout(() => {
-        toast.error("Ocurrió un error al crear la gift card. Intente nuevamente.");
-      }, 300);
+      toast.error("Ocurrió un error al crear la gift card. Intente nuevamente.");
     }
-  }, [newGiftCard, giftCards, dialogsEnabled]);
+  };
 
-  const handleViewDetails = useCallback((card: GiftCard) => {
+  const handleViewDetails = (card: GiftCard) => {
     safeAction(() => {
       try {
-        // Hacer una copia profunda para evitar problemas de referencia
-        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setSelectedGiftCard(card);
         setIsViewDetailsDialogOpen(true);
       } catch (error) {
         console.error("Error al ver detalles:", error);
         toast.error("No se pudieron cargar los detalles. Intente nuevamente.");
       }
     });
-  }, [safeAction]);
+  };
 
-  const handleEdit = useCallback((card: GiftCard) => {
+  const handleEdit = (card: GiftCard) => {
     safeAction(() => {
       try {
-        // Crear una copia profunda para evitar problemas de referencia
-        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
-        setEditGiftCard(JSON.parse(JSON.stringify(card)));
+        setSelectedGiftCard(card);
+        setEditGiftCard(card);
         setIsEditDialogOpen(true);
       } catch (error) {
         console.error("Error al editar:", error);
         toast.error("No se pudo abrir el editor. Intente nuevamente.");
       }
     });
-  }, [safeAction]);
+  };
 
-  const handleSaveEdit = useCallback(() => {
-    if (!dialogsEnabled) return;
+  const handleSaveEdit = () => {
+    if (!dialogsEnabled || !selectedGiftCard) return;
     
     try {
-      if (!editGiftCard.number || !editGiftCard.service || !selectedGiftCard) {
+      if (!editGiftCard.code || !editGiftCard.amount) {
         toast.error("Por favor complete todos los campos requeridos.");
         return;
       }
 
-      // Cerrar primero el diálogo
-      setIsEditDialogOpen(false);
-      
-      const cardId = selectedGiftCard.id;
-      const updatedCardNumber = editGiftCard.number;
-      
-      // Pequeño retraso para asegurar que la interfaz responda
-      setTimeout(() => {
-        setSelectedGiftCard(null);
-        setEditGiftCard({});
-        
-        setGiftCards(prevCards => prevCards.map(card => {
-          if (card.id === cardId) {
-            return {
-              ...card,
-              ...editGiftCard,
-              status: editGiftCard.status as GiftCardStatus || card.status
-            } as GiftCard;
-          }
-          return card;
-        }));
-        
-        toast.success(`La gift card ${updatedCardNumber} ha sido actualizada exitosamente.`);
-      }, 300);
+      updateGiftCardMutation.mutate({
+        id: selectedGiftCard.id,
+        updates: editGiftCard
+      });
     } catch (error) {
       console.error("Error al guardar edición:", error);
-      setIsEditDialogOpen(false);
-      
-      setTimeout(() => {
-        setSelectedGiftCard(null);
-        setEditGiftCard({});
-        
-        toast.error("Ocurrió un error al actualizar la gift card. Intente nuevamente.");
-      }, 300);
+      toast.error("Ocurrió un error al actualizar la gift card. Intente nuevamente.");
     }
-  }, [editGiftCard, selectedGiftCard, dialogsEnabled]);
+  };
 
-  const handleDelete = useCallback((card: GiftCard) => {
+  const handleDelete = (card: GiftCard) => {
     safeAction(() => {
       try {
-        // Crear una copia para evitar problemas de referencia
-        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setSelectedGiftCard(card);
         setIsDeleteDialogOpen(true);
       } catch (error) {
         console.error("Error al preparar eliminación:", error);
         toast.error("No se pudo preparar la eliminación. Intente nuevamente.");
       }
     });
-  }, [safeAction]);
+  };
 
-  const handleConfirmDelete = useCallback(() => {
-    if (!dialogsEnabled) return;
+  const handleConfirmDelete = () => {
+    if (!dialogsEnabled || !selectedGiftCard) return;
     
     try {
-      if (!selectedGiftCard) return;
-      
-      // Guardar los datos que necesitamos en variables locales
-      const cardToDelete = {...selectedGiftCard};
-      
-      // Primero cerrar el diálogo
-      setIsDeleteDialogOpen(false);
-      
-      // Pequeño retraso para actualizar el estado después de cerrar el diálogo
-      setTimeout(() => {
-        // Limpiar la referencia al card seleccionado
-        setSelectedGiftCard(null);
-        
-        // Actualizar la lista de gift cards
-        setGiftCards(prevCards => prevCards.filter(card => card.id !== cardToDelete.id));
-        
-        // Mostrar mensaje de confirmación
-        toast.success(`La gift card ${cardToDelete.number} ha sido eliminada exitosamente.`);
-      }, 300);
+      deleteGiftCardMutation.mutate(selectedGiftCard.id);
     } catch (error) {
       console.error("Error al eliminar gift card:", error);
-      
-      // Cerrar el diálogo en caso de error
-      setIsDeleteDialogOpen(false);
-      
-      setTimeout(() => {
-        // Limpiar la selección
-        setSelectedGiftCard(null);
-        
-        toast.error("Ocurrió un error al eliminar la gift card. Intente nuevamente.");
-      }, 300);
+      toast.error("Ocurrió un error al eliminar la gift card. Intente nuevamente.");
     }
-  }, [selectedGiftCard, dialogsEnabled]);
+  };
 
-  const handleMarkAsRedeemed = useCallback((card: GiftCard) => {
+  const handleMarkAsRedeemed = (card: GiftCard) => {
     safeAction(() => {
       try {
-        // Crear una copia para evitar problemas de referencia
-        setSelectedGiftCard(JSON.parse(JSON.stringify(card)));
+        setSelectedGiftCard(card);
         setIsConfirmRedeemDialogOpen(true);
       } catch (error) {
         console.error("Error al preparar canje:", error);
         toast.error("No se pudo preparar el canje. Intente nuevamente.");
       }
     });
-  }, [safeAction]);
+  };
 
-  const handleConfirmRedeem = useCallback(() => {
-    if (!dialogsEnabled) return;
+  const handleConfirmRedeem = () => {
+    if (!dialogsEnabled || !selectedGiftCard) return;
     
     try {
-      if (!selectedGiftCard) return;
-      
-      // Guardar los datos que necesitamos en variables locales
-      const cardToRedeem = {...selectedGiftCard};
-      
-      // Primero cerrar el diálogo
+      updateGiftCardMutation.mutate({
+        id: selectedGiftCard.id,
+        updates: {
+          status: "redeemed",
+          redeemed_date: new Date().toISOString().split('T')[0]
+        }
+      });
       setIsConfirmRedeemDialogOpen(false);
-      
-      // Pequeño retraso para actualizar el estado después de cerrar el diálogo
-      setTimeout(() => {
-        // Limpiar la referencia al card seleccionado
-        setSelectedGiftCard(null);
-        
-        // Actualizar la lista de gift cards
-        setGiftCards(prevCards => prevCards.map(card => {
-          if (card.id === cardToRedeem.id) {
-            return {
-              ...card,
-              status: "Canjeada" as GiftCardStatus,
-              receivedDate: new Date().toISOString().split('T')[0]
-            };
-          }
-          return card;
-        }));
-        
-        // Mostrar mensaje de confirmación
-        toast.success(`La gift card ${cardToRedeem.number} ha sido marcada como canjeada.`);
-      }, 300);
     } catch (error) {
       console.error("Error al canjear gift card:", error);
-      
-      // Cerrar el diálogo en caso de error
-      setIsConfirmRedeemDialogOpen(false);
-      
-      setTimeout(() => {
-        // Limpiar la selección
-        setSelectedGiftCard(null);
-        
-        toast.error("Ocurrió un error al canjear la gift card. Intente nuevamente.");
-      }, 300);
+      toast.error("Ocurrió un error al canjear la gift card. Intente nuevamente.");
     }
-  }, [selectedGiftCard, dialogsEnabled]);
+  };
 
   // Filtros y renderizado
   const filteredGiftCards = giftCards.filter(card => {
-    const matchesSearch = card.number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         card.service.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (card.code?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (card.customer_name && card.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         false);
 
     const matchesStatus = statusFilter === "all" || card.status === statusFilter;
 
-    const matchesBranch = branchFilter === "all" || card.branch === branchFilter;
-
-    return matchesSearch && matchesStatus && matchesBranch;
+    return matchesSearch && matchesStatus;
   });
 
-  const renderStatusBadge = useCallback((status: GiftCardStatus) => {
+  const renderStatusBadge = (status: GiftCard['status']) => {
     switch (status) {
-      case "Pendiente":
+      case "active":
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
             <BadgeInfo className="w-3 h-3 mr-1" />
             Pendiente
           </Badge>
         );
-      case "Canjeada":
+      case "redeemed":
         return (
           <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
             <BadgeCheck className="w-3 h-3 mr-1" />
             Canjeada
           </Badge>
         );
-      case "Vencida":
+      case "expired":
         return (
           <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
             <BadgeAlert className="w-3 h-3 mr-1" />
@@ -530,29 +332,23 @@ export default function GiftCardsPage() {
       default:
         return null;
     }
-  }, []);
+  };
 
-  const validateGiftCardData = useCallback((data: any): { isValid: boolean; errors: string[] } => {
+  const validateGiftCardData = (data: any): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
-    if (!data.number) errors.push(`Falta el número de gift card en la fila ${data.__rowNum__ + 1}`);
-    if (!data.service) errors.push(`Falta el servicio en la fila ${data.__rowNum__ + 1}`);
-    if (!data.type) errors.push(`Falta el tipo en la fila ${data.__rowNum__ + 1}`);
-    if (!data.branch) errors.push(`Falta la sucursal en la fila ${data.__rowNum__ + 1}`);
-    if (!data.issueDate) errors.push(`Falta la fecha de emisión en la fila ${data.__rowNum__ + 1}`);
+    if (!data.code) errors.push(`Falta el código de gift card en la fila ${data.__rowNum__ + 1}`);
+    if (!data.amount) errors.push(`Falta el monto en la fila ${data.__rowNum__ + 1}`);
+    if (!data.purchase_date) errors.push(`Falta la fecha de compra en la fila ${data.__rowNum__ + 1}`);
     
-    if (data.type && !["Física", "Virtual"].includes(data.type)) {
-      errors.push(`Tipo inválido "${data.type}" en la fila ${data.__rowNum__ + 1}. Debe ser "Física" o "Virtual"`);
-    }
-    
-    if (data.branch && !["Fisherton", "Alto Rosario", "Moreno", "Tucumán"].includes(data.branch)) {
-      errors.push(`Sucursal inválida "${data.branch}" en la fila ${data.__rowNum__ + 1}`);
+    if (data.status && !["active", "redeemed", "expired"].includes(data.status)) {
+      errors.push(`Estado inválido "${data.status}" en la fila ${data.__rowNum__ + 1}. Debe ser "active", "redeemed" o "expired"`);
     }
     
     try {
-      if (data.issueDate) new Date(data.issueDate);
-      if (data.expirationDate) new Date(data.expirationDate);
-      if (data.receivedDate) new Date(data.receivedDate);
+      if (data.purchase_date) new Date(data.purchase_date);
+      if (data.expiry_date) new Date(data.expiry_date);
+      if (data.redeemed_date) new Date(data.redeemed_date);
     } catch (e) {
       errors.push(`Formato de fecha inválido en la fila ${data.__rowNum__ + 1}`);
     }
@@ -561,9 +357,9 @@ export default function GiftCardsPage() {
       isValid: errors.length === 0,
       errors
     };
-  }, []);
+  };
 
-  const processExcelFile = useCallback((file: File) => {
+  const processExcelFile = (file: File) => {
     try {
       setImportStatus("processing");
       setImportProgress(10);
@@ -590,7 +386,7 @@ export default function GiftCardsPage() {
             return;
           }
           
-          const newGiftCards: GiftCard[] = [];
+          const newGiftCards: NewGiftCard[] = [];
           const errors: string[] = [];
           
           jsonData.forEach((row, index) => {
@@ -599,27 +395,23 @@ export default function GiftCardsPage() {
             const { isValid, errors: rowErrors } = validateGiftCardData(row);
             
             if (isValid) {
-              const issueDate = new Date(row.issueDate);
-              const expirationDate = new Date(issueDate);
-              expirationDate.setDate(expirationDate.getDate() + 30);
-              
-              let status: GiftCardStatus = "Pendiente";
-              if (row.receivedDate) {
-                status = "Canjeada";
-              } else if (row.expirationDate && new Date() > new Date(row.expirationDate)) {
-                status = "Vencida";
+              const purchaseDate = new Date(row.purchase_date);
+              let expiryDate = row.expiry_date ? new Date(row.expiry_date) : new Date(purchaseDate);
+              if (!row.expiry_date) {
+                expiryDate.setDate(expiryDate.getDate() + 30);
               }
               
-              const newGiftCard: GiftCard = {
-                id: (giftCards.length + newGiftCards.length + 1).toString(),
-                number: row.number,
-                type: row.type as GiftCardType,
-                service: row.service,
-                branch: row.branch as Branch,
-                issueDate: row.issueDate,
-                receivedDate: row.receivedDate || null,
-                expirationDate: row.expirationDate || expirationDate.toISOString().split('T')[0],
-                status
+              const newGiftCard: NewGiftCard = {
+                code: row.code,
+                amount: row.amount,
+                status: row.status || "active",
+                customer_name: row.customer_name,
+                customer_email: row.customer_email,
+                purchase_date: row.purchase_date,
+                expiry_date: row.expiry_date || expiryDate.toISOString().split('T')[0],
+                redeemed_date: row.redeemed_date,
+                created_by: "admin", // Se debería obtener del usuario logueado
+                notes: row.notes
               };
               
               newGiftCards.push(newGiftCard);
@@ -639,35 +431,25 @@ export default function GiftCardsPage() {
           setImportErrors(errors);
           
           if (newGiftCards.length > 0) {
-            // Cerrar diálogo primero si es exitoso
-            if (errors.length === 0) {
-              setImportStatus("success");
-              setImportProgress(100);
-              
-              // Pequeño retraso para la actualización
-              setTimeout(() => {
-                setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
-                
+            // Agregar cada gift card a la base de datos
+            Promise.all(newGiftCards.map(card => addGiftCardMutation.mutateAsync(card)))
+              .then(() => {
+                setImportStatus("success");
+                setImportProgress(100);
                 toast.success(`Se importaron ${newGiftCards.length} gift cards correctamente`);
-              }, 300);
-            } else {
-              setImportStatus("error");
-              setImportProgress(100);
-              
-              // Actualizar cards pero mostrar errores
-              setTimeout(() => {
-                setGiftCards(prevCards => [...prevCards, ...newGiftCards]);
-                
-                toast.error(`Se importaron ${newGiftCards.length} gift cards con ${errors.length} errores.`);
-              }, 300);
-            }
+              })
+              .catch(error => {
+                setImportStatus("error");
+                setImportProgress(100);
+                setImportErrors(prev => [...prev, `Error al guardar: ${error.message}`]);
+                toast.error(`Error al guardar gift cards: ${error.message}`);
+              });
           } else {
             setImportStatus("error");
             setImportProgress(100);
-            
             toast.error("No se pudo importar ninguna gift card. Revise los errores.");
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error al procesar el archivo Excel:", error);
           setImportStatus("error");
           setImportErrors(["Error al procesar el archivo Excel. Verifique el formato."]);
@@ -692,9 +474,9 @@ export default function GiftCardsPage() {
       
       toast.error("Error inesperado al procesar el archivo.");
     }
-  }, [giftCards, validateGiftCardData]);
+  };
 
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const file = event.target.files?.[0];
       if (file) {
@@ -704,34 +486,34 @@ export default function GiftCardsPage() {
       console.error("Error al seleccionar archivo:", error);
       toast.error("No se pudo seleccionar el archivo. Intente nuevamente.");
     }
-  }, [processExcelFile]);
+  };
 
-  const downloadExcelTemplate = useCallback(() => {
+  const downloadExcelTemplate = () => {
     try {
       const workbook = XLSX.utils.book_new();
       
       const headers = [
-        "number", "type", "service", "branch", "issueDate", "receivedDate", "expirationDate"
+        "code", "amount", "status", "customer_name", "customer_email", "purchase_date", "expiry_date"
       ];
       
       const sampleData = [
         {
-          number: "GC-SAMPLE-001",
-          type: "Física",
-          service: "Manicura Completa",
-          branch: "Fisherton",
-          issueDate: "2025-04-10",
-          receivedDate: "",
-          expirationDate: "2025-05-10"
+          code: "GC-SAMPLE-001",
+          amount: 2000,
+          status: "active",
+          customer_name: "Nombre Cliente",
+          customer_email: "cliente@example.com",
+          purchase_date: "2025-04-10",
+          expiry_date: "2025-05-10"
         },
         {
-          number: "GC-SAMPLE-002",
-          type: "Virtual",
-          service: "Corte y Peinado",
-          branch: "Alto Rosario",
-          issueDate: "2025-04-10",
-          receivedDate: "2025-04-15",
-          expirationDate: "2025-05-10"
+          code: "GC-SAMPLE-002",
+          amount: 3000,
+          status: "redeemed",
+          customer_name: "Otro Cliente",
+          customer_email: "otro@example.com",
+          purchase_date: "2025-04-10",
+          expiry_date: "2025-05-10"
         }
       ];
       
@@ -746,39 +528,16 @@ export default function GiftCardsPage() {
       console.error("Error al descargar plantilla:", error);
       toast.error("No se pudo descargar la plantilla. Intente nuevamente.");
     }
-  }, []);
+  };
 
-  const resetImportState = useCallback(() => {
-    try {
-      setImportStatus("idle");
-      setImportProgress(0);
-      setImportErrors([]);
-      setImportResults({ total: 0, successful: 0, failed: 0 });
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      console.error("Error al resetear estado de importación:", error);
-    }
-  }, []);
-
-  // Control de cierre de diálogos para evitar congelamiento de la interfaz
-  const handleDialogOpenChange = useCallback((open: boolean, setOpenFn: React.Dispatch<React.SetStateAction<boolean>>, cleanup?: () => void) => {
-    if (!open) {
-      // Primero cerramos el diálogo
-      setOpenFn(false);
-      
-      // Luego ejecutamos la limpieza si es necesario
-      if (cleanup) {
-        setTimeout(() => {
-          cleanup();
-        }, 300); // Aumentado para asegurar que los diálogos se cierren completamente
-      }
-    } else if (dialogsEnabled) {
-      // Solo abrimos si los diálogos están habilitados
-      setOpenFn(open);
-    }
-  }, [dialogsEnabled]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -794,7 +553,7 @@ export default function GiftCardsPage() {
             className="bg-salon-400 hover:bg-salon-500"
             onClick={() => {
               if (dialogsEnabled) {
-                setIsNewGiftCardDialogOpen(true);
+                setIsAddDialogOpen(true);
               }
             }}
             disabled={!dialogsEnabled}
@@ -872,34 +631,16 @@ export default function GiftCardsPage() {
                       <Label>Estado</Label>
                       <Select
                         value={statusFilter}
-                        onValueChange={(value) => setStatusFilter(value as GiftCardStatus | "all")}
+                        onValueChange={(value) => setStatusFilter(value as "active" | "redeemed" | "expired" | "all")}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Todos los estados" />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
                           <SelectItem value="all">Todos los estados</SelectItem>
-                          <SelectItem value="Pendiente">Pendiente</SelectItem>
-                          <SelectItem value="Canjeada">Canjeada</SelectItem>
-                          <SelectItem value="Vencida">Vencida</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Sucursal</Label>
-                      <Select
-                        value={branchFilter}
-                        onValueChange={(value) => setBranchFilter(value as Branch | "all")}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todas las sucursales" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="all">Todas las sucursales</SelectItem>
-                          <SelectItem value="Fisherton">Fisherton</SelectItem>
-                          <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
-                          <SelectItem value="Moreno">Moreno</SelectItem>
-                          <SelectItem value="Tucumán">Tucumán</SelectItem>
+                          <SelectItem value="active">Pendiente</SelectItem>
+                          <SelectItem value="redeemed">Canjeada</SelectItem>
+                          <SelectItem value="expired">Vencida</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -914,11 +655,10 @@ export default function GiftCardsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nro Gift Card</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Servicio</TableHead>
-                  <TableHead>Sucursal</TableHead>
-                  <TableHead>F. Emisión</TableHead>
+                  <TableHead>Código Gift Card</TableHead>
+                  <TableHead>Monto</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>F. Compra</TableHead>
                   <TableHead>F. Vencimiento</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -927,9 +667,9 @@ export default function GiftCardsPage() {
               <TableBody>
                 {filteredGiftCards.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24">
+                    <TableCell colSpan={7} className="text-center h-24">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <CreditCard className="h-8 w-8 mb-2" />
+                        <GiftIcon className="h-8 w-8 mb-2" />
                         <p>No se encontraron gift cards</p>
                       </div>
                     </TableCell>
@@ -937,12 +677,11 @@ export default function GiftCardsPage() {
                 ) : (
                   filteredGiftCards.map((card) => (
                     <TableRow key={card.id}>
-                      <TableCell className="font-medium">{card.number}</TableCell>
-                      <TableCell>{card.type}</TableCell>
-                      <TableCell>{card.service}</TableCell>
-                      <TableCell>{card.branch}</TableCell>
-                      <TableCell>{new Date(card.issueDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(card.expirationDate).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-medium">{card.code}</TableCell>
+                      <TableCell>${card.amount.toLocaleString()}</TableCell>
+                      <TableCell>{card.customer_name || '-'}</TableCell>
+                      <TableCell>{card.purchase_date}</TableCell>
+                      <TableCell>{card.expiry_date}</TableCell>
                       <TableCell>{renderStatusBadge(card.status)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -960,7 +699,7 @@ export default function GiftCardsPage() {
                               <Edit className="mr-2 h-4 w-4" />
                               <span>Editar</span>
                             </DropdownMenuItem>
-                            {card.status !== "Canjeada" && (
+                            {card.status === "active" && (
                               <DropdownMenuItem onClick={() => handleMarkAsRedeemed(card)}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 <span>Marcar como Canjeada</span>
@@ -986,7 +725,7 @@ export default function GiftCardsPage() {
         </CardContent>
       </Card>
 
-      {/* Diálogos con gestión mejorada para evitar congelamiento */}
+      {/* Diálogos */}
       <Dialog 
         open={isDeleteDialogOpen} 
         onOpenChange={(open) => handleDialogOpenChange(open, setIsDeleteDialogOpen, () => setSelectedGiftCard(null))}
@@ -1001,9 +740,9 @@ export default function GiftCardsPage() {
           {selectedGiftCard && (
             <div className="py-4">
               <div className="p-4 border rounded-md mb-4">
-                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
-                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
-                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
+                <p><span className="font-medium">Código:</span> {selectedGiftCard.code}</p>
+                <p><span className="font-medium">Monto:</span> ${selectedGiftCard.amount.toLocaleString()}</p>
+                <p><span className="font-medium">Cliente:</span> {selectedGiftCard.customer_name || '-'}</p>
               </div>
             </div>
           )}
@@ -1026,8 +765,8 @@ export default function GiftCardsPage() {
       </Dialog>
       
       <Dialog 
-        open={isNewGiftCardDialogOpen} 
-        onOpenChange={(open) => handleDialogOpenChange(open, setIsNewGiftCardDialogOpen)}
+        open={isAddDialogOpen} 
+        onOpenChange={(open) => handleDialogOpenChange(open, setIsAddDialogOpen)}
       >
         <DialogContent className="sm:max-w-[550px] bg-white">
           <DialogHeader>
@@ -1039,104 +778,79 @@ export default function GiftCardsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="giftCardNumber">Nro. Gift Card</Label>
+                <Label htmlFor="giftCardNumber">Código Gift Card</Label>
                 <Input
                   id="giftCardNumber"
                   placeholder="GC-001"
-                  value={newGiftCard.number || ""}
-                  onChange={(e) => handleNewGiftCardChange("number", e.target.value)}
+                  value={newGiftCard.code || ""}
+                  onChange={(e) => handleNewGiftCardChange("code", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="giftCardType">Tipo</Label>
-                <Select
-                  value={newGiftCard.type}
-                  onValueChange={(value) => handleNewGiftCardChange("type", value as GiftCardType)}
-                >
-                  <SelectTrigger id="giftCardType">
-                    <SelectValue placeholder="Seleccione un tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Física">Física</SelectItem>
-                    <SelectItem value="Virtual">Virtual</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="giftCardAmount">Monto</Label>
+                <Input
+                  id="giftCardAmount"
+                  type="number"
+                  placeholder="2000"
+                  value={newGiftCard.amount || ""}
+                  onChange={(e) => handleNewGiftCardChange("amount", Number(e.target.value))}
+                />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="giftCardService">Servicio</Label>
-              <Input
-                id="giftCardService"
-                placeholder="Manicura completa"
-                value={newGiftCard.service || ""}
-                onChange={(e) => handleNewGiftCardChange("service", e.target.value)}
-              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="giftCardBranch">Sucursal</Label>
-                <Select
-                  value={newGiftCard.branch}
-                  onValueChange={(value) => handleNewGiftCardChange("branch", value as Branch)}
-                >
-                  <SelectTrigger id="giftCardBranch">
-                    <SelectValue placeholder="Seleccione una sucursal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Fisherton">Fisherton</SelectItem>
-                    <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
-                    <SelectItem value="Moreno">Moreno</SelectItem>
-                    <SelectItem value="Tucumán">Tucumán</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="customerName">Nombre Cliente</Label>
+                <Input
+                  id="customerName"
+                  placeholder="Nombre del cliente"
+                  value={newGiftCard.customer_name || ""}
+                  onChange={(e) => handleNewGiftCardChange("customer_name", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="giftCardIssueDate">Fecha de Emisión</Label>
+                <Label htmlFor="customerEmail">Email Cliente</Label>
                 <Input
-                  id="giftCardIssueDate"
+                  id="customerEmail"
+                  placeholder="cliente@ejemplo.com"
+                  value={newGiftCard.customer_email || ""}
+                  onChange={(e) => handleNewGiftCardChange("customer_email", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="purchaseDate">Fecha de Compra</Label>
+                <Input
+                  id="purchaseDate"
                   type="date"
-                  value={newGiftCard.issueDate || ""}
-                  onChange={(e) => handleNewGiftCardChange("issueDate", e.target.value)}
+                  value={newGiftCard.purchase_date || ""}
+                  onChange={(e) => handleNewGiftCardChange("purchase_date", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expiryDate">Fecha de Vencimiento</Label>
+                <Input
+                  id="expiryDate"
+                  type="date"
+                  value={newGiftCard.expiry_date || ""}
+                  onChange={(e) => handleNewGiftCardChange("expiry_date", e.target.value)}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="hasBeenReceived" 
-                  checked={!!newGiftCard.receivedDate}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      handleNewGiftCardChange("receivedDate", new Date().toISOString().split('T')[0]);
-                    } else {
-                      handleNewGiftCardChange("receivedDate", null);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="hasBeenReceived"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Ya ha sido canjeada
-                </label>
-              </div>
+              <Label htmlFor="notes">Notas</Label>
+              <Input
+                id="notes"
+                placeholder="Notas adicionales"
+                value={newGiftCard.notes || ""}
+                onChange={(e) => handleNewGiftCardChange("notes", e.target.value)}
+              />
             </div>
-            {newGiftCard.receivedDate && (
-              <div className="space-y-2">
-                <Label htmlFor="giftCardReceivedDate">Fecha de Recepción</Label>
-                <Input
-                  id="giftCardReceivedDate"
-                  type="date"
-                  value={newGiftCard.receivedDate || ""}
-                  onChange={(e) => handleNewGiftCardChange("receivedDate", e.target.value)}
-                />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => setIsNewGiftCardDialogOpen(false)}
+              onClick={() => setIsAddDialogOpen(false)}
             >
               Cancelar
             </Button>
@@ -1166,46 +880,59 @@ export default function GiftCardsPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium mb-1">Nro. Gift Card:</p>
-                  <p className="text-lg font-bold">{selectedGiftCard.number}</p>
+                  <p className="text-sm font-medium mb-1">Código:</p>
+                  <p className="text-lg font-bold">{selectedGiftCard.code}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium mb-1">Tipo:</p>
-                  <p className="text-lg">{selectedGiftCard.type}</p>
+                  <p className="text-sm font-medium mb-1">Monto:</p>
+                  <p className="text-lg">${selectedGiftCard.amount.toLocaleString()}</p>
                 </div>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium mb-1">Servicio:</p>
-                <p className="text-lg">{selectedGiftCard.service}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium mb-1">Sucursal:</p>
-                  <p className="text-lg">{selectedGiftCard.branch}</p>
+                  <p className="text-sm font-medium mb-1">Cliente:</p>
+                  <p className="text-lg">{selectedGiftCard.customer_name || '-'}</p>
                 </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Email:</p>
+                  <p className="text-lg">{selectedGiftCard.customer_email || '-'}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium mb-1">Estado:</p>
                   <div className="text-lg">{renderStatusBadge(selectedGiftCard.status)}</div>
                 </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Creada por:</p>
+                  <p className="text-lg">{selectedGiftCard.created_by}</p>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium mb-1">Fecha de emisión:</p>
-                  <p className="text-lg">{new Date(selectedGiftCard.issueDate).toLocaleDateString()}</p>
+                  <p className="text-sm font-medium mb-1">Fecha de compra:</p>
+                  <p className="text-lg">{selectedGiftCard.purchase_date}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium mb-1">Fecha de vencimiento:</p>
-                  <p className="text-lg">{new Date(selectedGiftCard.expirationDate).toLocaleDateString()}</p>
+                  <p className="text-lg">{selectedGiftCard.expiry_date}</p>
                 </div>
               </div>
               
-              {selectedGiftCard.receivedDate && (
+              {selectedGiftCard.redeemed_date && (
                 <div>
-                  <p className="text-sm font-medium mb-1">Fecha de recepción:</p>
-                  <p className="text-lg">{new Date(selectedGiftCard.receivedDate).toLocaleDateString()}</p>
+                  <p className="text-sm font-medium mb-1">Fecha de canje:</p>
+                  <p className="text-lg">{selectedGiftCard.redeemed_date}</p>
+                </div>
+              )}
+              
+              {selectedGiftCard.notes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Notas:</p>
+                  <p className="text-lg">{selectedGiftCard.notes}</p>
                 </div>
               )}
             </div>
@@ -1239,108 +966,99 @@ export default function GiftCardsPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="editGiftCardNumber">Nro. Gift Card</Label>
+                  <Label htmlFor="editGiftCardCode">Código Gift Card</Label>
                   <Input
-                    id="editGiftCardNumber"
+                    id="editGiftCardCode"
                     placeholder="GC-001"
-                    value={editGiftCard.number || ""}
-                    onChange={(e) => handleEditGiftCardChange("number", e.target.value)}
+                    value={editGiftCard.code || ""}
+                    onChange={(e) => handleEditGiftCardChange("code", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editGiftCardType">Tipo</Label>
-                  <Select
-                    value={editGiftCard.type}
-                    onValueChange={(value) => handleEditGiftCardChange("type", value as GiftCardType)}
-                  >
-                    <SelectTrigger id="editGiftCardType">
-                      <SelectValue placeholder="Seleccione un tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Física">Física</SelectItem>
-                      <SelectItem value="Virtual">Virtual</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="editGiftCardAmount">Monto</Label>
+                  <Input
+                    id="editGiftCardAmount"
+                    type="number"
+                    placeholder="2000"
+                    value={editGiftCard.amount || ""}
+                    onChange={(e) => handleEditGiftCardChange("amount", Number(e.target.value))}
+                  />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editGiftCardService">Servicio</Label>
-                <Input
-                  id="editGiftCardService"
-                  placeholder="Manicura completa"
-                  value={editGiftCard.service || ""}
-                  onChange={(e) => handleEditGiftCardChange("service", e.target.value)}
-                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="editGiftCardBranch">Sucursal</Label>
-                  <Select
-                    value={editGiftCard.branch}
-                    onValueChange={(value) => handleEditGiftCardChange("branch", value as Branch)}
-                  >
-                    <SelectTrigger id="editGiftCardBranch">
-                      <SelectValue placeholder="Seleccione una sucursal" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Fisherton">Fisherton</SelectItem>
-                      <SelectItem value="Alto Rosario">Alto Rosario</SelectItem>
-                      <SelectItem value="Moreno">Moreno</SelectItem>
-                      <SelectItem value="Tucumán">Tucumán</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="editCustomerName">Nombre Cliente</Label>
+                  <Input
+                    id="editCustomerName"
+                    placeholder="Nombre del cliente"
+                    value={editGiftCard.customer_name || ""}
+                    onChange={(e) => handleEditGiftCardChange("customer_name", e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editGiftCardIssueDate">Fecha de Emisión</Label>
+                  <Label htmlFor="editCustomerEmail">Email Cliente</Label>
                   <Input
-                    id="editGiftCardIssueDate"
+                    id="editCustomerEmail"
+                    placeholder="cliente@ejemplo.com"
+                    value={editGiftCard.customer_email || ""}
+                    onChange={(e) => handleEditGiftCardChange("customer_email", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editPurchaseDate">Fecha de Compra</Label>
+                  <Input
+                    id="editPurchaseDate"
                     type="date"
-                    value={editGiftCard.issueDate || ""}
-                    onChange={(e) => handleEditGiftCardChange("issueDate", e.target.value)}
+                    value={editGiftCard.purchase_date || ""}
+                    onChange={(e) => handleEditGiftCardChange("purchase_date", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editExpiryDate">Fecha de Vencimiento</Label>
+                  <Input
+                    id="editExpiryDate"
+                    type="date"
+                    value={editGiftCard.expiry_date || ""}
+                    onChange={(e) => handleEditGiftCardChange("expiry_date", e.target.value)}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="editHasBeenReceived" 
-                    checked={!!editGiftCard.receivedDate}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        handleEditGiftCardChange("receivedDate", new Date().toISOString().split('T')[0]);
-                        handleEditGiftCardChange("status", "Canjeada");
-                      } else {
-                        handleEditGiftCardChange("receivedDate", null);
-                        handleEditGiftCardChange("status", "Pendiente");
-                      }
-                    }}
-                  />
-                  <label
-                    htmlFor="editHasBeenReceived"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Ya ha sido canjeada
-                  </label>
-                </div>
+                <Label htmlFor="editStatus">Estado</Label>
+                <Select
+                  value={editGiftCard.status}
+                  onValueChange={(value) => handleEditGiftCardChange("status", value)}
+                >
+                  <SelectTrigger id="editStatus">
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Pendiente</SelectItem>
+                    <SelectItem value="redeemed">Canjeada</SelectItem>
+                    <SelectItem value="expired">Vencida</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {editGiftCard.receivedDate && (
+              {editGiftCard.status === "redeemed" && (
                 <div className="space-y-2">
-                  <Label htmlFor="editGiftCardReceivedDate">Fecha de Recepción</Label>
+                  <Label htmlFor="editRedeemedDate">Fecha de Canje</Label>
                   <Input
-                    id="editGiftCardReceivedDate"
+                    id="editRedeemedDate"
                     type="date"
-                    value={editGiftCard.receivedDate || ""}
-                    onChange={(e) => handleEditGiftCardChange("receivedDate", e.target.value)}
+                    value={editGiftCard.redeemed_date || ""}
+                    onChange={(e) => handleEditGiftCardChange("redeemed_date", e.target.value)}
                   />
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="editGiftCardExpirationDate">Fecha de Vencimiento</Label>
+                <Label htmlFor="editNotes">Notas</Label>
                 <Input
-                  id="editGiftCardExpirationDate"
-                  type="date"
-                  value={editGiftCard.expirationDate || ""}
-                  onChange={(e) => handleEditGiftCardChange("expirationDate", e.target.value)}
+                  id="editNotes"
+                  placeholder="Notas adicionales"
+                  value={editGiftCard.notes || ""}
+                  onChange={(e) => handleEditGiftCardChange("notes", e.target.value)}
                 />
               </div>
             </div>
@@ -1374,9 +1092,9 @@ export default function GiftCardsPage() {
           {selectedGiftCard && (
             <div className="py-4">
               <div className="p-4 border rounded-md mb-4">
-                <p><span className="font-medium">Nro Gift Card:</span> {selectedGiftCard.number}</p>
-                <p><span className="font-medium">Servicio:</span> {selectedGiftCard.service}</p>
-                <p><span className="font-medium">Sucursal:</span> {selectedGiftCard.branch}</p>
+                <p><span className="font-medium">Código:</span> {selectedGiftCard.code}</p>
+                <p><span className="font-medium">Monto:</span> ${selectedGiftCard.amount.toLocaleString()}</p>
+                <p><span className="font-medium">Cliente:</span> {selectedGiftCard.customer_name || '-'}</p>
                 <p><span className="font-medium">Fecha actual:</span> {new Date().toLocaleDateString()}</p>
               </div>
             </div>

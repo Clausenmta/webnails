@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewExpense, expenseCategories } from "@/types/expenses";
 import { format } from "date-fns";
-import { FileImage, FilePdf, Loader2, Upload, X } from "lucide-react";
+import { FileImage, File, Loader2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface ExpenseFormProps {
   onSubmit: (expense: NewExpense) => void;
@@ -175,7 +177,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
                   {file.type.startsWith('image/') ? (
                     <FileImage className="h-4 w-4" />
                   ) : (
-                    <FilePdf className="h-4 w-4" />
+                    <File className="h-4 w-4" />
                   )}
                   <span className="text-sm truncate max-w-[150px]">
                     {file.name}

@@ -109,7 +109,7 @@ export const giftCardService = {
         ...giftCard,
         status: giftCard.status as "active" | "redeemed" | "expired",
         is_redeemed: giftCard.status === "redeemed" || giftCard.redeemed_date != null,
-        service: giftCard.customer_email, // Map customer_email to service for backward compatibility
+        service: giftCard.customer_email, // Map customer_email to service for UI
         branch: undefined // Initialize branch as undefined for all fetched records
       }));
     } catch (error) {
@@ -138,11 +138,18 @@ export const giftCardService = {
       // Extract fields that don't exist in the database
       const { branch: _, ...giftCardData } = newGiftCard;
       
-      // Map service to customer_email for database storage
+      // Create a data object specifically for the database with correct field mapping
       const dbGiftCardData = {
-        ...giftCardData,
+        code: giftCardData.code,
+        amount: giftCardData.amount,
+        status: status,
+        customer_name: giftCardData.customer_name,
         customer_email: giftCardData.service, // Map service to customer_email for database
-        status
+        purchase_date: giftCardData.purchase_date,
+        expiry_date: giftCardData.expiry_date,
+        redeemed_date: giftCardData.redeemed_date,
+        created_by: giftCardData.created_by,
+        notes: giftCardData.notes
       };
       
       const { data, error } = await supabase

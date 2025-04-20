@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -29,20 +28,36 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
   const [formData, setFormData] = useState({
     client_name: "",
     description: "",
-    created_by: "", // Comanda Original
-    assigned_to: "", // Arreglado Por
+    created_by: "",
+    assigned_to: "",
     status: "pendiente" as "pendiente" | "en_proceso" | "completado" | "cancelado",
     price: 0,
-    notes: "", // Observaciones
-    date: format(new Date(), "dd/MM/yyyy"), // Fecha Comanda
-    repair_date: format(new Date(), "dd/MM/yyyy"), // Fecha Arreglo
+    notes: "",
+    date: format(new Date(), "dd/MM/yyyy"),
+    repair_date: format(new Date(), "dd/MM/yyyy"),
     payment_status: "pendiente" as "pendiente" | "pagado",
-    service_type: "Manicura", // Default service type
+    service_type: "Manicura",
   });
 
   const [mismaManicura, setMismaManicura] = useState(false);
   const [fechaComanda, setFechaComanda] = useState<Date>();
   const [fechaArreglo, setFechaArreglo] = useState<Date>();
+
+  const manicuristas = [
+    "Cecilia Gomez",
+    "Agostina Gastaldi",
+    "Daiana La Rosa",
+    "Lourdes Altamirano",
+    "Rocio Espindola",
+    "Abigail Miranda",
+    "Ludmila Chavez",
+    "Camila Isaurrable",
+    "Samanta Gomez",
+    "Belen Flores",
+    "Analia Chavez",
+    "Graciela Mareco",
+    "Daniela Caggiano",
+  ];
 
   useEffect(() => {
     if (arreglo) {
@@ -144,9 +159,9 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
                     <SelectValue placeholder="Seleccionar manicurista" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Ana">Ana</SelectItem>
-                    <SelectItem value="María">María</SelectItem>
-                    <SelectItem value="Laura">Laura</SelectItem>
+                    {manicuristas.map(name => (
+                      <SelectItem value={name} key={name}>{name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -196,9 +211,9 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
                     <SelectValue placeholder="Seleccionar manicurista" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Ana">Ana</SelectItem>
-                    <SelectItem value="María">María</SelectItem>
-                    <SelectItem value="Laura">Laura</SelectItem>
+                    {manicuristas.map(name => (
+                      <SelectItem value={name} key={name}>{name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

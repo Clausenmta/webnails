@@ -235,22 +235,21 @@ export default function EmpleadosPage() {
         </TabsContent>
       </Tabs>
 
-      {selectedEmployee !== null && (
-        <>
-          <EmployeeProfileDialog
-            open={isProfileOpen}
-            onOpenChange={setIsProfileOpen}
-            employee={selectedEmployee}
-            onSave={handleSaveEmployee}
-            newEmployeeData={newEmployeeData}
-            setNewEmployeeData={setNewEmployeeData}
-          />
-          <SalaryCalculationDialog
-            open={isSalaryOpen}
-            onOpenChange={setIsSalaryOpen}
-            employee={selectedEmployee}
-          />
-        </>
+      <EmployeeProfileDialog
+        open={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
+        employee={selectedEmployee}
+        onSave={handleSaveEmployee}
+        newEmployeeData={newEmployeeData}
+        setNewEmployeeData={setNewEmployeeData}
+      />
+      
+      {selectedEmployee && (
+        <SalaryCalculationDialog
+          open={isSalaryOpen}
+          onOpenChange={setIsSalaryOpen}
+          employee={selectedEmployee}
+        />
       )}
     </div>
   );

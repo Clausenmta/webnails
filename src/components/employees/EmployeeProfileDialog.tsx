@@ -18,12 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Employee } from "@/types/employees";
 import {
@@ -37,7 +31,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { FileUp, Trash2 } from "lucide-react";
+import { employeePositions } from "@/services/employeeService";
 
 const employeeFormSchema = z.object({
   name: z.string().min(2, {
@@ -46,19 +40,13 @@ const employeeFormSchema = z.object({
   position: z.string().min(1, {
     message: "Debes seleccionar una posición.",
   }),
-  phone: z.string().min(1, {
-    message: "El teléfono es requerido.",
-  }),
-  address: z.string().min(1, {
-    message: "La dirección es requerida.",
-  }),
+  phone: z.string().optional(),
+  address: z.string().optional(),
   emergency_contact: z.string().optional(),
   email: z.string().email({
     message: "Por favor ingresa un correo electrónico válido.",
   }).optional().or(z.literal("")),
-  documentId: z.string().optional(),
-  birthday: z.string().optional(),
-  bankAccount: z.string().optional(),
+  salary: z.coerce.number().optional(),
 });
 
 type EmployeeProfileDialogProps = {
@@ -70,8 +58,6 @@ type EmployeeProfileDialogProps = {
   setNewEmployeeData: (data: Partial<Employee>) => void;
 };
 
-type DocumentType = "salary" | "contract" | "other";
-
 export default function EmployeeProfileDialog({
   open,
   onOpenChange,
@@ -80,30 +66,6 @@ export default function EmployeeProfileDialog({
   newEmployeeData,
   setNewEmployeeData,
 }: EmployeeProfileDialogProps) {
-  const [activeTab, setActiveTab] = useState("personal");
-  const [documents, setDocuments] = useState<{
-    id: number;
-    name: string;
-    date: string;
-    type: DocumentType;
-    url: string;
-  }[]>(
-    (employee?.documents as {
-      id: number;
-      name: string;
-      date: string;
-      type: DocumentType;
-      url: string;
-    }[]) || []
-  );
-  const [fileUpload, setFileUpload] = useState<{
-    name: string;
-    type: DocumentType;
-  }>({
-    name: "",
-    type: "salary",
-  });
-
   const form = useForm<z.infer<typeof employeeFormSchema>>({
     resolver: zodResolver(employeeFormSchema),
     defaultValues: {
@@ -113,11 +75,24 @@ export default function EmployeeProfileDialog({
       email: employee?.email || "",
       address: employee?.address || "",
       emergency_contact: employee?.contact || "",
-      documentId: employee?.documentId || "",
-      birthday: employee?.birthday || "",
-      bankAccount: employee?.bankAccount || "",
+      salary: employee?.salary || 0,
     },
   });
+
+  // Reset form when dialog opens or employee changes
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        name: employee?.name || "",
+        position: employee?.position || "Estilista",
+        phone: employee?.phone || "",
+        email: employee?.email || "",
+        address: employee?.address || "",
+        emergency_contact: employee?.contact || "",
+        salary: employee?.salary || 0,
+      });
+    }
+  }, [form, employee, open]);
 
   const handleSave = (values: z.infer<typeof employeeFormSchema>) => {
     if (employee) {
@@ -125,61 +100,15 @@ export default function EmployeeProfileDialog({
       onSave({
         ...employee,
         ...values,
-        documents,
       });
     } else {
       // Create new employee with properly typed status
       onSave({
         ...values,
-        status: "active" as "active" | "inactive", // Explicitly cast to the union type
+        status: "active" as "active" | "inactive",
         joinDate: new Date().toLocaleDateString("es-AR"),
-        documents: [],
       });
     }
-    onOpenChange(false);
-  };
-
-  const handleAddDocument = () => {
-    if (!fileUpload.name) {
-      toast.error("Por favor proporciona un nombre para el documento");
-      return;
-    }
-
-    const newDocument = {
-      id: Date.now(),
-      name: fileUpload.name,
-      date: new Date().toLocaleDateString("es-AR"),
-      type: fileUpload.type,
-      url: "#", // Would be replaced with actual file upload URL
-    };
-
-    const updatedDocuments = [...documents, newDocument];
-    setDocuments(updatedDocuments);
-
-    if (employee) {
-      // If editing an existing employee, update their documents
-      employee.documents = updatedDocuments as Employee["documents"];
-    }
-
-    // Reset the file upload form
-    setFileUpload({
-      name: "",
-      type: "salary",
-    });
-
-    toast.success("Documento agregado exitosamente");
-  };
-
-  const handleRemoveDocument = (id: number) => {
-    const updatedDocuments = documents.filter((doc) => doc.id !== id);
-    setDocuments(updatedDocuments);
-
-    if (employee) {
-      // If editing an existing employee, update their documents
-      employee.documents = updatedDocuments as Employee["documents"];
-    }
-
-    toast.success("Documento eliminado exitosamente");
   };
 
   return (
@@ -224,9 +153,11 @@ export default function EmployeeProfileDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Estilista">Estilista</SelectItem>
-                        <SelectItem value="Manicurista">Manicurista</SelectItem>
-                        <SelectItem value="Recepcionista">Recepcionista</SelectItem>
+                        {employeePositions.map(position => (
+                          <SelectItem key={position} value={position}>
+                            {position}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -241,7 +172,7 @@ export default function EmployeeProfileDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Teléfono *</FormLabel>
+                    <FormLabel>Teléfono</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="11-1234-5678" />
                     </FormControl>
@@ -270,7 +201,7 @@ export default function EmployeeProfileDialog({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Domicilio *</FormLabel>
+                  <FormLabel>Domicilio</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Dirección completa" />
                   </FormControl>
@@ -287,6 +218,20 @@ export default function EmployeeProfileDialog({
                   <FormLabel>Contacto de Emergencia</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Nombre y teléfono de contacto" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="salary"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Salario Base</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" placeholder="0" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

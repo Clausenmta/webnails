@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpDown, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Arreglo } from "@/services/arreglosService";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 interface ArreglosTableProps {
   arreglos: Arreglo[];
   onViewClick: (arreglo: Arreglo) => void;
+  onEditClick?: (arreglo: Arreglo) => void; // Nuevo handler (puedes pasarlo opcional)
   onDeleteClick?: (arreglo: Arreglo) => void;
   sortConfig: {
     key: keyof Arreglo;
@@ -19,6 +21,7 @@ interface ArreglosTableProps {
 export default function ArreglosTable({
   arreglos,
   onViewClick,
+  onEditClick,
   onDeleteClick,
   sortConfig,
   onSortChange
@@ -45,7 +48,10 @@ export default function ArreglosTable({
             >
               Cliente
               {sortConfig.key === 'client_name' && (
-                <ArrowUpDown className="h-4 w-4" />
+                <span>
+                  <span className="sr-only">Ordenar</span>
+                  {/* Puedes mostrar el ícono de orden aquí si lo deseas */}
+                </span>
               )}
             </Button>
           </TableHead>
@@ -76,21 +82,37 @@ export default function ArreglosTable({
             <TableCell>{arreglo.repair_date || '-'}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
+                {/* Ver detalles */}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onViewClick(arreglo)}
+                  title="Ver detalles"
                 >
-                  Ver detalles
+                  <Eye className="h-4 w-4 mr-1" />
+                  <span className="sr-only">Ver detalles</span>
                 </Button>
+                {/* Editar */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => (onEditClick ? onEditClick(arreglo) : onViewClick(arreglo))}
+                  title="Editar"
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  <span className="sr-only">Editar</span>
+                </Button>
+                {/* Eliminar */}
                 {onDeleteClick && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteClick(arreglo)}
+                    title="Eliminar"
                     className="text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    <span className="sr-only">Eliminar</span>
                   </Button>
                 )}
               </div>

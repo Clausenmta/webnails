@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,43 +81,17 @@ interface InitialExpense {
   amount: number;
 }
 
-const sampleInitialExpenses: InitialExpense[] = [
-  { 
-    id: "1", 
-    date: "2025-01-15", 
-    description: "Remodelación del local", 
-    category: "Remodelación", 
-    amount: 120000 
-  },
-  { 
-    id: "2", 
-    date: "2025-01-20", 
-    description: "Compra de sillones de peluquería", 
-    category: "Mobiliario", 
-    amount: 85000 
-  },
-  { 
-    id: "3", 
-    date: "2025-01-25", 
-    description: "Secadores y planchas profesionales", 
-    category: "Equipamiento", 
-    amount: 45000 
-  },
-  { 
-    id: "4", 
-    date: "2025-02-01", 
-    description: "Inventario inicial de productos", 
-    category: "Inventario inicial", 
-    amount: 65000 
-  },
-  { 
-    id: "5", 
-    date: "2025-02-05", 
-    description: "Depósito y garantía del local", 
-    category: "Depósitos y garantías", 
-    amount: 90000 
-  }
-];
+interface ExpensePayload {
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+}
+
+interface UpdateExpensePayload {
+  id: string;
+  expense: ExpensePayload;
+}
 
 export default function ResultadosPage() {
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -126,7 +101,6 @@ export default function ResultadosPage() {
   });
   
   const [year, setYear] = useState(() => new Date().getFullYear().toString());
-  const [initialExpenses, setInitialExpenses] = useState<InitialExpense[]>(sampleInitialExpenses);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<InitialExpense | null>(null);
@@ -160,7 +134,7 @@ export default function ResultadosPage() {
     queryFn: initialExpensesService.fetchInitialExpenses
   });
 
-  const addExpenseMutation = useMutation({
+  const addExpenseMutation = useMutation<any, Error, ExpensePayload>({
     mutationFn: (expense) => initialExpensesService.addInitialExpense(expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
@@ -176,7 +150,7 @@ export default function ResultadosPage() {
     onError: (error) => toast.error("Error al agregar gasto inicial: " + error.message)
   });
 
-  const updateExpenseMutation = useMutation({
+  const updateExpenseMutation = useMutation<any, Error, UpdateExpensePayload>({
     mutationFn: ({ id, expense }) => initialExpensesService.updateInitialExpense(id, expense),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
@@ -187,7 +161,7 @@ export default function ResultadosPage() {
     onError: (error) => toast.error("Error al actualizar gasto: " + error.message)
   });
 
-  const deleteExpenseMutation = useMutation({
+  const deleteExpenseMutation = useMutation<any, Error, string>({
     mutationFn: (id) => initialExpensesService.deleteInitialExpense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
@@ -207,19 +181,22 @@ export default function ResultadosPage() {
 
   const handleEditInitialExpense = () => {
     if (!currentExpense || !currentExpense.id) return;
-    updateExpenseMutation.mutate({ id: currentExpense.id, expense: {
-      date: currentExpense.date,
-      description: currentExpense.description,
-      category: currentExpense.category,
-      amount: currentExpense.amount,
-    }});
+    updateExpenseMutation.mutate({ 
+      id: currentExpense.id, 
+      expense: {
+        date: currentExpense.date,
+        description: currentExpense.description,
+        category: currentExpense.category,
+        amount: currentExpense.amount,
+      }
+    });
   };
 
-  const handleDeleteExpense = (id) => {
+  const handleDeleteExpense = (id: string) => {
     deleteExpenseMutation.mutate(id);
   };
 
-  const prepareEditExpense = (expense) => {
+  const prepareEditExpense = (expense: InitialExpense) => {
     setCurrentExpense(expense);
     setIsEditExpenseOpen(true);
   };
@@ -353,7 +330,7 @@ export default function ResultadosPage() {
     }))
     .slice(0, 5);
 
-    setPendingPayments(pendingPayments);
+    setPendingPayments(pendingExpenses);
 
     const tempServiceData = [
       { 
@@ -372,6 +349,10 @@ export default function ResultadosPage() {
     
     setServiceData(tempServiceData);
   };
+
+  // Calcular totales para servicios y gastos
+  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  const totalExpenses = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
 
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || {
     month: selectedMonth,
@@ -858,7 +839,7 @@ export default function ResultadosPage() {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-
+                      
                       <Card className="w-full sm:w-60 shadow-sm border border-slate-200">
                         <CardHeader className="pb-2">
                           <CardTitle>Desglose de Gastos Iniciales</CardTitle>

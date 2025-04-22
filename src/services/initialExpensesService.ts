@@ -1,8 +1,25 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+export interface InitialExpense {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+  created_at?: string;
+  created_by?: string;
+}
+
+export interface InitialExpensePayload {
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+}
+
 export const initialExpensesService = {
-  async fetchInitialExpenses() {
+  async fetchInitialExpenses(): Promise<InitialExpense[]> {
     const { data, error } = await supabase
       .from("initial_expenses")
       .select("*")
@@ -11,7 +28,7 @@ export const initialExpensesService = {
     return data;
   },
 
-  async addInitialExpense(expense) {
+  async addInitialExpense(expense: InitialExpensePayload): Promise<InitialExpense> {
     const { data, error } = await supabase
       .from("initial_expenses")
       .insert([expense])
@@ -21,7 +38,7 @@ export const initialExpensesService = {
     return data;
   },
 
-  async updateInitialExpense(id, updates) {
+  async updateInitialExpense(id: string, updates: InitialExpensePayload): Promise<InitialExpense> {
     const { data, error } = await supabase
       .from("initial_expenses")
       .update(updates)
@@ -32,7 +49,7 @@ export const initialExpensesService = {
     return data;
   },
 
-  async deleteInitialExpense(id) {
+  async deleteInitialExpense(id: string): Promise<boolean> {
     const { error } = await supabase
       .from("initial_expenses")
       .delete()
@@ -40,4 +57,4 @@ export const initialExpensesService = {
     if (error) throw error;
     return true;
   }
-}
+};

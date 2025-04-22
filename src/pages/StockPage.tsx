@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -23,6 +22,7 @@ import StockLocations from "./stock/StockLocations";
 import ProductDialog from "./stock/ProductDialog";
 import StockUpdateDialog from "./stock/StockUpdateDialog";
 import StockImportDialog from "./stock/StockImportDialog";
+import { usePhysicalStockLocations } from "./stock/usePhysicalStockLocations";
 
 export default function StockPage() {
   const { isAuthorized, user } = useAuth();
@@ -350,6 +350,26 @@ export default function StockPage() {
     });
   };
 
+  // Filtering logic, including default selection for 'all-categories' and 'all-locations'
+  const effectiveCategoryFilter = !categoryFilter || categoryFilter === "all-categories" ? "" : categoryFilter;
+  const effectiveLocationFilter = !locationFilter || locationFilter === "all-locations" ? "" : locationFilter;
+
+  const filteredStockItems = stockItems.filter(product => {
+    const matchesSearch =
+      searchTerm.length === 0 ||
+      product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.brand || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.supplier || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      !effectiveCategoryFilter || product.category === effectiveCategoryFilter;
+    const matchesLocation =
+      !effectiveLocationFilter || (product.location || "") === effectiveLocationFilter;
+    return matchesSearch && matchesCategory && matchesLocation;
+  });
+
+  // Use filtered products for "Detalle de Stock por Ubicación"
+  const physicalStockLocations = usePhysicalStockLocations(filteredStockItems);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -391,7 +411,6 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* --- Filtros y búsqueda arriba de la tabla --- */}
       <StockFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -402,7 +421,6 @@ export default function StockPage() {
         stockCategories={stockCategories}
         stockLocations={stockLocations}
       />
-      {/* --- Fin filtros y búsqueda --- */}
 
       {isLoading && (
         <Card>
@@ -472,7 +490,7 @@ export default function StockPage() {
         onOpenChange={setIsEditProductOpen}
         mode="edit"
         product={editingProduct || {}}
-        setProduct={product => setEditingProduct(e => e ? { ...e, ...product } : null)}
+        setProduct={p => setEditingProduct(e => e ? { ...e, ...p } : null)}
         categories={stockCategories}
         locations={stockLocations}
         isPending={editProductMutation.isPending}

@@ -136,17 +136,18 @@ export const giftCardService = {
       const { branch: _, ...giftCardData } = newGiftCard;
       
       // Create a data object specifically for the database with correct field mapping
+      // Aseguramos que todos los campos numéricos tengan valores por defecto si están vacíos
       const dbGiftCardData = {
         code: giftCardData.code,
-        amount: giftCardData.amount,
+        amount: giftCardData.amount || 0, // Valor por defecto para amount si está vacío
         status: status,
-        customer_name: giftCardData.customer_name,
-        customer_email: giftCardData.service, // Map service to customer_email for database
+        customer_name: giftCardData.customer_name || null,
+        customer_email: giftCardData.service || null, // Map service to customer_email for database
         purchase_date: giftCardData.purchase_date,
         expiry_date: giftCardData.expiry_date,
-        redeemed_date: giftCardData.redeemed_date,
+        redeemed_date: giftCardData.redeemed_date || null,
         created_by: giftCardData.created_by,
-        notes: giftCardData.notes
+        notes: giftCardData.notes || null
       };
       
       const { data, error } = await supabase
@@ -197,9 +198,14 @@ export const giftCardService = {
         ...otherUpdates
       };
       
+      // Manejar los campos que podrían estar vacíos
+      if (dbUpdates.amount === '') {
+        dbUpdates.amount = 0;
+      }
+      
       // Only add customer_email field if service was provided
       if (service !== undefined) {
-        dbUpdates.customer_email = service;
+        dbUpdates.customer_email = service || null;
       }
       
       // Combinar la gift card actual con las actualizaciones
@@ -257,6 +263,61 @@ export const giftCardService = {
     } catch (error) {
       handleSupabaseError(error, "eliminar tarjeta de regalo");
       throw error;
+    }
+  },
+  
+  // Función para importar múltiples tarjetas de regalo
+  async importGiftCards(giftCards: NewGiftCard[]): Promise<{ successful: number; failed: number; errors: string[] }> {
+    try {
+      const session = await getActiveSession();
+      if (!session) {
+        throw new Error("Debe iniciar sesión para realizar esta operación");
+      }
+      
+      // Preparar los datos para la inserción
+      const dbGiftCards = giftCards.map(card => {
+        // Determinar estado basado en fechas
+        const status = determineStatus(
+          card.purchase_date, 
+          card.expiry_date, 
+          card.redeemed_date
+        );
+        
+        // Mapear los campos para la base de datos
+        return {
+          code: card.code,
+          amount: card.amount || 0, // Valor por defecto si está vacío
+          status: status,
+          customer_name: card.customer_name || null,
+          customer_email: card.service || null, // Map service to customer_email
+          purchase_date: card.purchase_date,
+          expiry_date: card.expiry_date,
+          redeemed_date: card.redeemed_date || null,
+          created_by: card.created_by || 'importación',
+          notes: card.notes || null
+        };
+      });
+      
+      // Realizar la inserción de todos los registros
+      const { data, error } = await supabase
+        .from('gift_cards')
+        .insert(dbGiftCards)
+        .select();
+      
+      if (error) throw error;
+      
+      return {
+        successful: data?.length || 0,
+        failed: giftCards.length - (data?.length || 0),
+        errors: []
+      };
+    } catch (error) {
+      handleSupabaseError(error, "importar tarjetas de regalo");
+      return {
+        successful: 0,
+        failed: giftCards.length,
+        errors: [error.message || "Error desconocido al importar tarjetas de regalo"]
+      };
     }
   }
 };

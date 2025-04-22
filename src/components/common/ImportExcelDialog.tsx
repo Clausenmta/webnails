@@ -17,6 +17,7 @@ interface ImportExcelDialogProps {
   templateFilename: string;
   title: string;
   description: string;
+  allowIncompleteData?: boolean; // Nueva propiedad para permitir datos incompletos
 }
 
 export function ImportExcelDialog({
@@ -26,15 +27,20 @@ export function ImportExcelDialog({
   templateData,
   templateFilename,
   title,
-  description
+  description,
+  allowIncompleteData = false // Por defecto, no permitir datos incompletos
 }: ImportExcelDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setErrors([]);
+      setShowErrors(false);
     }
   };
   
@@ -54,6 +60,24 @@ export function ImportExcelDialog({
     toast.success('Plantilla descargada correctamente');
   };
   
+  const validateRow = (row: any, rowIndex: number): { isValid: boolean; error?: string } => {
+    // Si permitimos datos incompletos, marcamos todos los registros como válidos
+    if (allowIncompleteData) {
+      return { isValid: true };
+    }
+    
+    // Si no permitimos datos incompletos, validamos que los campos requeridos existan
+    if (!row.Código) {
+      return { isValid: false, error: `Falta el código en la fila ${rowIndex + 2}` };
+    }
+    
+    if (!row.Monto || isNaN(Number(row.Monto))) {
+      return { isValid: false, error: `Falta el monto en la fila ${rowIndex + 2}` };
+    }
+    
+    return { isValid: true };
+  };
+  
   const handleImport = async () => {
     if (!file) {
       toast.error('Por favor seleccione un archivo');
@@ -63,6 +87,7 @@ export function ImportExcelDialog({
     try {
       setUploading(true);
       setProgress(10);
+      setErrors([]);
       
       const reader = new FileReader();
       
@@ -86,11 +111,34 @@ export function ImportExcelDialog({
             return;
           }
           
+          // Validar cada fila
+          const foundErrors: string[] = [];
+          const validData: any[] = [];
+          
+          jsonData.forEach((row: any, index: number) => {
+            const validation = validateRow(row, index);
+            if (!validation.isValid && validation.error) {
+              foundErrors.push(validation.error);
+            }
+            
+            // Si permitimos datos incompletos o la fila es válida, la agregamos a los datos válidos
+            if (allowIncompleteData || validation.isValid) {
+              validData.push(row);
+            }
+          });
+          
+          if (foundErrors.length > 0 && !allowIncompleteData) {
+            setErrors(foundErrors);
+            setShowErrors(true);
+            setUploading(false);
+            return;
+          }
+          
           // Process the data
-          onImport(jsonData);
+          onImport(validData);
           
           setProgress(100);
-          toast.success(`${jsonData.length} registros importados correctamente`);
+          toast.success(`${validData.length} registros importados correctamente`);
           
           // Reset state
           setFile(null);
@@ -151,6 +199,17 @@ export function ImportExcelDialog({
                 <p className="text-xs text-center text-muted-foreground">
                   Procesando... {progress}%
                 </p>
+              </div>
+            )}
+            
+            {showErrors && errors.length > 0 && (
+              <div className="mt-4 p-4 border border-red-200 rounded bg-red-50">
+                <h4 className="text-red-700 font-medium mb-2">Errores encontrados</h4>
+                <div className="max-h-40 overflow-y-auto">
+                  {errors.map((error, index) => (
+                    <p key={index} className="text-red-600 text-sm mb-1">{error}</p>
+                  ))}
+                </div>
               </div>
             )}
           </div>

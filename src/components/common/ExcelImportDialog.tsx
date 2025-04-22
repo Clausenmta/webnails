@@ -27,6 +27,7 @@ interface ExcelImportDialogProps {
   templateData: any[];
   templateFilename: string;
   validationFunction: (row: any) => { isValid: boolean; error?: string };
+  allowIncompleteData?: boolean; // Nueva propiedad para permitir datos incompletos
 }
 
 export default function ExcelImportDialog({
@@ -35,7 +36,8 @@ export default function ExcelImportDialog({
   onImport,
   templateData,
   templateFilename,
-  validationFunction
+  validationFunction,
+  allowIncompleteData = false // Por defecto, no permitir datos incompletos
 }: ExcelImportDialogProps) {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
@@ -65,6 +67,13 @@ export default function ExcelImportDialog({
         const validData: any[] = [];
 
         jsonData.forEach((row: any, index: number) => {
+          // Si permitimos datos incompletos, consideramos todos los registros
+          if (allowIncompleteData) {
+            validData.push(row);
+            return;
+          }
+          
+          // En caso contrario, aplicamos la validación normal
           const validation = validationFunction(row);
           if (!validation.isValid) {
             errors.push(`Fila ${index + 2}: ${validation.error}`);
@@ -73,13 +82,15 @@ export default function ExcelImportDialog({
           }
         });
 
-        if (errors.length > 0) {
+        // Si hay errores y no permitimos datos incompletos, mostramos los errores
+        if (errors.length > 0 && !allowIncompleteData) {
           setImportResult({
             success: false,
             message: 'Se encontraron errores en algunos registros',
             errors
           });
         } else {
+          // Si permitimos datos incompletos o no hay errores, importamos todos los datos
           onImport(validData);
           setImportResult({
             success: true,
@@ -105,6 +116,7 @@ export default function ExcelImportDialog({
           <DialogTitle>Importar datos desde Excel</DialogTitle>
           <DialogDescription>
             Descargue la plantilla y complete los datos según el formato requerido.
+            {allowIncompleteData && " Los campos vacíos pueden ser editados posteriormente."}
           </DialogDescription>
         </DialogHeader>
         

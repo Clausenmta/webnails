@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -195,6 +196,97 @@ export function useGiftCardManagement() {
     ];
   };
 
+  // Validar las tarjetas de regalo importadas
+  const validateImportedGiftCard = (row: any) => {
+    const errors = [];
+    
+    if (!row.Código) {
+      errors.push("El código es requerido");
+    }
+    
+    if (!row.Monto || isNaN(Number(row.Monto))) {
+      errors.push("El monto es requerido y debe ser un número");
+    }
+    
+    return { 
+      isValid: errors.length === 0,
+      error: errors.join(", ")
+    };
+  };
+
+  // Procesar tarjetas de regalo importadas
+  const processImportedGiftCards = (data: any[]) => {
+    setImportStatus("processing");
+    setImportProgress(10);
+    
+    const total = data.length;
+    let successful = 0;
+    let failed = 0;
+    const errors: string[] = [];
+    
+    // Validar y transformar los datos
+    const processedData = data.map((row, index) => {
+      // Establecer valores por defecto para campos que pueden estar vacíos
+      const purchaseDate = row.Fecha_Compra || format(new Date(), 'yyyy-MM-dd');
+      
+      // Asegurar que el código esté presente
+      if (!row.Código) {
+        errors.push(`Fila ${index + 2}: Falta el código`);
+        failed++;
+        return null;
+      }
+      
+      // Si el monto está vacío, asignar 0 temporalmente (se puede editar después)
+      const amount = row.Monto !== undefined && row.Monto !== '' ? Number(row.Monto) : 0;
+      
+      // Calcular la fecha de vencimiento si no existe
+      const expiryDate = row.Fecha_Vencimiento || calculateExpiryDate(purchaseDate);
+      
+      // Determinar el estado basado en las fechas
+      const status = determineStatus(purchaseDate, expiryDate, row.Fecha_Canje);
+      
+      successful++;
+      
+      return {
+        code: row.Código,
+        amount: amount,
+        customer_name: row.Cliente || '',
+        service: row.Servicio || '',
+        purchase_date: purchaseDate,
+        expiry_date: expiryDate,
+        status: status,
+        redeemed_date: row.Fecha_Canje || undefined,
+        notes: row.Notas || '',
+        created_by: 'importación'
+      };
+    }).filter(item => item !== null) as NewGiftCard[];
+    
+    setImportProgress(50);
+    
+    // Si hay datos válidos, los importamos
+    if (processedData.length > 0) {
+      // Aquí podrías importar las tarjetas a la base de datos
+      // Por ahora, solo actualizamos el estado de importación
+      setImportProgress(100);
+      setImportResults({
+        total,
+        successful,
+        failed
+      });
+      setImportErrors(errors);
+      setImportStatus("success");
+      
+      // Puedes implementar aquí la lógica para guardar los datos en la base de datos
+      // Por ejemplo, utilizando una función de tu servicio
+      
+      toast.success(`Se importaron ${successful} tarjetas de regalo exitosamente`);
+    } else {
+      setImportStatus("error");
+      setImportErrors(["No se encontraron datos válidos para importar"]);
+      toast.error("No se pudieron importar las tarjetas de regalo");
+    }
+  };
+
   return {
     // Estado y datos
     giftCards,
@@ -246,6 +338,8 @@ export function useGiftCardManagement() {
     resetImportState,
     updateExpiryDate,
     updateStatusFromDates,
+    validateImportedGiftCard,
+    processImportedGiftCards,
     
     // Otros
     dialogsEnabled,

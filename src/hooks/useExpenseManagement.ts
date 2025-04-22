@@ -1,12 +1,12 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Expense, NewExpense } from "@/types/expenses";
+import { Expense, NewExpense, PaymentMethod } from "@/types/expenses";
 import { expenseService } from "@/services/expenseService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { exportReport } from "@/utils/reportExport";
+import { ExpensesFiltersState } from "@/components/expenses/ExpensesFilters";
 
 export function useExpenseManagement() {
   const { user, isAuthorized } = useAuth();
@@ -29,6 +29,64 @@ export function useExpenseManagement() {
       }
     }
   });
+
+  const [filters, setFilters] = useState<ExpensesFiltersState>(() => {
+    const now = new Date();
+    return {
+      date: new Date(now.getFullYear(), now.getMonth(), 1),
+      concept: "",
+      category: "",
+      provider: "",
+      payment_method: "",
+      created_by: ""
+    }
+  });
+
+  const uniqueProviders = useMemo(() => {
+    const providers = expenses.map(e => e.provider).filter(Boolean);
+    return Array.from(new Set(providers as string[]));
+  }, [expenses]);
+
+  const uniqueUsers = useMemo(() => {
+    const users = expenses.map(e => e.created_by).filter(Boolean);
+    return Array.from(new Set(users));
+  }, [expenses]);
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      if (filters.date) {
+        const [day, month, year] = expense.date.split("/");
+        const expDate = new Date(Number(year), Number(month) - 1);
+        if (
+          expDate.getMonth() !== filters.date.getMonth() ||
+          expDate.getFullYear() !== filters.date.getFullYear()
+        ) return false;
+      }
+      if (filters.concept && !expense.concept?.toLowerCase().includes(filters.concept.toLowerCase())) return false;
+      if (filters.category && expense.category !== filters.category) return false;
+      if (filters.provider && expense.provider !== filters.provider) return false;
+      if (filters.payment_method && expense.payment_method !== filters.payment_method) return false;
+      if (filters.created_by && expense.created_by !== filters.created_by) return false;
+      return true;
+    });
+  }, [expenses, filters]);
+
+  const filteredExpensesPrevMonth = useMemo(() => {
+    return expenses.filter(expense => {
+      if (filters.date) {
+        const d = filters.date;
+        const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+        const [day, month, year] = expense.date.split("/");
+        const expDate = new Date(Number(year), Number(month) - 1);
+        return (
+          expDate.getMonth() === prev.getMonth() &&
+          expDate.getFullYear() === prev.getFullYear() &&
+          (!filters.category || expense.category === filters.category)
+        );
+      }
+      return false;
+    });
+  }, [expenses, filters]);
 
   const addExpenseMutation = useMutation({
     mutationFn: expenseService.addExpense,
@@ -57,18 +115,12 @@ export function useExpenseManagement() {
     }
   });
 
-  // Filtrar gastos según el rol del usuario
-  const filteredExpenses = isSuperAdmin 
-    ? expenses 
-    : expenses.filter(expense => expense.created_by === user?.username);
-
   const handleViewExpense = (expense: Expense) => {
     setCurrentExpense(expense);
     setIsViewExpenseOpen(true);
   };
 
   const handleDeleteExpense = (expense: Expense) => {
-    // Verificar si el usuario puede eliminar este gasto
     if (isSuperAdmin || expense.created_by === user?.username) {
       setExpenseToDelete(expense);
       setIsDeleteDialogOpen(true);
@@ -105,6 +157,11 @@ export function useExpenseManagement() {
   return {
     expenses,
     filteredExpenses,
+    filteredExpensesPrevMonth,
+    filters,
+    setFilters,
+    uniqueProviders,
+    uniqueUsers,
     isLoading,
     isSuperAdmin,
     

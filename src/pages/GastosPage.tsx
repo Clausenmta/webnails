@@ -6,12 +6,14 @@ import { useExpenseManagement } from "@/hooks/useExpenseManagement";
 
 export default function GastosPage() {
   const {
-    // Estado y datos
     expenses,
     filteredExpenses,
+    filteredExpensesPrevMonth,
+    filters,
+    setFilters,
+    uniqueProviders,
+    uniqueUsers,
     isSuperAdmin,
-    
-    // Estado de diálogos
     isAddExpenseOpen,
     setIsAddExpenseOpen,
     isViewExpenseOpen,
@@ -20,11 +22,7 @@ export default function GastosPage() {
     isDeleteDialogOpen,
     setIsDeleteDialogOpen,
     expenseToDelete,
-    
-    // Mutaciones
     addExpenseMutation,
-    
-    // Manejadores de eventos
     handleViewExpense,
     handleDeleteExpense,
     confirmDeleteExpense,
@@ -43,6 +41,11 @@ export default function GastosPage() {
         isSuperAdmin={isSuperAdmin}
         expenses={expenses}
         filteredExpenses={filteredExpenses}
+        filteredExpensesPrevMonth={filteredExpensesPrevMonth}
+        filters={filters}
+        setFilters={setFilters}
+        uniqueProviders={uniqueProviders}
+        uniqueUsers={uniqueUsers}
         onViewExpense={handleViewExpense}
         onDeleteExpense={handleDeleteExpense}
       />

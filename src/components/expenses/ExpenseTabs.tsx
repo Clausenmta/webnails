@@ -4,21 +4,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpenseList } from "./ExpenseList";
 import { ExpenseCategories } from "./ExpenseCategories";
 import { UpcomingExpenses } from "./UpcomingExpenses";
+import { ExpensesFilters, ExpensesFiltersState } from "./ExpensesFilters";
 
 interface ExpenseTabsProps {
   isSuperAdmin: boolean;
   expenses: Expense[];
   filteredExpenses: Expense[];
+  filteredExpensesPrevMonth: Expense[];
+  filters: ExpensesFiltersState;
+  setFilters: (f: ExpensesFiltersState) => void;
+  uniqueProviders: string[];
+  uniqueUsers: string[];
   onViewExpense: (expense: Expense) => void;
   onDeleteExpense: (expense: Expense) => void;
 }
 
-export function ExpenseTabs({ 
-  isSuperAdmin, 
-  expenses, 
+export function ExpenseTabs({
+  isSuperAdmin,
+  expenses,
   filteredExpenses,
-  onViewExpense, 
-  onDeleteExpense 
+  filteredExpensesPrevMonth,
+  filters,
+  setFilters,
+  uniqueProviders,
+  uniqueUsers,
+  onViewExpense,
+  onDeleteExpense,
 }: ExpenseTabsProps) {
   if (isSuperAdmin) {
     return (
@@ -28,31 +39,51 @@ export function ExpenseTabs({
           <TabsTrigger value="categories">Gastos por Categoría</TabsTrigger>
           <TabsTrigger value="upcoming">Próximos Vencimientos</TabsTrigger>
         </TabsList>
-        
+
+        <ExpensesFilters
+          filters={filters}
+          setFilters={setFilters}
+          uniqueProviders={uniqueProviders}
+          uniqueUsers={uniqueUsers}
+        />
+
         <TabsContent value="list">
-          <ExpenseList 
-            expenses={filteredExpenses} 
-            onViewExpense={onViewExpense} 
-            onDeleteExpense={onDeleteExpense} 
+          <ExpenseList
+            expenses={filteredExpenses}
+            onViewExpense={onViewExpense}
+            onDeleteExpense={onDeleteExpense}
           />
         </TabsContent>
-        
+
         <TabsContent value="categories">
-          <ExpenseCategories expenses={expenses} />
+          <ExpenseCategories
+            filteredExpenses={filteredExpenses}
+            prevMonthExpenses={filteredExpensesPrevMonth}
+          />
         </TabsContent>
-        
+
         <TabsContent value="upcoming">
           <UpcomingExpenses expenses={expenses} />
         </TabsContent>
       </Tabs>
     );
   }
-  
+
+  // Para usuarios NO super admin, solo el listado y filtros
   return (
-    <ExpenseList 
-      expenses={filteredExpenses} 
-      onViewExpense={onViewExpense} 
-      onDeleteExpense={onDeleteExpense} 
-    />
+    <>
+      <ExpensesFilters
+        filters={filters}
+        setFilters={setFilters}
+        uniqueProviders={uniqueProviders}
+        uniqueUsers={uniqueUsers}
+      />
+      <ExpenseList
+        expenses={filteredExpenses}
+        onViewExpense={onViewExpense}
+        onDeleteExpense={onDeleteExpense}
+      />
+    </>
   );
 }
+

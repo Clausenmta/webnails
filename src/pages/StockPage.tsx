@@ -407,7 +407,7 @@ export default function StockPage() {
               <SelectValue placeholder="Filtrar por categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
+              <SelectItem value="all-categories">Todas las categorías</SelectItem>
               {stockCategories.map(category => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -426,7 +426,7 @@ export default function StockPage() {
               <SelectValue placeholder="Filtrar por ubicación" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las ubicaciones</SelectItem>
+              <SelectItem value="all-locations">Todas las ubicaciones</SelectItem>
               {stockLocations.map(location => (
                 <SelectItem key={location} value={location}>
                   {location}
@@ -752,13 +752,14 @@ export default function StockPage() {
             <div className="space-y-2">
               <Label htmlFor="product">Producto</Label>
               <Select 
-                value={stockUpdate.productId ? stockUpdate.productId.toString() : ""} 
+                value={stockUpdate.productId ? stockUpdate.productId.toString() : "select-product"} 
                 onValueChange={(value) => setStockUpdate({...stockUpdate, productId: Number(value)})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar producto" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="select-product" disabled>Seleccionar producto</SelectItem>
                   {stockItems.map(product => (
                     <SelectItem key={product.id} value={product.id.toString()}>
                       {product.product_name}

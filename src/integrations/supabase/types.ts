@@ -170,6 +170,7 @@ export type Database = {
           purchase_date: string
           redeemed_date: string | null
           status: string
+          sucursal: string[] | null
         }
         Insert: {
           amount: number
@@ -184,6 +185,7 @@ export type Database = {
           purchase_date: string
           redeemed_date?: string | null
           status: string
+          sucursal?: string[] | null
         }
         Update: {
           amount?: number
@@ -198,6 +200,7 @@ export type Database = {
           purchase_date?: string
           redeemed_date?: string | null
           status?: string
+          sucursal?: string[] | null
         }
         Relationships: []
       }

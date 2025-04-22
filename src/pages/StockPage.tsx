@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -31,6 +30,7 @@ import { stockCategories, stockLocations } from "@/types/stock";
 import { FileSpreadsheet } from "lucide-react";
 import { exportReport } from "@/utils/reportExport";
 import { ImportExcelDialog } from "@/components/common/ImportExcelDialog";
+import { Search, Filter } from "lucide-react";
 
 export default function StockPage() {
   const { isAuthorized, user } = useAuth();
@@ -60,6 +60,10 @@ export default function StockPage() {
     quantity: 0,
     operation: "add" as "add" | "remove"
   });
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [locationFilter, setLocationFilter] = useState<string>("");
 
   const { data: stockItems = [], isLoading, error } = useQuery({
     queryKey: ['stock'],
@@ -213,8 +217,6 @@ export default function StockPage() {
 
   const handleImportStock = async (data: any[]) => {
     try {
-      // Since we have the user already from useAuth() at the component level,
-      // we don't need to call useAuth() again inside this function
       const currentUserEmail = user?.username || 'unknown';
       
       for (const item of data) {
@@ -228,7 +230,7 @@ export default function StockPage() {
           unit_price: item.unit_price !== undefined ? item.unit_price : 0,
           purchase_date: item.purchase_date || new Date().toLocaleDateString(),
           location: item.location || stockLocations[0],
-          created_by: currentUserEmail // Using username which contains the email
+          created_by: currentUserEmail
         };
 
         const validationResult = validateStockImport(stockItem);
@@ -245,6 +247,21 @@ export default function StockPage() {
       toast.error('Error al importar productos');
     }
   };
+
+  const filteredStockItems = stockItems.filter(product => {
+    const matchesSearch = 
+      searchTerm.length === 0 ||
+      product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.brand || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.supplier || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory = 
+      !categoryFilter || product.category === categoryFilter;
+    const matchesLocation = 
+      !locationFilter || (product.location || "") === locationFilter;
+
+    return matchesSearch && matchesCategory && matchesLocation;
+  });
 
   useEffect(() => {
     if (error) {
@@ -368,6 +385,59 @@ export default function StockPage() {
         </div>
       </div>
 
+      {/* --- Filtros y búsqueda arriba de la tabla --- */}
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:gap-4 my-2">
+        <div className="relative w-full md:w-1/3">
+          <Input
+            type="text"
+            placeholder="Buscar producto, marca o proveedor..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+        </div>
+        <div className="w-full md:w-1/4">
+          <Select
+            value={categoryFilter}
+            onValueChange={setCategoryFilter}
+          >
+            <SelectTrigger className="w-full">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filtrar por categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas las categorías</SelectItem>
+              {stockCategories.map(category => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full md:w-1/4">
+          <Select
+            value={locationFilter}
+            onValueChange={setLocationFilter}
+          >
+            <SelectTrigger className="w-full">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Filtrar por ubicación" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas las ubicaciones</SelectItem>
+              {stockLocations.map(location => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {/* --- Fin filtros y búsqueda --- */}
+
       {isLoading && (
         <Card>
           <CardContent className="p-8 flex justify-center">
@@ -408,7 +478,7 @@ export default function StockPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {stockItems.map(product => (
+                      {filteredStockItems.map(product => (
                         <tr key={product.id} className="border-b">
                           <td className="py-3 px-4">{product.id}</td>
                           <td className="py-3 px-4">{product.product_name}</td>
@@ -444,10 +514,10 @@ export default function StockPage() {
                         </tr>
                       ))}
                       
-                      {stockItems.length === 0 && (
+                      {filteredStockItems.length === 0 && (
                         <tr>
                           <td colSpan={isSuperAdmin ? 8 : 7} className="py-6 text-center text-muted-foreground">
-                            No hay productos en el inventario
+                            No hay productos en el inventario con esos filtros
                           </td>
                         </tr>
                       )}

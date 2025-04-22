@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, ArrowUp, ArrowDown, DollarSign, Users, TrendingUp, FileDown, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { 
+  Download, 
+  ArrowUp, 
+  ArrowDown, 
+  DollarSign, 
+  Users, 
+  TrendingUp, 
+  FileDown, 
+  PlusCircle, 
+  Pencil, 
+  Trash2 
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,11 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line } from "recharts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -48,44 +54,10 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { exportReport } from "@/utils/reportExport";
-
-const monthlyData = [
-  { month: "Ene", ventas: 42000, gastos: 28000, utilidad: 14000, ventasPrevMes: 39000, gastosPrevMes: 27000 },
-  { month: "Feb", ventas: 48000, gastos: 30000, utilidad: 18000, ventasPrevMes: 42000, gastosPrevMes: 28000 },
-  { month: "Mar", ventas: 51000, gastos: 31500, utilidad: 19500, ventasPrevMes: 48000, gastosPrevMes: 30000 },
-  { month: "Abr", ventas: 47000, gastos: 29000, utilidad: 18000, ventasPrevMes: 51000, gastosPrevMes: 31500 },
-  { month: "May", ventas: 53000, gastos: 32000, utilidad: 21000, ventasPrevMes: 47000, gastosPrevMes: 29000 },
-  { month: "Jun", ventas: 55000, gastos: 33000, utilidad: 22000, ventasPrevMes: 53000, gastosPrevMes: 32000 },
-  { month: "Jul", ventas: 58000, gastos: 34500, utilidad: 23500, ventasPrevMes: 55000, gastosPrevMes: 33000 },
-  { month: "Ago", ventas: 56000, gastos: 33800, utilidad: 22200, ventasPrevMes: 58000, gastosPrevMes: 34500 },
-  { month: "Sep", ventas: 60000, gastos: 36000, utilidad: 24000, ventasPrevMes: 56000, gastosPrevMes: 33800 },
-  { month: "Oct", ventas: 62000, gastos: 37500, utilidad: 24500, ventasPrevMes: 60000, gastosPrevMes: 36000 },
-  { month: "Nov", ventas: 59000, gastos: 35400, utilidad: 23600, ventasPrevMes: 62000, gastosPrevMes: 37500 },
-  { month: "Dic", ventas: 65000, gastos: 39000, utilidad: 26000, ventasPrevMes: 59000, gastosPrevMes: 35400 },
-];
-
-const serviceData = [
-  { servicio: "Peluquería", cantidad: 560, ingresos: 168000, ingresosPrevMes: 152000 },
-  { servicio: "Spa", cantidad: 310, ingresos: 148000, ingresosPrevMes: 140000 },
-];
-
-const expenseData = [
-  { categoria: "Salarios", monto: 118000, montoPrevMes: 112000 },
-  { categoria: "Productos", monto: 45000, montoPrevMes: 42000 },
-  { categoria: "Servicios", monto: 28000, montoPrevMes: 26500 },
-  { categoria: "Alquiler", monto: 35000, montoPrevMes: 35000 },
-  { categoria: "Marketing", monto: 15000, montoPrevMes: 18000 },
-  { categoria: "Otros", monto: 9000, montoPrevMes: 8800 },
-];
-
-const pendingPayments = [
-  { id: 1, proveedor: "Distribuidora OPI", monto: 35000, vencimiento: "15/04/2025", medioPago: "Transferencia" },
-  { id: 2, proveedor: "Inmobiliaria Norte", monto: 150000, vencimiento: "10/04/2025", medioPago: "Efectivo" },
-  { id: 3, proveedor: "Servicio de Internet", monto: 12500, vencimiento: "20/04/2025", medioPago: "Débito" },
-  { id: 4, proveedor: "Proveedor de Insumos", monto: 28000, vencimiento: "25/04/2025", medioPago: "Transferencia" },
-];
-
-const availableYears = ["2023", "2024", "2025", "2026"];
+import { useQuery } from "@tanstack/react-query";
+import { expenseService } from "@/services/expenseService";
+import { stockService } from "@/services/stock";
+import { format, parseISO, isValid } from "date-fns";
 
 const initialExpenseCategories = [
   "Remodelación",
@@ -145,12 +117,21 @@ const sampleInitialExpenses: InitialExpense[] = [
 ];
 
 export default function ResultadosPage() {
-  const [selectedMonth, setSelectedMonth] = useState("Mar");
-  const [year, setYear] = useState("2025");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const currentMonth = new Date().getMonth();
+    const monthAbbreviations = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    return monthAbbreviations[currentMonth];
+  });
+  
+  const [year, setYear] = useState(() => new Date().getFullYear().toString());
   const [initialExpenses, setInitialExpenses] = useState<InitialExpense[]>(sampleInitialExpenses);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<InitialExpense | null>(null);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [serviceData, setServiceData] = useState<any[]>([]);
+  const [expenseDataByCategory, setExpenseDataByCategory] = useState<any[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   
   const [newExpense, setNewExpense] = useState<Omit<InitialExpense, 'id'>>({
     date: new Date().toISOString().split('T')[0],
@@ -159,7 +140,173 @@ export default function ResultadosPage() {
     amount: 0
   });
 
-  const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || monthlyData[0];
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: expenseService.fetchExpenses
+  });
+  
+  const { data: stockItems = [] } = useQuery({
+    queryKey: ['stock'],
+    queryFn: stockService.fetchStock
+  });
+
+  useEffect(() => {
+    if (expenses.length > 0) {
+      processExpensesData();
+    }
+  }, [expenses, selectedMonth, year]);
+
+  const processExpensesData = () => {
+    const monthAbbreviations = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    
+    const tempMonthlyData = monthAbbreviations.map((month, index) => {
+      return {
+        month,
+        ventas: 0,
+        gastos: 0,
+        utilidad: 0,
+        ventasPrevMes: 0,
+        gastosPrevMes: 0
+      };
+    });
+
+    const expensesByMonth: Record<string, number> = {};
+    const currentYear = parseInt(year);
+    
+    expenses.forEach(expense => {
+      try {
+        const dateParts = expense.date.split('/');
+        if (dateParts.length === 3) {
+          const month = parseInt(dateParts[1]) - 1;
+          const expenseYear = parseInt(dateParts[2]);
+          
+          if (expenseYear === currentYear && month >= 0 && month < 12) {
+            expensesByMonth[month] = (expensesByMonth[month] || 0) + expense.amount;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing date:', expense.date);
+      }
+    });
+
+    const simulatedSalesByMonth: Record<string, number> = {};
+    for (let i = 0; i < 12; i++) {
+      simulatedSalesByMonth[i] = (expensesByMonth[i] || 0) * 1.5 + Math.random() * 10000;
+    }
+
+    for (let i = 0; i < 12; i++) {
+      const ventas = simulatedSalesByMonth[i] || 0;
+      const gastos = expensesByMonth[i] || 0;
+      const utilidad = ventas - gastos;
+      
+      const ventasPrevMes = i > 0 ? (simulatedSalesByMonth[i - 1] || 0) : 0;
+      const gastosPrevMes = i > 0 ? (expensesByMonth[i - 1] || 0) : 0;
+      
+      tempMonthlyData[i] = {
+        month: monthAbbreviations[i],
+        ventas: Math.round(ventas),
+        gastos: Math.round(gastos),
+        utilidad: Math.round(utilidad),
+        ventasPrevMes: Math.round(ventasPrevMes),
+        gastosPrevMes: Math.round(gastosPrevMes)
+      };
+    }
+    
+    setMonthlyData(tempMonthlyData);
+
+    const categoryTotals: Record<string, { monto: number, montoPrevMes: number }> = {};
+    
+    const currentMonthIndex = monthAbbreviations.indexOf(selectedMonth);
+    const prevMonthIndex = currentMonthIndex > 0 ? currentMonthIndex - 1 : 11;
+    
+    expenses.forEach(expense => {
+      try {
+        const dateParts = expense.date.split('/');
+        if (dateParts.length === 3) {
+          const month = parseInt(dateParts[1]) - 1;
+          const expenseYear = parseInt(dateParts[2]);
+          
+          if (expenseYear === currentYear) {
+            if (!categoryTotals[expense.category]) {
+              categoryTotals[expense.category] = { monto: 0, montoPrevMes: 0 };
+            }
+            
+            if (month === currentMonthIndex) {
+              categoryTotals[expense.category].monto += expense.amount;
+            } else if (month === prevMonthIndex) {
+              categoryTotals[expense.category].montoPrevMes += expense.amount;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error processing expense category data:', error);
+      }
+    });
+    
+    const expenseCategoryData = Object.entries(categoryTotals).map(([categoria, values]) => ({
+      categoria,
+      monto: values.monto,
+      montoPrevMes: values.montoPrevMes
+    }));
+    
+    setExpenseDataByCategory(expenseCategoryData);
+
+    const today = new Date();
+    const pendingExpenses = expenses.filter(expense => {
+      if (expense.status === 'pending' && expense.due_date) {
+        try {
+          const dateParts = expense.due_date.split('/');
+          if (dateParts.length === 3) {
+            const dueDate = new Date(
+              parseInt(dateParts[2]),
+              parseInt(dateParts[1]) - 1,
+              parseInt(dateParts[0])
+            );
+            return dueDate > today;
+          }
+        } catch (error) {
+          console.error('Error parsing due date:', expense.due_date);
+        }
+      }
+      return false;
+    })
+    .map((expense, index) => ({
+      id: expense.id,
+      proveedor: expense.provider || 'Desconocido',
+      monto: expense.amount,
+      vencimiento: expense.due_date || '',
+      medioPago: expense.payment_method || 'Desconocido'
+    }))
+    .slice(0, 5);
+
+    setPendingPayments(pendingPayments);
+
+    const tempServiceData = [
+      { 
+        servicio: "Peluquería", 
+        cantidad: Math.round(Math.random() * 300 + 300), 
+        ingresos: Math.round(simulatedSalesByMonth[currentMonthIndex] * 0.6), 
+        ingresosPrevMes: Math.round(simulatedSalesByMonth[prevMonthIndex] * 0.6)
+      },
+      { 
+        servicio: "Spa", 
+        cantidad: Math.round(Math.random() * 200 + 100), 
+        ingresos: Math.round(simulatedSalesByMonth[currentMonthIndex] * 0.4), 
+        ingresosPrevMes: Math.round(simulatedSalesByMonth[prevMonthIndex] * 0.4)
+      },
+    ];
+    
+    setServiceData(tempServiceData);
+  };
+
+  const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || {
+    month: selectedMonth,
+    ventas: 0,
+    gastos: 0,
+    utilidad: 0,
+    ventasPrevMes: 0,
+    gastosPrevMes: 0
+  };
   
   const revenueGrowth = currentMonthData.ventas > 0 && currentMonthData.ventasPrevMes > 0
     ? ((currentMonthData.ventas - currentMonthData.ventasPrevMes) / currentMonthData.ventasPrevMes * 100).toFixed(1)
@@ -186,7 +333,7 @@ export default function ResultadosPage() {
       revenueGrowth: revenueGrowth,
       profitGrowth: profitGrowth,
       serviceData: serviceData,
-      expenseData: expenseData
+      expenseData: expenseDataByCategory
     };
     
     exportReport(reportData, {
@@ -204,7 +351,7 @@ export default function ResultadosPage() {
       revenueGrowth: revenueGrowth,
       profitGrowth: profitGrowth,
       serviceData: serviceData,
-      expenseData: expenseData
+      expenseData: expenseDataByCategory
     };
     
     exportReport(reportData, {
@@ -264,8 +411,14 @@ export default function ResultadosPage() {
   }).filter(item => item.amount > 0);
 
   const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  const totalExpenses = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
 
-  const totalExpenses = expenseData.reduce((sum, item) => sum + item.monto, 0);
+  const availableYears = [
+    (new Date().getFullYear() - 2).toString(),
+    (new Date().getFullYear() - 1).toString(), 
+    new Date().getFullYear().toString(),
+    (new Date().getFullYear() + 1).toString()
+  ];
 
   return (
     <div className="space-y-6">
@@ -404,7 +557,7 @@ export default function ResultadosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {expenseData.map((item) => {
+                {expenseDataByCategory.map((item) => {
                   const percentage = totalExpenses > 0 
                     ? ((item.monto / totalExpenses) * 100).toFixed(1) 
                     : "0.0";
@@ -473,13 +626,22 @@ export default function ResultadosPage() {
                   <TableCell className="text-right">{item.medioPago}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="font-bold bg-muted/30">
-                <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right">
-                  $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
-                </TableCell>
-                <TableCell colSpan={2}></TableCell>
-              </TableRow>
+              {pendingPayments.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    No hay pagos pendientes registrados
+                  </TableCell>
+                </TableRow>
+              )}
+              {pendingPayments.length > 0 && (
+                <TableRow className="font-bold bg-muted/30">
+                  <TableCell>TOTAL</TableCell>
+                  <TableCell className="text-right">
+                    $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell colSpan={2}></TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -31,6 +31,12 @@ import { FileSpreadsheet } from "lucide-react";
 import { exportReport } from "@/utils/reportExport";
 import { ImportExcelDialog } from "@/components/common/ImportExcelDialog";
 import { Search, Filter } from "lucide-react";
+import StockFilters from "./stock/StockFilters";
+import ProductTable from "./stock/ProductTable";
+import StockLocations from "./stock/StockLocations";
+import ProductDialog from "./stock/ProductDialog";
+import StockUpdateDialog from "./stock/StockUpdateDialog";
+import StockImportDialog from "./stock/StockImportDialog";
 
 export default function StockPage() {
   const { isAuthorized, user } = useAuth();
@@ -386,56 +392,16 @@ export default function StockPage() {
       </div>
 
       {/* --- Filtros y búsqueda arriba de la tabla --- */}
-      <div className="flex flex-col gap-2 md:flex-row md:items-end md:gap-4 my-2">
-        <div className="relative w-full md:w-1/3">
-          <Input
-            type="text"
-            placeholder="Buscar producto, marca o proveedor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-        </div>
-        <div className="w-full md:w-1/4">
-          <Select
-            value={categoryFilter}
-            onValueChange={setCategoryFilter}
-          >
-            <SelectTrigger className="w-full">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Filtrar por categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-categories">Todas las categorías</SelectItem>
-              {stockCategories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-full md:w-1/4">
-          <Select
-            value={locationFilter}
-            onValueChange={setLocationFilter}
-          >
-            <SelectTrigger className="w-full">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Filtrar por ubicación" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-locations">Todas las ubicaciones</SelectItem>
-              {stockLocations.map(location => (
-                <SelectItem key={location} value={location}>
-                  {location}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <StockFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        locationFilter={locationFilter}
+        setLocationFilter={setLocationFilter}
+        stockCategories={stockCategories}
+        stockLocations={stockLocations}
+      />
       {/* --- Fin filtros y búsqueda --- */}
 
       {isLoading && (
@@ -454,515 +420,68 @@ export default function StockPage() {
           </TabsList>
           
           <TabsContent value="products">
-            <Card>
-              <CardHeader>
-                <CardTitle>Listado de Productos</CardTitle>
-                <CardDescription>
-                  Inventario completo de productos e insumos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="py-3 px-4 text-left">Código</th>
-                        <th className="py-3 px-4 text-left">Producto</th>
-                        <th className="py-3 px-4 text-left">Categoría</th>
-                        <th className="py-3 px-4 text-center">Stock</th>
-                        <th className="py-3 px-4 text-center">Mínimo</th>
-                        <th className="py-3 px-4 text-left">Ubicación</th>
-                        <th className="py-3 px-4 text-left">Marca</th>
-                        {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
-                        <th className="py-3 px-4 text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredStockItems.map(product => (
-                        <tr key={product.id} className="border-b">
-                          <td className="py-3 px-4">{product.id}</td>
-                          <td className="py-3 px-4">{product.product_name}</td>
-                          <td className="py-3 px-4">{product.category}</td>
-                          <td className={`py-3 px-4 text-center ${product.quantity < (product.min_stock_level || 3) ? "text-red-500 font-medium" : ""}`}>
-                            {product.quantity}
-                          </td>
-                          <td className="py-3 px-4 text-center">{product.min_stock_level || 3}</td>
-                          <td className="py-3 px-4">{product.location}</td>
-                          <td className="py-3 px-4">{product.brand || 'N/A'}</td>
-                          {isSuperAdmin && (
-                            <td className="py-3 px-4 text-right">${product.unit_price.toLocaleString()}</td>
-                          )}
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleEditProduct(product)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      
-                      {filteredStockItems.length === 0 && (
-                        <tr>
-                          <td colSpan={isSuperAdmin ? 8 : 7} className="py-6 text-center text-muted-foreground">
-                            No hay productos en el inventario con esos filtros
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+            <ProductTable
+              stockItems={stockItems}
+              filteredStockItems={filteredStockItems}
+              isSuperAdmin={isSuperAdmin}
+              onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
+            />
           </TabsContent>
           
           <TabsContent value="locations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalle de Stock por Ubicación</CardTitle>
-                <CardDescription>
-                  Distribución de productos en las diferentes ubicaciones
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {physicalStockLocations.map(location => (
-                    <Card key={location.id} className="shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center">
-                          <Package className="h-4 w-4 mr-2 text-salon-500" />
-                          {location.name}
-                        </CardTitle>
-                        <CardDescription>
-                          {location.items.length} productos
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="rounded-md border">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="py-2 px-3 text-left">Producto</th>
-                                <th className="py-2 px-3 text-left">Categoría</th>
-                                <th className="py-2 px-3 text-right">Stock</th>
-                                {isSuperAdmin && (
-                                  <th className="py-2 px-3 text-right">Precio</th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {location.items.map((item, index) => (
-                                <tr key={index} className="border-b last:border-0">
-                                  <td className="py-2 px-3">
-                                    {item.brand ? `${item.productName} (${item.brand})` : item.productName}
-                                  </td>
-                                  <td className="py-2 px-3">{item.category}</td>
-                                  <td className={`py-2 px-3 text-right ${
-                                    item.quantity < (item.min_stock_level || 3) ? "text-red-500 font-medium" : ""
-                                  }`}>
-                                    {item.quantity}
-                                  </td>
-                                  {isSuperAdmin && (
-                                    <td className="py-2 px-3 text-right">
-                                      ${item.unit_price.toLocaleString()}
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                              
-                              {location.items.length === 0 && (
-                                <tr>
-                                  <td colSpan={isSuperAdmin ? 4 : 3} className="py-4 text-center text-muted-foreground">
-                                    No hay productos en esta ubicación
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <StockLocations
+              physicalStockLocations={physicalStockLocations}
+              isSuperAdmin={isSuperAdmin}
+            />
           </TabsContent>
         </Tabs>
       )}
 
-      <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-            <DialogDescription>
-              Completa los detalles del producto para agregarlo al inventario
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre del Producto</Label>
-              <Input
-                id="name"
-                value={newProduct.product_name}
-                onChange={(e) => setNewProduct({...newProduct, product_name: e.target.value})}
-                placeholder="Nombre completo del producto"
-                className="w-full"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier">Proveedor</Label>
-                <Input
-                  id="supplier"
-                  value={newProduct.supplier || ""}
-                  onChange={(e) => setNewProduct({...newProduct, supplier: e.target.value})}
-                  placeholder="Nombre del proveedor"
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Marca</Label>
-                <Input
-                  id="brand"
-                  value={newProduct.brand || ""}
-                  onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
-                  placeholder="Marca del producto"
-                  className="w-full"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoría</Label>
-              <Select 
-                value={newProduct.category} 
-                onValueChange={(value) => setNewProduct({...newProduct, category: value})}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stockCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Ubicación</Label>
-              <Select 
-                value={newProduct.location || ''} 
-                onValueChange={(value) => setNewProduct({...newProduct, location: value})}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar ubicación" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stockLocations.map(location => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="stock">Stock Inicial</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  value={newProduct.quantity || ""}
-                  onChange={(e) => setNewProduct({...newProduct, quantity: Number(e.target.value)})}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="minStock">Stock Mínimo</Label>
-                <Input
-                  id="minStock"
-                  type="number"
-                  min="1"
-                  value={newProduct.min_stock_level || ""}
-                  onChange={(e) => setNewProduct({...newProduct, min_stock_level: Number(e.target.value)})}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Precio</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  value={newProduct.unit_price || ""}
-                  onChange={(e) => setNewProduct({...newProduct, unit_price: Number(e.target.value)})}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter className="flex justify-end gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsAddProductOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleAddProduct}
-              disabled={!newProduct.product_name || addProductMutation.isPending}
-              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
-            >
-              {addProductMutation.isPending ? "Guardando..." : "Agregar Producto"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ProductDialog
+        open={isAddProductOpen}
+        onOpenChange={setIsAddProductOpen}
+        mode="add"
+        product={newProduct}
+        setProduct={setNewProduct}
+        categories={stockCategories}
+        locations={stockLocations}
+        isPending={addProductMutation.isPending}
+        onAction={handleAddProduct}
+        onCancel={() => setIsAddProductOpen(false)}
+        actionLabel="Agregar Producto"
+      />
 
-      <Dialog open={isUpdateStockOpen} onOpenChange={setIsUpdateStockOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Actualizar Stock</DialogTitle>
-            <DialogDescription>
-              Selecciona un producto y actualiza su cantidad en stock
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="product">Producto</Label>
-              <Select 
-                value={stockUpdate.productId ? stockUpdate.productId.toString() : "select-product"} 
-                onValueChange={(value) => setStockUpdate({...stockUpdate, productId: Number(value)})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar producto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="select-product" disabled>Seleccionar producto</SelectItem>
-                  {stockItems.map(product => (
-                    <SelectItem key={product.id} value={product.id.toString()}>
-                      {product.product_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="operation">Operación</Label>
-              <Select 
-                value={stockUpdate.operation} 
-                onValueChange={(value) => setStockUpdate({...stockUpdate, operation: value as "add" | "remove"})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar operación" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="add">Agregar</SelectItem>
-                  <SelectItem value="remove">Retirar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Cantidad</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                value={stockUpdate.quantity || ""}
-                onChange={(e) => setStockUpdate({...stockUpdate, quantity: Number(e.target.value)})}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUpdateStockOpen(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleUpdateStock}
-              disabled={stockUpdate.quantity <= 0 || !stockUpdate.productId || updateStockMutation.isPending}
-            >
-              {updateStockMutation.isPending ? "Actualizando..." : "Actualizar Stock"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <StockUpdateDialog
+        open={isUpdateStockOpen}
+        onOpenChange={setIsUpdateStockOpen}
+        productId={stockUpdate.productId}
+        setProductId={id => setStockUpdate(update => ({ ...update, productId: id }))}
+        quantity={stockUpdate.quantity}
+        setQuantity={q => setStockUpdate(update => ({ ...update, quantity: q }))}
+        operation={stockUpdate.operation}
+        setOperation={op => setStockUpdate(update => ({ ...update, operation: op }))}
+        stockItems={stockItems}
+        isPending={updateStockMutation.isPending}
+        onUpdate={handleUpdateStock}
+        onCancel={() => setIsUpdateStockOpen(false)}
+      />
 
-      <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Editar Producto</DialogTitle>
-            <DialogDescription>
-              Modifica los detalles del producto en el inventario
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre del Producto</Label>
-              <Input
-                id="name"
-                value={editingProduct?.product_name || ""}
-                onChange={(e) => setEditingProduct(prev => 
-                  prev ? { ...prev, product_name: e.target.value } : null
-                )}
-                placeholder="Nombre completo del producto"
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoría</Label>
-              <Select 
-                value={editingProduct?.category || ""} 
-                onValueChange={(value) => setEditingProduct(prev => 
-                  prev ? { ...prev, category: value } : null
-                )}
-              >
-                <SelectTrigger className="w-full border-[#9b87f5] focus:ring-[#9b87f5]">
-                  <SelectValue placeholder="Seleccionar categoría" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {stockCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="stock">Stock</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  value={editingProduct?.quantity || ""}
-                  onChange={(e) => setEditingProduct(prev => 
-                    prev ? { ...prev, quantity: Number(e.target.value) } : null
-                  )}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="minStock">Stock Mínimo</Label>
-                <Input
-                  id="minStock"
-                  type="number"
-                  min="1"
-                  value={editingProduct?.min_stock_level || ""}
-                  onChange={(e) => setEditingProduct(prev => 
-                    prev ? { ...prev, min_stock_level: Number(e.target.value) } : null
-                  )}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Precio</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  value={editingProduct?.unit_price || ""}
-                  onChange={(e) => setEditingProduct(prev => 
-                    prev ? { ...prev, unit_price: Number(e.target.value) } : null
-                  )}
-                  className="w-full"
-                />
-              </div>
-            </div>
+      <ProductDialog
+        open={isEditProductOpen}
+        onOpenChange={setIsEditProductOpen}
+        mode="edit"
+        product={editingProduct || {}}
+        setProduct={product => setEditingProduct(e => e ? { ...e, ...product } : null)}
+        categories={stockCategories}
+        locations={stockLocations}
+        isPending={editProductMutation.isPending}
+        onAction={handleSaveEditedProduct}
+        onCancel={() => setIsEditProductOpen(false)}
+        actionLabel="Guardar Cambios"
+      />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier">Proveedor</Label>
-                <Input
-                  id="supplier"
-                  value={editingProduct?.supplier || ""}
-                  onChange={(e) => setEditingProduct(prev => 
-                    prev ? { ...prev, supplier: e.target.value } : null
-                  )}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Marca</Label>
-                <Input
-                  id="brand"
-                  value={editingProduct?.brand || ""}
-                  onChange={(e) => setEditingProduct(prev => 
-                    prev ? { ...prev, brand: e.target.value } : null
-                  )}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Ubicación</Label>
-              <Select 
-                value={editingProduct?.location || ''} 
-                onValueChange={(value) => setEditingProduct(prev => 
-                  prev ? { ...prev, location: value } : null
-                )}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar ubicación" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stockLocations.map(location => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <DialogFooter className="flex justify-end gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEditProductOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSaveEditedProduct}
-              disabled={!editingProduct?.product_name || editProductMutation.isPending}
-              className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
-            >
-              {editProductMutation.isPending ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ImportExcelDialog
+      <StockImportDialog
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         onImport={handleImportStock}

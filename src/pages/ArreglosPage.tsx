@@ -38,7 +38,8 @@ export default function ArreglosPage() {
     cantidadFiltrosAplicados,
     sortConfig,
     setSortConfig,
-    handleExportReport
+    handleExportReport,
+    deleteArregloMutation, // <- ya lo tienes del hook
   } = useArreglosManagement();
 
   const { isAuthorized } = useAuth();
@@ -61,6 +62,14 @@ export default function ArreglosPage() {
 
   const handleExportClick = () => {
     handleExportReport(filteredArreglos);
+  };
+
+  // Nuevo handler para eliminar
+  const handleDeleteClick = (arreglo: any) => {
+    // Confirmación rápida, puedes mejorar este UX con un modal si deseas
+    if (window.confirm("¿Seguro que quieres eliminar este arreglo?")) {
+      deleteArregloMutation.mutate(arreglo.id);
+    }
   };
 
   return (
@@ -171,6 +180,8 @@ export default function ArreglosPage() {
                   setCurrentArreglo(arreglo);
                   setIsEditDialogOpen(true);
                 }}
+                // <-- AGREGAMOS el handler de eliminar
+                onDeleteClick={handleDeleteClick}
                 sortConfig={sortConfig}
                 onSortChange={handleSortChange}
               />
@@ -186,6 +197,7 @@ export default function ArreglosPage() {
               setCurrentArreglo(arreglo);
               setIsEditDialogOpen(true);
             }}
+            onDeleteClick={handleDeleteClick}
             sortConfig={sortConfig}
             onSortChange={handleSortChange}
           />
@@ -199,6 +211,7 @@ export default function ArreglosPage() {
               setCurrentArreglo(arreglo);
               setIsEditDialogOpen(true);
             }}
+            onDeleteClick={handleDeleteClick}
             sortConfig={sortConfig}
             onSortChange={handleSortChange}
           />
@@ -212,6 +225,7 @@ export default function ArreglosPage() {
               setCurrentArreglo(arreglo);
               setIsEditDialogOpen(true);
             }}
+            onDeleteClick={handleDeleteClick}
             sortConfig={sortConfig}
             onSortChange={handleSortChange}
           />
@@ -225,6 +239,7 @@ export default function ArreglosPage() {
               setCurrentArreglo(arreglo);
               setIsEditDialogOpen(true);
             }}
+            onDeleteClick={handleDeleteClick}
             sortConfig={sortConfig}
             onSortChange={handleSortChange}
           />

@@ -22,6 +22,7 @@ export type Database = {
           notes: string | null
           payment_status: string
           price: number
+          repair_date: string | null
           service_type: string
           status: string
         }
@@ -37,6 +38,7 @@ export type Database = {
           notes?: string | null
           payment_status: string
           price: number
+          repair_date?: string | null
           service_type: string
           status: string
         }
@@ -52,6 +54,7 @@ export type Database = {
           notes?: string | null
           payment_status?: string
           price?: number
+          repair_date?: string | null
           service_type?: string
           status?: string
         }

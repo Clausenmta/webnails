@@ -9,6 +9,7 @@ interface ArregloViewControlsProps {
   description: string;
   arreglos: Arreglo[];
   onViewClick: (arreglo: Arreglo) => void;
+  onDeleteClick?: (arreglo: Arreglo) => void; // <-- AGREGADO
   sortConfig: {
     key: keyof Arreglo;
     direction: "asc" | "desc";
@@ -21,6 +22,7 @@ export default function ArregloViewControls({
   description,
   arreglos,
   onViewClick,
+  onDeleteClick,
   sortConfig,
   onSortChange
 }: ArregloViewControlsProps) {
@@ -34,6 +36,7 @@ export default function ArregloViewControls({
         <ArreglosTable
           arreglos={arreglos}
           onViewClick={onViewClick}
+          onDeleteClick={onDeleteClick} // <-- PASA EL HANDLER!
           sortConfig={sortConfig}
           onSortChange={onSortChange}
         />

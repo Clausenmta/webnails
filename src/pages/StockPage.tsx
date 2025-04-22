@@ -194,25 +194,44 @@ export default function StockPage() {
     if (!row.product_name) {
       return { isValid: false, error: "El nombre del producto es requerido" };
     }
-    if (!row.category || !stockCategories.includes(row.category)) {
+    
+    if (typeof row.quantity !== 'number' || row.quantity < 0) {
+      return { isValid: false, error: "La cantidad debe ser un número mayor o igual a 0" };
+    }
+
+    if (row.category && !stockCategories.includes(row.category)) {
       return { isValid: false, error: "La categoría no es válida" };
     }
-    if (typeof row.quantity !== 'number' || row.quantity < 0) {
-      return { isValid: false, error: "La cantidad debe ser un número positivo" };
+
+    if (row.unit_price !== undefined && (typeof row.unit_price !== 'number' || row.unit_price < 0)) {
+      return { isValid: false, error: "El precio debe ser un número mayor o igual a 0" };
     }
-    if (typeof row.unit_price !== 'number' || row.unit_price < 0) {
-      return { isValid: false, error: "El precio debe ser un número positivo" };
-    }
+
     return { isValid: true };
   };
 
   const handleImportStock = async (data: any[]) => {
     try {
       for (const item of data) {
-        await addProductMutation.mutateAsync({
-          ...item,
-          purchase_date: new Date().toLocaleDateString()
-        });
+        const stockItem = {
+          product_name: item.product_name,
+          category: item.category || stockCategories[0],
+          brand: item.brand || '',
+          supplier: item.supplier || '',
+          quantity: item.quantity !== undefined ? item.quantity : 0,
+          min_stock_level: item.min_stock_level || 1,
+          unit_price: item.unit_price !== undefined ? item.unit_price : 0,
+          purchase_date: item.purchase_date || new Date().toLocaleDateString(),
+          location: item.location || stockLocations[0]
+        };
+
+        const validationResult = validateStockImport(stockItem);
+        if (!validationResult.isValid) {
+          toast.error(validationResult.error);
+          return;
+        }
+
+        await addProductMutation.mutateAsync(stockItem);
       }
       toast.success(`${data.length} productos importados correctamente`);
     } catch (error) {

@@ -58,6 +58,8 @@ import { useQuery } from "@tanstack/react-query";
 import { expenseService } from "@/services/expenseService";
 import { stockService } from "@/services/stock";
 import { format, parseISO, isValid } from "date-fns";
+import { initialExpensesService } from "@/services/initialExpensesService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const initialExpenseCategories = [
   "Remodelación",
@@ -149,6 +151,78 @@ export default function ResultadosPage() {
     queryKey: ['stock'],
     queryFn: stockService.fetchStock
   });
+
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: initialExpenses = [], isLoading: isFetchingInitialExpenses } = useQuery({
+    queryKey: ['initial_expenses'],
+    queryFn: initialExpensesService.fetchInitialExpenses
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: (expense) => initialExpensesService.addInitialExpense(expense),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
+      toast.success("Gasto inicial agregado correctamente");
+      setIsAddExpenseOpen(false);
+      setNewExpense({
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        category: initialExpenseCategories[0],
+        amount: 0
+      });
+    },
+    onError: (error) => toast.error("Error al agregar gasto inicial: " + error.message)
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: ({ id, expense }) => initialExpensesService.updateInitialExpense(id, expense),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
+      setIsEditExpenseOpen(false);
+      setCurrentExpense(null);
+      toast.success("Gasto inicial actualizado correctamente");
+    },
+    onError: (error) => toast.error("Error al actualizar gasto: " + error.message)
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (id) => initialExpensesService.deleteInitialExpense(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['initial_expenses'] });
+      toast.success("Gasto inicial eliminado correctamente");
+    },
+    onError: (error) => toast.error("Error al eliminar gasto: " + error.message)
+  });
+
+  const handleAddInitialExpense = () => {
+    addExpenseMutation.mutate({
+      date: newExpense.date,
+      description: newExpense.description,
+      category: newExpense.category,
+      amount: newExpense.amount,
+    });
+  };
+
+  const handleEditInitialExpense = () => {
+    if (!currentExpense || !currentExpense.id) return;
+    updateExpenseMutation.mutate({ id: currentExpense.id, expense: {
+      date: currentExpense.date,
+      description: currentExpense.description,
+      category: currentExpense.category,
+      amount: currentExpense.amount,
+    }});
+  };
+
+  const handleDeleteExpense = (id) => {
+    deleteExpenseMutation.mutate(id);
+  };
+
+  const prepareEditExpense = (expense) => {
+    setCurrentExpense(expense);
+    setIsEditExpenseOpen(true);
+  };
 
   useEffect(() => {
     if (expenses.length > 0) {
@@ -316,7 +390,17 @@ export default function ResultadosPage() {
     ? ((currentMonthData.utilidad - (currentMonthData.ventasPrevMes - currentMonthData.gastosPrevMes)) / (currentMonthData.ventasPrevMes - currentMonthData.gastosPrevMes) * 100).toFixed(1)
     : "0.0";
 
-  const totalInitialInvestment = initialExpenses.reduce((total, expense) => total + expense.amount, 0);
+  const totalInitialInvestment = initialExpenses.reduce((total, expense) => total + Number(expense.amount), 0);
+
+  const initialExpensesByCategory = initialExpenseCategories.map(category => {
+    const total = initialExpenses
+      .filter(expense => expense.category === category)
+      .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    return {
+      category,
+      amount: total
+    };
+  }).filter(item => item.amount > 0);
 
   const calculateROI = () => {
     const annualProfit = monthlyData.reduce((total, data) => total + data.utilidad, 0);
@@ -359,59 +443,6 @@ export default function ResultadosPage() {
       format: 'excel'
     });
   };
-
-  const handleAddInitialExpense = () => {
-    const expense: InitialExpense = {
-      ...newExpense,
-      id: Date.now().toString(),
-    };
-    setInitialExpenses([...initialExpenses, expense]);
-    setNewExpense({
-      date: new Date().toISOString().split('T')[0],
-      description: '',
-      category: initialExpenseCategories[0],
-      amount: 0
-    });
-    setIsAddExpenseOpen(false);
-    toast.success("Gasto inicial agregado correctamente");
-  };
-
-  const handleEditInitialExpense = () => {
-    if (!currentExpense) return;
-    
-    const updatedExpenses = initialExpenses.map(expense => 
-      expense.id === currentExpense.id ? currentExpense : expense
-    );
-    
-    setInitialExpenses(updatedExpenses);
-    setCurrentExpense(null);
-    setIsEditExpenseOpen(false);
-    toast.success("Gasto inicial actualizado correctamente");
-  };
-
-  const handleDeleteExpense = (id: string) => {
-    setInitialExpenses(initialExpenses.filter(expense => expense.id !== id));
-    toast.success("Gasto inicial eliminado correctamente");
-  };
-
-  const prepareEditExpense = (expense: InitialExpense) => {
-    setCurrentExpense(expense);
-    setIsEditExpenseOpen(true);
-  };
-
-  const initialExpensesByCategory = initialExpenseCategories.map(category => {
-    const total = initialExpenses
-      .filter(expense => expense.category === category)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    
-    return {
-      category,
-      amount: total
-    };
-  }).filter(item => item.amount > 0);
-
-  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
-  const totalExpenses = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
 
   const availableYears = [
     (new Date().getFullYear() - 2).toString(),
@@ -833,66 +864,3 @@ export default function ResultadosPage() {
                 <div className="grid grid-cols-1 gap-6">
                   <Card className="shadow-sm border border-slate-200">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xl">Detalle de Gastos Iniciales</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[120px]">Fecha</TableHead>
-                            <TableHead className="max-w-[250px]">Descripción</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead className="text-right">Monto</TableHead>
-                            <TableHead className="text-right">% del Total</TableHead>
-                            <TableHead className="w-[100px] text-right">Acciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {initialExpenses.map((expense) => {
-                            const percentage = totalInitialInvestment > 0 
-                              ? ((expense.amount / totalInitialInvestment) * 100).toFixed(1) 
-                              : "0.0";
-                              
-                            return (
-                              <TableRow key={expense.id}>
-                                <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                                <TableCell className="max-w-[250px] truncate">{expense.description}</TableCell>
-                                <TableCell>{expense.category}</TableCell>
-                                <TableCell className="text-right">$ {expense.amount.toLocaleString()}</TableCell>
-                                <TableCell className="text-right">{percentage}%</TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => prepareEditExpense(expense)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Pencil className="h-4 w-4 text-slate-600" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => handleDeleteExpense(expense.id)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-    </div>
-  );
-}

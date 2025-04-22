@@ -201,6 +201,69 @@ export type Database = {
         }
         Relationships: []
       }
+      initial_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          date: string
+          description: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      service_revenue: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          month: string
+          quantity: number
+          revenue: number
+          service_name: string
+          year: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month: string
+          quantity?: number
+          revenue?: number
+          service_name: string
+          year: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month?: string
+          quantity?: number
+          revenue?: number
+          service_name?: string
+          year?: string
+        }
+        Relationships: []
+      }
       stock: {
         Row: {
           brand: string | null

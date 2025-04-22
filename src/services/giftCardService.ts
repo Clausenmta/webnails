@@ -1,4 +1,3 @@
-
 import { supabase, getActiveSession } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -274,31 +273,37 @@ export const giftCardService = {
         throw new Error("Debe iniciar sesión para realizar esta operación");
       }
       
-      // Preparar los datos para la inserción
+      console.log("Importing gift cards:", giftCards);
+      
+      // Format the data for database insertion
       const dbGiftCards = giftCards.map(card => {
-        // Determinar estado basado en fechas
+        // Set default values for missing fields
+        const purchaseDate = card.purchase_date || new Date().toISOString().split('T')[0];
+        const expiryDate = card.expiry_date || calculateExpiryDate(purchaseDate);
+        
+        // Determine status based on dates
         const status = determineStatus(
-          card.purchase_date, 
-          card.expiry_date, 
+          purchaseDate, 
+          expiryDate, 
           card.redeemed_date
         );
         
-        // Mapear los campos para la base de datos
+        // Map fields for the database
         return {
-          code: card.code,
-          amount: card.amount || 0, // Valor por defecto si está vacío
+          code: card.code || `GC-${Math.floor(Math.random() * 100000)}`, // Generate code if missing
+          amount: card.amount !== undefined && card.amount !== null ? card.amount : 0, // Default to 0 if empty
           status: status,
           customer_name: card.customer_name || null,
           customer_email: card.service || null, // Map service to customer_email
-          purchase_date: card.purchase_date,
-          expiry_date: card.expiry_date,
+          purchase_date: purchaseDate,
+          expiry_date: expiryDate,
           redeemed_date: card.redeemed_date || null,
           created_by: card.created_by || 'importación',
           notes: card.notes || null
         };
       });
       
-      // Realizar la inserción de todos los registros
+      // Insert all records
       const { data, error } = await supabase
         .from('gift_cards')
         .insert(dbGiftCards)
@@ -312,7 +317,7 @@ export const giftCardService = {
         errors: []
       };
     } catch (error) {
-      handleSupabaseError(error, "importar tarjetas de regalo");
+      console.error("Error importing gift cards:", error);
       return {
         successful: 0,
         failed: giftCards.length,

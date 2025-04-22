@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -94,7 +93,22 @@ export function useGiftCardManagement() {
     }
   });
 
-  // Funciones para manejo de diálogos
+  const importGiftCardsMutation = useMutation({
+    mutationFn: (giftCards: NewGiftCard[]) => {
+      console.log("Importing gift cards in mutation:", giftCards);
+      return giftCardService.importGiftCards(giftCards);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['giftCards'] });
+      toast.success(`Se importaron ${result.successful} tarjetas de regalo correctamente`);
+      setIsImportDialogOpen(false);
+    },
+    onError: (error: any) => {
+      console.error("Error al importar tarjetas de regalo:", error);
+      toast.error(`Error al importar tarjetas de regalo: ${error.message}`);
+    }
+  });
+
   const safeAction = (action: () => void) => {
     if (!dialogsEnabled) return;
     
@@ -103,7 +117,6 @@ export function useGiftCardManagement() {
     try {
       action();
     } finally {
-      // Use a setTimeout to prevent too many re-renders in a single cycle
       setTimeout(() => {
         setDialogsEnabled(true);
       }, 500);
@@ -118,13 +131,11 @@ export function useGiftCardManagement() {
     setIsConfirmRedeemDialogOpen(false);
     setIsImportDialogOpen(false);
     
-    // Use setTimeout to ensure state updates don't conflict
     setTimeout(() => {
       setSelectedGiftCard(null);
     }, 300);
   };
 
-  // Fixed handleDialogOpenChange to prevent infinite loops
   const handleDialogOpenChange = (open: boolean, setOpenFn: React.Dispatch<React.SetStateAction<boolean>>, cleanup?: () => void) => {
     if (!open) {
       setOpenFn(false);
@@ -135,14 +146,13 @@ export function useGiftCardManagement() {
         }, 300);
       }
     } else if (dialogsEnabled) {
-      closeAllDialogs(); // Cerrar todos los diálogos antes de abrir uno nuevo
+      closeAllDialogs();
       setTimeout(() => {
         setOpenFn(open);
       }, 100);
     }
   };
 
-  // Resetear estado importación
   const resetImportState = () => {
     setImportStatus("idle");
     setImportProgress(0);
@@ -150,17 +160,14 @@ export function useGiftCardManagement() {
     setImportResults({ total: 0, successful: 0, failed: 0 });
   };
 
-  // Función para calcular automáticamente la fecha de vencimiento
   const updateExpiryDate = (purchaseDate: string): string => {
     return calculateExpiryDate(purchaseDate);
   };
 
-  // Función para determinar el estado basado en fechas
   const updateStatusFromDates = (purchaseDate: string, expiryDate: string, redeemedDate?: string): GiftCard["status"] => {
     return determineStatus(purchaseDate, expiryDate, redeemedDate);
   };
 
-  // Export function
   const handleExportToExcel = () => {
     const formattedGiftCards = giftCards.map(card => ({
       Código: card.code,
@@ -181,7 +188,6 @@ export function useGiftCardManagement() {
     });
   };
 
-  // Import template data
   const getImportTemplateData = () => {
     return [
       {
@@ -196,7 +202,6 @@ export function useGiftCardManagement() {
     ];
   };
 
-  // Validar las tarjetas de regalo importadas
   const validateImportedGiftCard = (row: any) => {
     const errors = [];
     
@@ -208,14 +213,18 @@ export function useGiftCardManagement() {
       errors.push("El monto es requerido y debe ser un número");
     }
     
+    if (!row.Fecha_Compra) {
+      errors.push("La fecha de compra es requerida");
+    }
+    
     return { 
       isValid: errors.length === 0,
       error: errors.join(", ")
     };
   };
 
-  // Procesar tarjetas de regalo importadas
   const processImportedGiftCards = (data: any[]) => {
+    console.log("Processing imported gift cards:", data);
     setImportStatus("processing");
     setImportProgress(10);
     
@@ -224,31 +233,20 @@ export function useGiftCardManagement() {
     let failed = 0;
     const errors: string[] = [];
     
-    // Validar y transformar los datos
     const processedData = data.map((row, index) => {
-      // Establecer valores por defecto para campos que pueden estar vacíos
       const purchaseDate = row.Fecha_Compra || format(new Date(), 'yyyy-MM-dd');
-      
-      // Asegurar que el código esté presente
-      if (!row.Código) {
-        errors.push(`Fila ${index + 2}: Falta el código`);
-        failed++;
-        return null;
-      }
-      
-      // Si el monto está vacío, asignar 0 temporalmente (se puede editar después)
-      const amount = row.Monto !== undefined && row.Monto !== '' ? Number(row.Monto) : 0;
-      
-      // Calcular la fecha de vencimiento si no existe
       const expiryDate = row.Fecha_Vencimiento || calculateExpiryDate(purchaseDate);
       
-      // Determinar el estado basado en las fechas
+      const amount = row.Monto !== undefined && row.Monto !== '' && !isNaN(Number(row.Monto)) 
+        ? Number(row.Monto) 
+        : 0;
+      
       const status = determineStatus(purchaseDate, expiryDate, row.Fecha_Canje);
       
       successful++;
       
       return {
-        code: row.Código,
+        code: row.Código || `GC-${Math.floor(Math.random() * 100000)}`,
         amount: amount,
         customer_name: row.Cliente || '',
         service: row.Servicio || '',
@@ -259,27 +257,20 @@ export function useGiftCardManagement() {
         notes: row.Notas || '',
         created_by: 'importación'
       };
-    }).filter(item => item !== null) as NewGiftCard[];
+    });
     
     setImportProgress(50);
     
-    // Si hay datos válidos, los importamos
     if (processedData.length > 0) {
-      // Aquí podrías importar las tarjetas a la base de datos
-      // Por ahora, solo actualizamos el estado de importación
+      importGiftCardsMutation.mutate(processedData);
+      
       setImportProgress(100);
       setImportResults({
         total,
         successful,
         failed
       });
-      setImportErrors(errors);
       setImportStatus("success");
-      
-      // Puedes implementar aquí la lógica para guardar los datos en la base de datos
-      // Por ejemplo, utilizando una función de tu servicio
-      
-      toast.success(`Se importaron ${successful} tarjetas de regalo exitosamente`);
     } else {
       setImportStatus("error");
       setImportErrors(["No se encontraron datos válidos para importar"]);
@@ -288,11 +279,9 @@ export function useGiftCardManagement() {
   };
 
   return {
-    // Estado y datos
     giftCards,
     isLoading,
     
-    // Estado de diálogos
     isAddDialogOpen,
     setIsAddDialogOpen,
     isEditDialogOpen,
@@ -308,7 +297,6 @@ export function useGiftCardManagement() {
     selectedGiftCard,
     setSelectedGiftCard,
     
-    // Filtros
     searchTerm,
     setSearchTerm,
     statusFilter,
@@ -316,12 +304,10 @@ export function useGiftCardManagement() {
     branchFilter,
     setBranchFilter,
     
-    // Mutaciones
     addGiftCardMutation,
     updateGiftCardMutation,
     deleteGiftCardMutation,
     
-    // Importación
     importProgress,
     setImportProgress,
     importStatus,
@@ -331,7 +317,6 @@ export function useGiftCardManagement() {
     importErrors,
     setImportErrors,
     
-    // Funciones de utilidad
     safeAction,
     closeAllDialogs,
     handleDialogOpenChange,
@@ -341,11 +326,10 @@ export function useGiftCardManagement() {
     validateImportedGiftCard,
     processImportedGiftCards,
     
-    // Otros
     dialogsEnabled,
     
-    // Export functions
     handleExportToExcel,
-    getImportTemplateData
+    getImportTemplateData,
+    importGiftCardsMutation
   };
 }

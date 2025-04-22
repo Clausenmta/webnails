@@ -17,7 +17,7 @@ interface ImportExcelDialogProps {
   templateFilename: string;
   title: string;
   description: string;
-  allowIncompleteData?: boolean; // Nueva propiedad para permitir datos incompletos
+  allowIncompleteData?: boolean; // Property to allow incomplete data
 }
 
 export function ImportExcelDialog({
@@ -28,7 +28,7 @@ export function ImportExcelDialog({
   templateFilename,
   title,
   description,
-  allowIncompleteData = false // Por defecto, no permitir datos incompletos
+  allowIncompleteData = false // Default to false
 }: ImportExcelDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -61,21 +61,30 @@ export function ImportExcelDialog({
   };
   
   const validateRow = (row: any, rowIndex: number): { isValid: boolean; error?: string } => {
-    // Si permitimos datos incompletos, marcamos todos los registros como válidos
+    // If we allow incomplete data, mark all records as valid
     if (allowIncompleteData) {
       return { isValid: true };
     }
     
-    // Si no permitimos datos incompletos, validamos que los campos requeridos existan
+    // If we don't allow incomplete data, validate that required fields exist
+    const errors = [];
+    
     if (!row.Código) {
-      return { isValid: false, error: `Falta el código en la fila ${rowIndex + 2}` };
+      errors.push(`Falta el código en la fila ${rowIndex + 2}`);
     }
     
     if (!row.Monto || isNaN(Number(row.Monto))) {
-      return { isValid: false, error: `Falta el monto en la fila ${rowIndex + 2}` };
+      errors.push(`Falta el monto en la fila ${rowIndex + 2}`);
     }
     
-    return { isValid: true };
+    if (!row.Fecha_Compra) {
+      errors.push(`Falta la fecha de compra en la fila ${rowIndex + 2}`);
+    }
+    
+    return { 
+      isValid: errors.length === 0,
+      error: errors.join(", ")
+    };
   };
   
   const handleImport = async () => {
@@ -111,7 +120,10 @@ export function ImportExcelDialog({
             return;
           }
           
-          // Validar cada fila
+          console.log("Imported data:", jsonData);
+          console.log("Allow incomplete data:", allowIncompleteData);
+          
+          // Validate each row
           const foundErrors: string[] = [];
           const validData: any[] = [];
           
@@ -121,7 +133,7 @@ export function ImportExcelDialog({
               foundErrors.push(validation.error);
             }
             
-            // Si permitimos datos incompletos o la fila es válida, la agregamos a los datos válidos
+            // If we allow incomplete data or the row is valid, add it to valid data
             if (allowIncompleteData || validation.isValid) {
               validData.push(row);
             }

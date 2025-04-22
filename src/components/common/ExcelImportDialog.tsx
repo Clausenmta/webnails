@@ -27,7 +27,7 @@ interface ExcelImportDialogProps {
   templateData: any[];
   templateFilename: string;
   validationFunction: (row: any) => { isValid: boolean; error?: string };
-  allowIncompleteData?: boolean; // Nueva propiedad para permitir datos incompletos
+  allowIncompleteData?: boolean; // Property to allow incomplete data
 }
 
 export default function ExcelImportDialog({
@@ -37,7 +37,7 @@ export default function ExcelImportDialog({
   templateData,
   templateFilename,
   validationFunction,
-  allowIncompleteData = false // Por defecto, no permitir datos incompletos
+  allowIncompleteData = false // Default to false
 }: ExcelImportDialogProps) {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
@@ -62,12 +62,15 @@ export default function ExcelImportDialog({
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Validar cada fila
+        console.log("Imported data:", jsonData);
+        console.log("Allow incomplete data:", allowIncompleteData);
+
+        // Validate each row
         const errors: string[] = [];
         const validData: any[] = [];
 
         jsonData.forEach((row: any, index: number) => {
-          // Si permitimos datos incompletos, consideramos todos los registros
+          // If we allow incomplete data, add all records
           if (allowIncompleteData) {
             validData.push(row);
             return;
@@ -82,7 +85,7 @@ export default function ExcelImportDialog({
           }
         });
 
-        // Si hay errores y no permitimos datos incompletos, mostramos los errores
+        // If there are errors and we don't allow incomplete data, show errors
         if (errors.length > 0 && !allowIncompleteData) {
           setImportResult({
             success: false,
@@ -90,7 +93,7 @@ export default function ExcelImportDialog({
             errors
           });
         } else {
-          // Si permitimos datos incompletos o no hay errores, importamos todos los datos
+          // If we allow incomplete data or there are no errors, import all data
           onImport(validData);
           setImportResult({
             success: true,
@@ -99,6 +102,7 @@ export default function ExcelImportDialog({
           });
         }
       } catch (error) {
+        console.error("Error processing file:", error);
         setImportResult({
           success: false,
           message: 'Error al procesar el archivo',

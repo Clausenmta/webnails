@@ -33,7 +33,7 @@ import { exportReport } from "@/utils/reportExport";
 import { ImportExcelDialog } from "@/components/common/ImportExcelDialog";
 
 export default function StockPage() {
-  const { isAuthorized } = useAuth();
+  const { isAuthorized, user } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   const queryClient = useQueryClient();
   
@@ -213,8 +213,9 @@ export default function StockPage() {
 
   const handleImportStock = async (data: any[]) => {
     try {
-      // Get the current user's information for created_by field
-      const { isAuthorized, user } = useAuth();
+      // Since we have the user already from useAuth() at the component level,
+      // we don't need to call useAuth() again inside this function
+      const currentUserEmail = user?.username || 'unknown';
       
       for (const item of data) {
         const stockItem: NewStockItem = {
@@ -227,7 +228,7 @@ export default function StockPage() {
           unit_price: item.unit_price !== undefined ? item.unit_price : 0,
           purchase_date: item.purchase_date || new Date().toLocaleDateString(),
           location: item.location || stockLocations[0],
-          created_by: user?.email || 'unknown' // Add the created_by field
+          created_by: currentUserEmail // Using username which contains the email
         };
 
         const validationResult = validateStockImport(stockItem);

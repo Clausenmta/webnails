@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -212,8 +213,11 @@ export default function StockPage() {
 
   const handleImportStock = async (data: any[]) => {
     try {
+      // Get the current user's information for created_by field
+      const { isAuthorized, user } = useAuth();
+      
       for (const item of data) {
-        const stockItem = {
+        const stockItem: NewStockItem = {
           product_name: item.product_name,
           category: item.category || stockCategories[0],
           brand: item.brand || '',
@@ -222,7 +226,8 @@ export default function StockPage() {
           min_stock_level: item.min_stock_level || 1,
           unit_price: item.unit_price !== undefined ? item.unit_price : 0,
           purchase_date: item.purchase_date || new Date().toLocaleDateString(),
-          location: item.location || stockLocations[0]
+          location: item.location || stockLocations[0],
+          created_by: user?.email || 'unknown' // Add the created_by field
         };
 
         const validationResult = validateStockImport(stockItem);

@@ -512,7 +512,7 @@ export default function ResultadosPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 space-y-4">
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Facturación por Servicio</CardTitle>
@@ -632,192 +632,119 @@ export default function ResultadosPage() {
             </Table>
           </CardContent>
         </Card>
-      </div>
 
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Pagos Pendientes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Proveedor</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="text-center">Vencimiento</TableHead>
-                <TableHead className="text-right">Medio de Pago</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pendingPayments.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.proveedor}</TableCell>
-                  <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
-                  <TableCell className="text-center">{item.vencimiento}</TableCell>
-                  <TableCell className="text-right">{item.medioPago}</TableCell>
-                </TableRow>
-              ))}
-              {pendingPayments.length === 0 && (
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle>Pagos Pendientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                    No hay pagos pendientes registrados
-                  </TableCell>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead className="text-center">Vencimiento</TableHead>
+                  <TableHead className="text-right">Medio de Pago</TableHead>
                 </TableRow>
-              )}
-              {pendingPayments.length > 0 && (
-                <TableRow className="font-bold bg-muted/30">
-                  <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-right">
-                    $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell colSpan={2}></TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {pendingPayments.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.proveedor}</TableCell>
+                    <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">{item.vencimiento}</TableCell>
+                    <TableCell className="text-right">{item.medioPago}</TableCell>
+                  </TableRow>
+                ))}
+                {pendingPayments.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                      No hay pagos pendientes registrados
+                    </TableCell>
+                  </TableRow>
+                )}
+                {pendingPayments.length > 0 && (
+                  <TableRow className="font-bold bg-muted/30">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell className="text-right">
+                      $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      <div className="space-y-4">
-        <Accordion type="single" collapsible defaultValue="item-1">
-          <AccordionItem value="item-1">
-            <AccordionTrigger className="text-xl font-bold">
-              Inversión Inicial y ROI
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row justify-between gap-6">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1">
-                      Inversión inicial total: ${totalInitialInvestment.toLocaleString()}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Desglose de los gastos para la puesta en marcha del negocio
-                    </p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-end">
-                    <Card className="w-full sm:w-60 shadow-sm border border-slate-200">
-                      <CardHeader className="pb-2 pt-4">
-                        <CardTitle className="text-base font-medium">ROI Estimado</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-[#9b87f5]">{calculateROI().toFixed(2)}%</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Retorno sobre la inversión inicial
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white h-10 px-4 py-2 rounded-md flex items-center gap-2 ml-auto mt-1 md:mt-4">
-                          <PlusCircle className="h-4 w-4" />
-                          Agregar Gasto Inicial
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Agregar Gasto Inicial</DialogTitle>
-                          <DialogDescription>
-                            Ingrese los detalles del gasto inicial para el montaje del negocio.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="expense-date">Fecha</Label>
-                            <Input
-                              id="expense-date"
-                              type="date"
-                              value={newExpense.date}
-                              onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="expense-description">Descripción</Label>
-                            <Input
-                              id="expense-description"
-                              placeholder="Ej: Remodelación del local"
-                              value={newExpense.description}
-                              onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="expense-category">Categoría</Label>
-                            <Select 
-                              value={newExpense.category} 
-                              onValueChange={(value) => setNewExpense({...newExpense, category: value})}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar categoría" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {initialExpenseCategories.map((category) => (
-                                  <SelectItem key={category} value={category}>
-                                    {category}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="expense-amount">Monto ($)</Label>
-                            <Input
-                              id="expense-amount"
-                              type="number"
-                              min="0"
-                              step="100"
-                              value={newExpense.amount.toString()}
-                              onChange={(e) => setNewExpense({...newExpense, amount: Number(e.target.value)})}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>
-                            Cancelar
+        <div className="space-y-4">
+          <Accordion type="single" collapsible defaultValue="item-1">
+            <AccordionItem value="item-1">
+              <AccordionTrigger className="text-xl font-bold">
+                Inversión Inicial y ROI
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold mb-1">
+                        Inversión inicial total: ${totalInitialInvestment.toLocaleString()}
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Desglose de los gastos para la puesta en marcha del negocio
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                      <Card className="w-full sm:w-60 shadow-sm border border-slate-200">
+                        <CardHeader className="pb-2 pt-4">
+                          <CardTitle className="text-base font-medium">ROI Estimado</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-[#9b87f5]">{calculateROI().toFixed(2)}%</div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Retorno sobre la inversión inicial
+                          </p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white h-10 px-4 py-2 rounded-md flex items-center gap-2 ml-auto mt-1 md:mt-4">
+                            <PlusCircle className="h-4 w-4" />
+                            Agregar Gasto Inicial
                           </Button>
-                          <Button 
-                            onClick={handleAddInitialExpense}
-                            disabled={!newExpense.description || newExpense.amount <= 0}
-                            className="bg-[#9b87f5] hover:bg-[#7E69AB]"
-                          >
-                            Guardar
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Dialog open={isEditExpenseOpen} onOpenChange={setIsEditExpenseOpen}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Editar Gasto Inicial</DialogTitle>
-                          <DialogDescription>
-                            Modifique los detalles del gasto inicial.
-                          </DialogDescription>
-                        </DialogHeader>
-                        {currentExpense && (
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Agregar Gasto Inicial</DialogTitle>
+                            <DialogDescription>
+                              Ingrese los detalles del gasto inicial para el montaje del negocio.
+                            </DialogDescription>
+                          </DialogHeader>
                           <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                              <Label htmlFor="edit-expense-date">Fecha</Label>
+                              <Label htmlFor="expense-date">Fecha</Label>
                               <Input
-                                id="edit-expense-date"
+                                id="expense-date"
                                 type="date"
-                                value={currentExpense.date}
-                                onChange={(e) => setCurrentExpense({...currentExpense, date: e.target.value})}
+                                value={newExpense.date}
+                                onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="edit-expense-description">Descripción</Label>
+                              <Label htmlFor="expense-description">Descripción</Label>
                               <Input
-                                id="edit-expense-description"
+                                id="expense-description"
                                 placeholder="Ej: Remodelación del local"
-                                value={currentExpense.description}
-                                onChange={(e) => setCurrentExpense({...currentExpense, description: e.target.value})}
+                                value={newExpense.description}
+                                onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="edit-expense-category">Categoría</Label>
+                              <Label htmlFor="expense-category">Categoría</Label>
                               <Select 
-                                value={currentExpense.category} 
-                                onValueChange={(value) => setCurrentExpense({...currentExpense, category: value})}
+                                value={newExpense.category} 
+                                onValueChange={(value) => setNewExpense({...newExpense, category: value})}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Seleccionar categoría" />
@@ -832,35 +759,139 @@ export default function ResultadosPage() {
                               </Select>
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="edit-expense-amount">Monto ($)</Label>
+                              <Label htmlFor="expense-amount">Monto ($)</Label>
                               <Input
-                                id="edit-expense-amount"
+                                id="expense-amount"
                                 type="number"
                                 min="0"
                                 step="100"
-                                value={currentExpense.amount.toString()}
-                                onChange={(e) => setCurrentExpense({...currentExpense, amount: Number(e.target.value)})}
+                                value={newExpense.amount.toString()}
+                                onChange={(e) => setNewExpense({...newExpense, amount: Number(e.target.value)})}
                               />
                             </div>
                           </div>
-                        )}
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsEditExpenseOpen(false)}>
-                            Cancelar
-                          </Button>
-                          <Button 
-                            onClick={handleEditInitialExpense}
-                            disabled={!currentExpense?.description || (currentExpense?.amount || 0) <= 0}
-                            className="bg-[#9b87f5] hover:bg-[#7E69AB]"
-                          >
-                            Actualizar
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddExpenseOpen(false)}>
+                              Cancelar
+                            </Button>
+                            <Button 
+                              onClick={handleAddInitialExpense}
+                              disabled={!newExpense.description || newExpense.amount <= 0}
+                              className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+                            >
+                              Guardar
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Dialog open={isEditExpenseOpen} onOpenChange={setIsEditExpenseOpen}>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Editar Gasto Inicial</DialogTitle>
+                            <DialogDescription>
+                              Modifique los detalles del gasto inicial.
+                            </DialogDescription>
+                          </DialogHeader>
+                          {currentExpense && (
+                            <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-expense-date">Fecha</Label>
+                                <Input
+                                  id="edit-expense-date"
+                                  type="date"
+                                  value={currentExpense.date}
+                                  onChange={(e) => setCurrentExpense({...currentExpense, date: e.target.value})}
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-expense-description">Descripción</Label>
+                                <Input
+                                  id="edit-expense-description"
+                                  placeholder="Ej: Remodelación del local"
+                                  value={currentExpense.description}
+                                  onChange={(e) => setCurrentExpense({...currentExpense, description: e.target.value})}
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-expense-category">Categoría</Label>
+                                <Select 
+                                  value={currentExpense.category} 
+                                  onValueChange={(value) => setCurrentExpense({...currentExpense, category: value})}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar categoría" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {initialExpenseCategories.map((category) => (
+                                      <SelectItem key={category} value={category}>
+                                        {category}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-expense-amount">Monto ($)</Label>
+                                <Input
+                                  id="edit-expense-amount"
+                                  type="number"
+                                  min="0"
+                                  step="100"
+                                  value={currentExpense.amount.toString()}
+                                  onChange={(e) => setCurrentExpense({...currentExpense, amount: Number(e.target.value)})}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditExpenseOpen(false)}>
+                              Cancelar
+                            </Button>
+                            <Button 
+                              onClick={handleEditInitialExpense}
+                              disabled={!currentExpense?.description || (currentExpense?.amount || 0) <= 0}
+                              className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+                            >
+                              Actualizar
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Card className="w-full sm:w-60 shadow-sm border border-slate-200">
+                        <CardHeader className="pb-2">
+                          <CardTitle>Desglose de Gastos Iniciales</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead className="text-right">Monto</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {initialExpensesByCategory.map((item) => (
+                                <TableRow key={item.category}>
+                                  <TableCell>{item.category}</TableCell>
+                                  <TableCell className="text-right">
+                                    $ {item.amount.toLocaleString()}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 gap-6">
-                  <Card className="shadow-sm border border-slate-200">
-                    <CardHeader className="pb-2">
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
+    </div>
+  );
+}

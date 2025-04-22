@@ -88,20 +88,24 @@ export default function ArreglosTable({
                   size="sm"
                   onClick={() => onViewClick(arreglo)}
                   title="Ver detalles"
+                  className="text-muted-foreground hover:text-primary"
                 >
-                  <Eye className="h-4 w-4 mr-1" />
+                  <Eye className="h-4 w-4" />
                   <span className="sr-only">Ver detalles</span>
                 </Button>
+
                 {/* Editar */}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => (onEditClick ? onEditClick(arreglo) : onViewClick(arreglo))}
                   title="Editar"
+                  className="text-muted-foreground hover:text-primary"
                 >
-                  <Pencil className="h-4 w-4 mr-1" />
+                  <Pencil className="h-4 w-4" />
                   <span className="sr-only">Editar</span>
                 </Button>
+
                 {/* Eliminar */}
                 {onDeleteClick && (
                   <Button
@@ -111,7 +115,7 @@ export default function ArreglosTable({
                     title="Eliminar"
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
+                    <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Eliminar</span>
                   </Button>
                 )}

@@ -134,7 +134,7 @@ export default function DashboardPage() {
       });
     }
     
-    // Alerta de pago pendiente (simulada para superadmin)
+    // Alerta de pago pendiente (solo para superadmin)
     if (isSuperAdmin) {
       alerts.push({
         icon: DollarSign,
@@ -155,6 +155,7 @@ export default function DashboardPage() {
       });
     }
     
+    // Filtrar alertas según el rol del usuario
     return alerts.filter(alert => {
       if (!alert.requiredRole) return true;
       if (isSuperAdmin) return true;

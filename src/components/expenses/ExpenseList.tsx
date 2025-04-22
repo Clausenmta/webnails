@@ -12,7 +12,7 @@ interface ExpenseListProps {
 }
 
 export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: ExpenseListProps) {
-  const { isAuthorized } = useAuth();
+  const { isAuthorized, user } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
 
   return (
@@ -60,7 +60,7 @@ export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: Expens
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
                       </Button>
-                      {isSuperAdmin && (
+                      {(isSuperAdmin || (!isSuperAdmin && user?.username === expense.created_by)) && (
                         <Button 
                           variant="ghost" 
                           size="sm"

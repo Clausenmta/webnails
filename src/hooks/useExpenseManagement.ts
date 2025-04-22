@@ -57,12 +57,10 @@ export function useExpenseManagement() {
     }
   });
 
+  // Filtrar gastos según el rol del usuario
   const filteredExpenses = isSuperAdmin 
     ? expenses 
-    : expenses.filter(expense => 
-        expense.created_by === user?.username || 
-        (expense.category !== "Fijos" && expense.category !== "Proveedores")
-      );
+    : expenses.filter(expense => expense.created_by === user?.username);
 
   const handleViewExpense = (expense: Expense) => {
     setCurrentExpense(expense);
@@ -70,8 +68,13 @@ export function useExpenseManagement() {
   };
 
   const handleDeleteExpense = (expense: Expense) => {
-    setExpenseToDelete(expense);
-    setIsDeleteDialogOpen(true);
+    // Verificar si el usuario puede eliminar este gasto
+    if (isSuperAdmin || expense.created_by === user?.username) {
+      setExpenseToDelete(expense);
+      setIsDeleteDialogOpen(true);
+    } else {
+      toast.error("No tienes permisos para eliminar este gasto");
+    }
   };
 
   const confirmDeleteExpense = () => {

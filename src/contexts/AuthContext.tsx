@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType } from '@/types/auth';
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 const userRoleMap: Record<string, UserRole> = {
   'clausnemi@gmail.com': 'superadmin',
   'nailsandcopaula@gmail.com': 'superadmin',
+  'nailsandcofisherton@gmail.com': 'employee',
 };
 
 const AuthContext = createContext<AuthContextType>({

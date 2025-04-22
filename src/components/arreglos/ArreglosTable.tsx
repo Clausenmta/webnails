@@ -109,7 +109,7 @@ export default function ArreglosTable({
                     size="sm"
                     onClick={() => onDeleteClick(arreglo)}
                     title="Eliminar"
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     <span className="sr-only">Eliminar</span>

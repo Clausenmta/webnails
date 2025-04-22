@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -8,29 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Package, Pencil, Trash2, PlusCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { Package, FileSpreadsheet, PlusCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import UserRoleInfo from "@/components/auth/UserRoleInfo";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { stockService } from "@/services/stock";
 import type { StockItem, NewStockItem, PhysicalStockLocation } from "@/types/stock";
 import { stockCategories, stockLocations } from "@/types/stock";
-import { FileSpreadsheet } from "lucide-react";
 import { exportReport } from "@/utils/reportExport";
-import { ImportExcelDialog } from "@/components/common/ImportExcelDialog";
-import { Search, Filter } from "lucide-react";
 import StockFilters from "./stock/StockFilters";
 import ProductTable from "./stock/ProductTable";
 import StockLocations from "./stock/StockLocations";
@@ -49,7 +35,7 @@ export default function StockPage() {
   const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const [newProduct, setNewProduct] = useState<Omit<NewStockItem, 'created_by'>>({
+  const [newProduct, setNewProduct] = useState<Partial<NewStockItem>>({
     product_name: "",
     category: stockCategories[0],
     brand: "",
@@ -290,11 +276,25 @@ export default function StockPage() {
   };
 
   const handleAddProduct = () => {
-    const stockItem: Omit<NewStockItem, 'created_by'> = {
-      ...newProduct,
+    if (!newProduct.product_name) {
+      toast.error("El nombre del producto es requerido");
+      return;
+    }
+
+    const stockItem: NewStockItem = {
+      product_name: newProduct.product_name,
+      category: newProduct.category || stockCategories[0],
+      brand: newProduct.brand || '',
+      supplier: newProduct.supplier || '',
+      quantity: newProduct.quantity || 0,
+      min_stock_level: newProduct.min_stock_level || 1,
+      unit_price: newProduct.unit_price || 0,
+      purchase_date: newProduct.purchase_date || new Date().toLocaleDateString(),
+      location: newProduct.location || stockLocations[0],
+      created_by: user?.username || 'unknown'
     };
     
-    addProductMutation.mutate(stockItem as NewStockItem);
+    addProductMutation.mutate(stockItem);
   };
 
   const handleUpdateStock = () => {

@@ -17,11 +17,10 @@ export interface GiftCard {
   created_by: string;
   notes?: string;
   branch?: string; // Propiedad UI, no se guarda en BD
-  is_redeemed?: boolean; // Nueva propiedad para indicar si ha sido canjeada
 }
 
 // Necesitamos que NewGiftCard tenga la propiedad branch para el UI
-export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at' | 'is_redeemed'> & {
+export type NewGiftCard = Omit<GiftCard, 'id' | 'created_at'> & {
   branch?: string; // Ensure branch is explicitly defined here
   service?: string; // Explicitly define service to replace customer_email
 };
@@ -54,8 +53,7 @@ const MOCK_GIFT_CARDS: GiftCard[] = [
     purchase_date: "01/04/2025",
     expiry_date: "01/05/2025",
     created_by: "admin",
-    branch: "Fisherton",
-    is_redeemed: false
+    branch: "Fisherton"
   }
 ];
 
@@ -108,7 +106,6 @@ export const giftCardService = {
       return (data || []).map(giftCard => ({
         ...giftCard,
         status: giftCard.status as "active" | "redeemed" | "expired",
-        is_redeemed: giftCard.status === "redeemed" || giftCard.redeemed_date != null,
         service: giftCard.customer_email, // Map customer_email to service for UI
         branch: undefined // Initialize branch as undefined for all fetched records
       }));
@@ -164,7 +161,6 @@ export const giftCardService = {
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
-        is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
         service: data.customer_email, // Map customer_email to service for UI
         branch // Reintegrate branch for UI purposes
       };
@@ -197,10 +193,14 @@ export const giftCardService = {
       const { branch: _, service, ...otherUpdates } = updates;
       
       // Prepare database updates with mapping service to customer_email
-      const dbUpdates = {
-        ...otherUpdates,
-        ...(service !== undefined ? { customer_email: service } : {})
+      const dbUpdates: Record<string, any> = {
+        ...otherUpdates
       };
+      
+      // Only add customer_email field if service was provided
+      if (service !== undefined) {
+        dbUpdates.customer_email = service;
+      }
       
       // Combinar la gift card actual con las actualizaciones
       const updatedGiftCard = {
@@ -217,6 +217,8 @@ export const giftCardService = {
         );
       }
       
+      console.log("Updating gift card with:", updatedGiftCard);
+      
       const { data, error } = await supabase
         .from('gift_cards')
         .update(updatedGiftCard)
@@ -230,7 +232,6 @@ export const giftCardService = {
       return {
         ...data,
         status: data.status as "active" | "redeemed" | "expired",
-        is_redeemed: data.status === "redeemed" || data.redeemed_date != null,
         service: data.customer_email, // Map customer_email to service for UI
         branch // Reintegrate branch for UI purposes
       };

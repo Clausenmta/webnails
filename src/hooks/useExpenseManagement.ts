@@ -1,12 +1,14 @@
-import { useState, useMemo } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Expense, NewExpense, PaymentMethod } from "@/types/expenses";
 import { expenseService } from "@/services/expenseService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import { exportReport } from "@/utils/reportExport";
 import { ExpensesFiltersState } from "@/components/expenses/ExpensesFilters";
+import { categoryService, ExpenseCategory } from "@/services/categoryService";
 
 export function useExpenseManagement() {
   const { user, isAuthorized } = useAuth();
@@ -19,6 +21,27 @@ export function useExpenseManagement() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
+  // Fetch expense categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: categoryService.fetchCategories,
+    meta: {
+      onError: (error: any) => {
+        console.error("Error fetching categories:", error);
+        toast.error(`Error fetching categories: ${(error as Error).message}`);
+      }
+    }
+  });
+  
+  // Filter categories based on user role
+  const availableCategories = useMemo(() => {
+    if (isSuperAdmin) {
+      return categories;
+    } else {
+      return categories.filter(cat => cat.access_level === 'all');
+    }
+  }, [categories, isSuperAdmin]);
+
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: expenseService.fetchExpenses,
@@ -164,6 +187,7 @@ export function useExpenseManagement() {
     uniqueUsers,
     isLoading,
     isSuperAdmin,
+    availableCategories,
     
     isAddExpenseOpen,
     setIsAddExpenseOpen,

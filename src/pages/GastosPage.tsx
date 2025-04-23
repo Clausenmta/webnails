@@ -14,6 +14,7 @@ export default function GastosPage() {
     uniqueProviders,
     uniqueUsers,
     isSuperAdmin,
+    availableCategories,
     isAddExpenseOpen,
     setIsAddExpenseOpen,
     isViewExpenseOpen,
@@ -46,6 +47,7 @@ export default function GastosPage() {
         setFilters={setFilters}
         uniqueProviders={uniqueProviders}
         uniqueUsers={uniqueUsers}
+        availableCategories={availableCategories}
         onViewExpense={handleViewExpense}
         onDeleteExpense={handleDeleteExpense}
       />
@@ -54,6 +56,7 @@ export default function GastosPage() {
         isAddExpenseOpen={isAddExpenseOpen}
         setIsAddExpenseOpen={setIsAddExpenseOpen}
         addExpenseMutation={addExpenseMutation}
+        availableCategories={availableCategories}
         isViewExpenseOpen={isViewExpenseOpen}
         setIsViewExpenseOpen={setIsViewExpenseOpen}
         currentExpense={currentExpense}

@@ -5,6 +5,7 @@ import { ExpenseList } from "./ExpenseList";
 import { ExpenseCategories } from "./ExpenseCategories";
 import { UpcomingExpenses } from "./UpcomingExpenses";
 import { ExpensesFilters, ExpensesFiltersState } from "./ExpensesFilters";
+import { ExpenseCategory } from "@/services/categoryService";
 
 interface ExpenseTabsProps {
   isSuperAdmin: boolean;
@@ -15,6 +16,7 @@ interface ExpenseTabsProps {
   setFilters: (f: ExpensesFiltersState) => void;
   uniqueProviders: string[];
   uniqueUsers: string[];
+  availableCategories: ExpenseCategory[];
   onViewExpense: (expense: Expense) => void;
   onDeleteExpense: (expense: Expense) => void;
 }
@@ -28,6 +30,7 @@ export function ExpenseTabs({
   setFilters,
   uniqueProviders,
   uniqueUsers,
+  availableCategories,
   onViewExpense,
   onDeleteExpense,
 }: ExpenseTabsProps) {
@@ -45,6 +48,7 @@ export function ExpenseTabs({
           setFilters={setFilters}
           uniqueProviders={uniqueProviders}
           uniqueUsers={uniqueUsers}
+          availableCategories={availableCategories}
         />
 
         <TabsContent value="list">
@@ -77,6 +81,7 @@ export function ExpenseTabs({
         setFilters={setFilters}
         uniqueProviders={uniqueProviders}
         uniqueUsers={uniqueUsers}
+        availableCategories={availableCategories}
       />
       <ExpenseList
         expenses={filteredExpenses}
@@ -86,4 +91,3 @@ export function ExpenseTabs({
     </>
   );
 }
-

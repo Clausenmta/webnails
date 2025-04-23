@@ -13,6 +13,7 @@ import {
 import { Expense, NewExpense } from "@/types/expenses";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseDetail } from "./ExpenseDetail";
+import { ExpenseCategory } from "@/services/categoryService";
 
 interface ExpenseDialogsProps {
   // Add expense dialog props
@@ -22,6 +23,7 @@ interface ExpenseDialogsProps {
     mutate: (expense: NewExpense) => void;
     isPending: boolean;
   };
+  availableCategories: ExpenseCategory[];
   
   // View expense dialog props
   isViewExpenseOpen: boolean;
@@ -39,6 +41,7 @@ export function ExpenseDialogs({
   isAddExpenseOpen,
   setIsAddExpenseOpen,
   addExpenseMutation,
+  availableCategories,
   isViewExpenseOpen,
   setIsViewExpenseOpen,
   currentExpense,
@@ -62,7 +65,8 @@ export function ExpenseDialogs({
           <ExpenseForm 
             onSubmit={addExpenseMutation.mutate} 
             isSubmitting={addExpenseMutation.isPending} 
-            onCancel={() => setIsAddExpenseOpen(false)} 
+            onCancel={() => setIsAddExpenseOpen(false)}
+            availableCategories={availableCategories}
           />
         </DialogContent>
       </Dialog>

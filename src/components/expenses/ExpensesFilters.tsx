@@ -2,17 +2,19 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { expenseCategories, paymentMethods } from "@/types/expenses";
+import { paymentMethods } from "@/types/expenses";
 import { CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
+import { ExpenseCategory } from "@/services/categoryService";
 
 interface ExpensesFiltersProps {
   filters: ExpensesFiltersState;
   setFilters: (filters: ExpensesFiltersState) => void;
   uniqueProviders: string[];
   uniqueUsers: string[];
+  availableCategories: ExpenseCategory[];
 }
 
 export interface ExpensesFiltersState {
@@ -24,7 +26,13 @@ export interface ExpensesFiltersState {
   created_by: string;
 }
 
-export function ExpensesFilters({ filters, setFilters, uniqueProviders, uniqueUsers }: ExpensesFiltersProps) {
+export function ExpensesFilters({ 
+  filters, 
+  setFilters, 
+  uniqueProviders, 
+  uniqueUsers,
+  availableCategories
+}: ExpensesFiltersProps) {
   // Select month/year
   const selectMonth = (date: Date) => {
     setFilters({ ...filters, date });
@@ -73,7 +81,7 @@ export function ExpensesFilters({ filters, setFilters, uniqueProviders, uniqueUs
         onChange={e => handleChange("category", e.target.value)}
       >
         <option value="">Todas las categorías</option>
-        {expenseCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+        {availableCategories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
       </select>
       {/* Proveedor */}
       <select

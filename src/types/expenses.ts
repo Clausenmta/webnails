@@ -1,4 +1,3 @@
-
 export type PaymentMethod = "Efectivo" | "Transferencia" | "Cuenta Corriente";
 
 export interface Expense {
@@ -18,14 +17,21 @@ export interface Expense {
 
 export type NewExpense = Omit<Expense, 'id' | 'created_at'>;
 
+// These are now managed in the database
+// We keep this constant for backward compatibility 
 export const expenseCategories = [
   "Fijos", 
-  "Proveedores", 
-  "Insumos", 
   "Servicios", 
+  "Impuestos y Tasas",
+  "Mantenimiento",
+  "Sueldos",
+  "Honorarios",
+  "Cargas Sociales",
+  "Proveedores", 
+  "Insumos generales", 
   "Marketing", 
-  "Personal", 
-  "Otros"
+  "Ingresos",
+  "Varios"
 ];
 
 export const paymentMethods: PaymentMethod[] = [

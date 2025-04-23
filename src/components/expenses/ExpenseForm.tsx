@@ -8,14 +8,16 @@ import { Loader2 } from "lucide-react";
 import { BasicExpenseInfo } from "./form/BasicExpenseInfo";
 import { DetailedExpenseInfo } from "./form/DetailedExpenseInfo";
 import { AttachmentsSection } from "./form/AttachmentsSection";
+import { ExpenseCategory } from "@/services/categoryService";
 
 interface ExpenseFormProps {
   onSubmit: (expense: NewExpense) => void;
   isSubmitting: boolean;
   onCancel: () => void;
+  availableCategories: ExpenseCategory[];
 }
 
-export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategories }: ExpenseFormProps) {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
   
@@ -23,7 +25,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
     date: format(new Date(), 'dd/MM/yyyy'),
     concept: "",
     amount: 0,
-    category: "Insumos",
+    category: availableCategories.length > 0 ? availableCategories[0].name : "",
     created_by: user?.username || "",
     details: "",
     due_date: "",
@@ -37,6 +39,14 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
     }
   }, [user]);
 
+  // Update category if the current one isn't available (e.g. when role changes)
+  useEffect(() => {
+    if (availableCategories.length > 0 && 
+        !availableCategories.some(cat => cat.name === newExpense.category)) {
+      setNewExpense(prev => ({ ...prev, category: availableCategories[0].name }));
+    }
+  }, [availableCategories, newExpense.category]);
+
   const handleUpdate = (updates: Partial<NewExpense>) => {
     setNewExpense(prev => ({ ...prev, ...updates }));
   };
@@ -46,6 +56,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel }: ExpenseFormPro
       <BasicExpenseInfo 
         expense={newExpense}
         onUpdate={handleUpdate}
+        availableCategories={availableCategories}
       />
       
       <DetailedExpenseInfo

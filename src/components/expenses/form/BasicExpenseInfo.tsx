@@ -2,15 +2,16 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { expenseCategories } from "@/types/expenses";
 import { NewExpense } from "@/types/expenses";
+import { ExpenseCategory } from "@/services/categoryService";
 
 interface BasicExpenseInfoProps {
   expense: NewExpense;
   onUpdate: (updates: Partial<NewExpense>) => void;
+  availableCategories: ExpenseCategory[];
 }
 
-export function BasicExpenseInfo({ expense, onUpdate }: BasicExpenseInfoProps) {
+export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: BasicExpenseInfoProps) {
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -32,9 +33,9 @@ export function BasicExpenseInfo({ expense, onUpdate }: BasicExpenseInfoProps) {
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
             <SelectContent>
-              {expenseCategories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              {availableCategories.map(category => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>

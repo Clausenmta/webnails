@@ -11,14 +11,11 @@ export interface ExpenseCategory {
 export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
-      // Using a simple query with type casting
-      const result = await supabase
+      // Using a simple query with more aggressive type casting
+      const { data, error } = await (supabase
         .from('expense_categories')
         .select('*')
-        .order('name');
-      
-      const data = result.data as unknown as ExpenseCategory[] | null;
-      const error = result.error;
+        .order('name') as any);
       
       if (error) {
         console.error("Error fetching categories:", error);
@@ -26,7 +23,7 @@ export const categoryService = {
         return [];
       }
       
-      return data || [];
+      return (data || []) as ExpenseCategory[];
     } catch (error) {
       console.error("Error in fetchCategories:", error);
       toast.error(`Error fetching categories: ${error instanceof Error ? error.message : 'Unknown error'}`);

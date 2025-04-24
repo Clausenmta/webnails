@@ -12,8 +12,12 @@ export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
       // Using a simple query with more aggressive type casting
-      const result = await supabase.from('expense_categories').select('*').order('name');
-      const { data, error } = result as unknown as { data: ExpenseCategory[] | null; error: any };
+      const result = await (supabase as any)
+        .from('expense_categories')
+        .select('*')
+        .order('name');
+      
+      const { data, error } = result;
       
       if (error) {
         console.error("Error fetching categories:", error);

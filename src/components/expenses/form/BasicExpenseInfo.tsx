@@ -1,9 +1,11 @@
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NewExpense } from "@/types/expenses";
 import { ExpenseCategory } from "@/services/categoryService";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface BasicExpenseInfoProps {
   expense: NewExpense;
@@ -12,10 +14,26 @@ interface BasicExpenseInfoProps {
 }
 
 export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: BasicExpenseInfoProps) {
+  const { isAuthorized } = useAuth();
+  const isSuperAdmin = isAuthorized('superadmin');
+
+  // Filter categories based on user role
+  const filteredCategories = availableCategories.filter(
+    category => category.access_level === 'all' || (isSuperAdmin && category.access_level === 'superadmin')
+  );
+
   // Add logging to help diagnose the issue
   useEffect(() => {
     console.log("Available categories in BasicExpenseInfo:", availableCategories);
-  }, [availableCategories]);
+    console.log("Filtered categories:", filteredCategories);
+  }, [availableCategories, filteredCategories]);
+
+  // Ensure a valid category is selected
+  useEffect(() => {
+    if (filteredCategories.length > 0 && (!expense.category || !filteredCategories.some(cat => cat.name === expense.category))) {
+      onUpdate({ category: filteredCategories[0].name });
+    }
+  }, [filteredCategories, expense.category, onUpdate]);
 
   return (
     <>
@@ -38,8 +56,8 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
             <SelectContent>
-              {availableCategories.length > 0 ? (
-                availableCategories.map(category => (
+              {filteredCategories.length > 0 ? (
+                filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.name}>
                     {category.name}
                   </SelectItem>

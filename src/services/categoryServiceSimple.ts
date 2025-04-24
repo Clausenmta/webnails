@@ -15,7 +15,10 @@ export const categoryService = {
       const { data, error } = await supabase
         .from('expense_categories')
         .select('*')
-        .order('name') as any;
+        .order('name') as unknown as {
+          data: ExpenseCategory[] | null;
+          error: any;
+        };
       
       if (error) {
         console.error("Error fetching categories:", error);

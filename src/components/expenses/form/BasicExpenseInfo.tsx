@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NewExpense } from "@/types/expenses";
 import { ExpenseCategory } from "@/services/categoryService";
+import { useEffect } from "react";
 
 interface BasicExpenseInfoProps {
   expense: NewExpense;
@@ -12,6 +13,11 @@ interface BasicExpenseInfoProps {
 }
 
 export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: BasicExpenseInfoProps) {
+  // Add logging to help diagnose the issue
+  useEffect(() => {
+    console.log("Available categories:", availableCategories);
+  }, [availableCategories]);
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -33,11 +39,15 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
             <SelectContent>
-              {availableCategories.map(category => (
-                <SelectItem key={category.id} value={category.name}>
-                  {category.name}
-                </SelectItem>
-              ))}
+              {availableCategories.length > 0 ? (
+                availableCategories.map(category => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-categories" disabled>No hay categorías disponibles</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>

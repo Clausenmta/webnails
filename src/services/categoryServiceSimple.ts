@@ -11,7 +11,7 @@ export interface ExpenseCategory {
 export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
-      // Using a simple query with more aggressive type casting
+      // Using type assertion to bypass TypeScript errors
       const result = await (supabase as any)
         .from('expense_categories')
         .select('*')

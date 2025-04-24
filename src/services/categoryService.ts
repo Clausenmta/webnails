@@ -11,9 +11,8 @@ export interface ExpenseCategory {
 export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
-      // Using a more aggressive type assertion by casting the entire supabase client
-      const result = (await (supabase as any)
-        .rpc('get_expense_categories'));
+      // Using type assertion to bypass TypeScript errors
+      const result = await (supabase as any).from('expense_categories').select('*').order('name');
       
       const { data, error } = result;
       
@@ -23,22 +22,10 @@ export const categoryService = {
         return [];
       }
       
-      // If no data is returned, provide a fallback to avoid null reference errors
-      if (!data) {
-        console.warn("No categories found, using direct query fallback");
-        // Use a direct query as fallback with more aggressive type assertion
-        const fallbackResult = await (supabase as any)
-          .from('expense_categories')
-          .select('*');
-          
-        const { data: directData, error: directError } = fallbackResult;
-          
-        if (directError) {
-          console.error("Error in fallback query:", directError);
-          return [];
-        }
-        
-        return (directData || []) as ExpenseCategory[];
+      // If no data is returned, provide an empty array
+      if (!data || data.length === 0) {
+        console.warn("No categories found");
+        return [];
       }
       
       return data as ExpenseCategory[];

@@ -12,11 +12,8 @@ export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
       // Using a more aggressive type assertion to bypass TypeScript checks
-      const { data, error } = await supabase
-        .rpc('get_expense_categories') as unknown as { 
-          data: ExpenseCategory[] | null;
-          error: any; 
-        };
+      const { data, error } = await (supabase
+        .rpc('get_expense_categories') as any);
       
       if (error) {
         console.error("Error fetching categories:", error);
@@ -28,12 +25,9 @@ export const categoryService = {
       if (!data) {
         console.warn("No categories found, using direct query fallback");
         // Use a direct query as fallback with more aggressive type assertion
-        const { data: directData, error: directError } = await supabase
+        const { data: directData, error: directError } = await (supabase
           .from('expense_categories')
-          .select('*') as unknown as {
-            data: ExpenseCategory[] | null;
-            error: any;
-          };
+          .select('*') as any);
           
         if (directError) {
           console.error("Error in fallback query:", directError);

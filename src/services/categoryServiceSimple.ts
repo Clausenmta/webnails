@@ -11,13 +11,11 @@ export interface ExpenseCategory {
 export const categoryService = {
   async fetchCategories(): Promise<ExpenseCategory[]> {
     try {
-      // Using type assertion to bypass TypeScript errors
-      const result = await (supabase as any)
+      console.log("Fetching expense categories...");
+      const { data, error } = await supabase
         .from('expense_categories')
         .select('*')
         .order('name');
-      
-      const { data, error } = result;
       
       if (error) {
         console.error("Error fetching categories:", error);
@@ -25,6 +23,7 @@ export const categoryService = {
         return [];
       }
       
+      console.log("Categories fetched:", data);
       return (data || []) as ExpenseCategory[];
     } catch (error) {
       console.error("Error in fetchCategories:", error);

@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +14,7 @@ interface BasicExpenseInfoProps {
 export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: BasicExpenseInfoProps) {
   // Add logging to help diagnose the issue
   useEffect(() => {
-    console.log("Available categories:", availableCategories);
+    console.log("Available categories in BasicExpenseInfo:", availableCategories);
   }, [availableCategories]);
 
   return (

@@ -111,6 +111,24 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          access_level: string
+          id: number
+          name: string
+        }
+        Insert: {
+          access_level?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          access_level?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number

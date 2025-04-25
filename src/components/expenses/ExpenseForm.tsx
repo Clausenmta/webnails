@@ -9,6 +9,7 @@ import { BasicExpenseInfo } from "./form/BasicExpenseInfo";
 import { DetailedExpenseInfo } from "./form/DetailedExpenseInfo";
 import { AttachmentsSection } from "./form/AttachmentsSection";
 import { ExpenseCategory } from "@/services/categoryService";
+import { toast } from "sonner";
 
 interface ExpenseFormProps {
   onSubmit: (expense: NewExpense) => void;
@@ -21,11 +22,19 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
   
+  // Log when the component renders
+  useEffect(() => {
+    console.log("ExpenseForm rendered with categories:", availableCategories);
+    if (availableCategories.length === 0) {
+      console.warn("No expense categories available. Check if they were loaded correctly.");
+    }
+  }, [availableCategories]);
+  
   const [newExpense, setNewExpense] = useState<NewExpense>({
     date: format(new Date(), 'dd/MM/yyyy'),
     concept: "",
     amount: 0,
-    category: availableCategories.length > 0 ? availableCategories[0].name : "",
+    category: "",
     created_by: user?.username || "",
     details: "",
     due_date: "",
@@ -43,12 +52,32 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
   useEffect(() => {
     if (availableCategories.length > 0 && 
         !availableCategories.some(cat => cat.name === newExpense.category)) {
+      console.log("Setting initial category based on available categories");
       setNewExpense(prev => ({ ...prev, category: availableCategories[0].name }));
     }
   }, [availableCategories, newExpense.category]);
 
   const handleUpdate = (updates: Partial<NewExpense>) => {
     setNewExpense(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleSubmit = () => {
+    if (!newExpense.concept) {
+      toast.error("Por favor ingrese un concepto para el gasto");
+      return;
+    }
+    
+    if (!newExpense.amount || newExpense.amount <= 0) {
+      toast.error("Por favor ingrese un monto válido");
+      return;
+    }
+    
+    if (!newExpense.category) {
+      toast.error("Por favor seleccione una categoría");
+      return;
+    }
+    
+    onSubmit(newExpense);
   };
 
   return (
@@ -74,7 +103,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
           Cancelar
         </Button>
         <Button 
-          onClick={() => onSubmit(newExpense)}
+          onClick={handleSubmit} 
           disabled={!newExpense.concept || !newExpense.amount || isSubmitting}
           className="bg-salon-400 hover:bg-salon-500"
         >

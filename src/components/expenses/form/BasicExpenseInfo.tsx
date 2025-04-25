@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NewExpense } from "@/types/expenses";
 import { ExpenseCategory } from "@/services/categoryService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface BasicExpenseInfoProps {
@@ -16,22 +16,31 @@ interface BasicExpenseInfoProps {
 export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: BasicExpenseInfoProps) {
   const { isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
+  const [hasLogged, setHasLogged] = useState(false);
 
   // Filter categories based on user role
   const filteredCategories = availableCategories.filter(
     category => category.access_level === 'all' || (isSuperAdmin && category.access_level === 'superadmin')
   );
 
-  // Add logging to help diagnose the issue
+  // Add detailed logging to help diagnose the issue
   useEffect(() => {
-    console.log("Available categories in BasicExpenseInfo:", availableCategories);
-    console.log("Filtered categories:", filteredCategories);
-    console.log("User is superadmin:", isSuperAdmin);
-  }, [availableCategories, filteredCategories, isSuperAdmin]);
+    // Only log once to avoid console spam
+    if (!hasLogged) {
+      console.log("=== EXPENSE CATEGORIES DEBUG ===");
+      console.log("Raw available categories:", availableCategories);
+      console.log("Filtered categories for current user:", filteredCategories);
+      console.log("User is superadmin:", isSuperAdmin);
+      console.log("Current expense category:", expense.category);
+      console.log("================================");
+      setHasLogged(true);
+    }
+  }, [availableCategories, filteredCategories, isSuperAdmin, expense.category, hasLogged]);
 
   // Ensure a valid category is selected
   useEffect(() => {
     if (filteredCategories.length > 0 && (!expense.category || !filteredCategories.some(cat => cat.name === expense.category))) {
+      console.log("Setting default category to:", filteredCategories[0].name);
       onUpdate({ category: filteredCategories[0].name });
     }
   }, [filteredCategories, expense.category, onUpdate]);
@@ -56,7 +65,7 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent className="bg-white z-50">
               {filteredCategories.length > 0 ? (
                 filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.name}>

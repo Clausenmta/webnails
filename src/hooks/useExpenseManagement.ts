@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Expense, NewExpense, PaymentMethod } from "@/types/expenses";
@@ -21,25 +20,36 @@ export function useExpenseManagement() {
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // Fetch expense categories
-  const { data: categories = [] } = useQuery({
+  // Fetch expense categories with better error handling
+  const { data: categories = [], isLoading: isCategoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['expense-categories'],
     queryFn: categoryService.fetchCategories,
+    retry: 3, // Retry 3 times before giving up
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     meta: {
       onError: (error: any) => {
-        console.error("Error fetching categories:", error);
-        toast.error(`Error fetching categories: ${(error as Error).message}`);
+        console.error("Error fetching expense categories:", error);
+        toast.error(`Error al cargar categorías: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     }
   });
   
+  // Effect to log category fetching status
+  useEffect(() => {
+    console.log("Categories query state:", { 
+      isLoading: isCategoriesLoading,
+      error: categoriesError,
+      categoriesCount: categories.length,
+      categories
+    });
+  }, [categories, isCategoriesLoading, categoriesError]);
+  
   // Filter categories based on user role
   const availableCategories = useMemo(() => {
-    if (isSuperAdmin) {
-      return categories;
-    } else {
-      return categories.filter(cat => cat.access_level === 'all');
-    }
+    return isSuperAdmin 
+      ? categories 
+      : categories.filter(cat => cat.access_level === 'all');
   }, [categories, isSuperAdmin]);
 
   const { data: expenses = [], isLoading } = useQuery({

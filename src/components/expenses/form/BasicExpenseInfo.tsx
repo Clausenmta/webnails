@@ -37,9 +37,9 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
     }
   }, [availableCategories, filteredCategories, isSuperAdmin, expense.category, hasLogged]);
 
-  // Ensure a valid category is selected
+  // Ensure a valid category is selected when categories are loaded
   useEffect(() => {
-    if (filteredCategories.length > 0 && (!expense.category || !filteredCategories.some(cat => cat.name === expense.category))) {
+    if (filteredCategories.length > 0 && !expense.category) {
       console.log("Setting default category to:", filteredCategories[0].name);
       onUpdate({ category: filteredCategories[0].name });
     }
@@ -62,10 +62,10 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
             value={expense.category} 
             onValueChange={(value) => onUpdate({ category: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white">
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
-            <SelectContent className="bg-white z-50">
+            <SelectContent className="bg-white z-[100] max-h-60">
               {filteredCategories.length > 0 ? (
                 filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.name}>

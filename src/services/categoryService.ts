@@ -13,7 +13,6 @@ export const categoryService = {
     try {
       console.log("Fetching expense categories from database...");
       
-      // Ensure we have an active session before making the request
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         console.error("No active session found when fetching categories");
@@ -31,7 +30,12 @@ export const categoryService = {
         return [];
       }
       
-      console.log("Categories fetched successfully:", data);
+      if (!data || data.length === 0) {
+        console.warn("No categories found in database");
+      } else {
+        console.log(`Categories fetched successfully: ${data.length}`, data);
+      }
+      
       return (data || []) as ExpenseCategory[];
     } catch (error) {
       console.error("Exception in fetchCategories:", error);

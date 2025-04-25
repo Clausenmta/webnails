@@ -22,11 +22,11 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
   
-  // Log when the component renders
+  // Debug categories passed to form
   useEffect(() => {
     console.log("ExpenseForm rendered with categories:", availableCategories);
     if (availableCategories.length === 0) {
-      console.warn("No expense categories available. Check if they were loaded correctly.");
+      console.warn("No expense categories available in ExpenseForm. Check category loading.");
     }
   }, [availableCategories]);
   
@@ -48,16 +48,16 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
     }
   }, [user]);
 
-  // Update category if the current one isn't available (e.g. when role changes)
+  // Set a default category if available
   useEffect(() => {
-    if (availableCategories.length > 0 && 
-        !availableCategories.some(cat => cat.name === newExpense.category)) {
-      console.log("Setting initial category based on available categories");
+    if (availableCategories.length > 0 && !newExpense.category) {
+      console.log("Setting initial category:", availableCategories[0].name);
       setNewExpense(prev => ({ ...prev, category: availableCategories[0].name }));
     }
   }, [availableCategories, newExpense.category]);
 
   const handleUpdate = (updates: Partial<NewExpense>) => {
+    console.log("Updating expense form with:", updates);
     setNewExpense(prev => ({ ...prev, ...updates }));
   };
 

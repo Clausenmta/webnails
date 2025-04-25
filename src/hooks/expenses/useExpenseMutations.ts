@@ -15,7 +15,7 @@ export function useExpenseMutations() {
     },
     onError: (error: any) => {
       console.error("Error al registrar el gasto:", error);
-      toast.error(`Error al registrar el gasto: ${error.message}`);
+      toast.error(`Error al registrar el gasto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   });
 
@@ -27,7 +27,7 @@ export function useExpenseMutations() {
     },
     onError: (error: any) => {
       console.error("Error al eliminar el gasto:", error);
-      toast.error(`Error al eliminar el gasto: ${error.message}`);
+      toast.error(`Error al eliminar el gasto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   });
 

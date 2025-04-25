@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,12 +20,12 @@ interface ExpenseFormProps {
 export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategories }: ExpenseFormProps) {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
-  
-  // Ensure we have at least one default category
-  const ensuredCategories = availableCategories?.length > 0 
+
+  // Ensure we have at least one default category - use `as const` to infer the correct type
+  const ensuredCategories: ExpenseCategory[] = availableCategories?.length > 0 
     ? availableCategories 
-    : [{ id: 999, name: "Varios", access_level: "all" }];
-    
+    : [{ id: 999, name: "Varios", access_level: "all" as "all" }];
+
   // Debug categories passed to form
   useEffect(() => {
     console.log("==== EXPENSE FORM RENDER ====");

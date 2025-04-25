@@ -12,6 +12,30 @@ import { useExpenseFilters } from "./expenses/useExpenseFilters";
 import { useExpenseMutations } from "./expenses/useExpenseMutations";
 import { ExpenseCategory } from "@/services/categoryService";
 
+/**
+ * Filtra los gastos según el rol y las categorías permitidas para el usuario.
+ * @param expenses Lista total de gastos
+ * @param isSuperAdmin ¿El usuario es superadmin?
+ * @param username Nombre de usuario del usuario actual
+ * @param allowedCategories Lista de nombres de las categorías permitidas para usuarios normales
+ * @returns Lista de gastos filtrados según las reglas de visibilidad
+ */
+function filterExpensesByRole(
+  expenses: Expense[],
+  isSuperAdmin: boolean,
+  username: string | undefined,
+  allowedCategories: string[] | null
+) {
+  if (isSuperAdmin) return expenses;
+  if (!username || !allowedCategories) return [];
+  // Solo mostrar los gastos creados por el usuario y de categorías habilitadas
+  return expenses.filter(
+    expense =>
+      expense.created_by === username &&
+      allowedCategories.includes(expense.category)
+  );
+}
+
 export function useExpenseManagement() {
   const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
@@ -35,21 +59,20 @@ export function useExpenseManagement() {
 
   const { availableCategories } = useCategoryManagement();
 
-  // -------- NEW: build allowed categories for easy lookup ----------
+  // Construye las categorías permitidas por el usuario (solo nombre)
   const allowedCategoryNames = isSuperAdmin
-    ? null // no filter for superadmin
+    ? null
     : availableCategories.filter(cat => cat.access_level === 'all').map(cat => cat.name);
 
-  // -------- NEW: Filter expenses for current user profile ----------
-  // Si es superadmin: ve todo. Si NO, ve solo los que creo él y de categorías permitidas.
-  const filteredExpensesForUser = isSuperAdmin
-    ? expenses
-    : expenses.filter(expense =>
-        expense.created_by === user?.username &&
-        allowedCategoryNames?.includes(expense.category)
-      );
+  // Lógica centralizada de filtrado para reusabilidad y claridad
+  const filteredExpensesForUser = filterExpensesByRole(
+    expenses,
+    isSuperAdmin,
+    user?.username,
+    allowedCategoryNames
+  );
 
-  // --------- Filtros y helpers de la lógica original, pero usando este nuevo array filtrado -----------
+  // Pasa el resultado filtrado al hook de filtros de gastos
   const {
     filters,
     setFilters,
@@ -131,3 +154,4 @@ export function useExpenseManagement() {
     handleExportReport
   };
 }
+

@@ -26,7 +26,8 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
   useEffect(() => {
     console.log("Available categories in BasicExpenseInfo:", availableCategories);
     console.log("Filtered categories:", filteredCategories);
-  }, [availableCategories, filteredCategories]);
+    console.log("User is superadmin:", isSuperAdmin);
+  }, [availableCategories, filteredCategories, isSuperAdmin]);
 
   // Ensure a valid category is selected
   useEffect(() => {
@@ -55,7 +56,7 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               {filteredCategories.length > 0 ? (
                 filteredCategories.map(category => (
                   <SelectItem key={category.id} value={category.name}>

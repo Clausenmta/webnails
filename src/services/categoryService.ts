@@ -20,11 +20,8 @@ export const categoryService = {
         return [];
       }
       
-      // Add 2-second delay to ensure we're properly authorized
-      // This helps resolve timing issues with token validation
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Make sure we have a valid session token before proceeding
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
         console.error("Error refreshing session:", refreshError);
@@ -48,39 +45,35 @@ export const categoryService = {
         toast.error(`Error: ${error.message}`);
         return [];
       }
+
+      // Mapeo explícito para tipos estrictos TS
+      const mapped = (data || []).map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        access_level: cat.access_level === "all" ? "all" : "superadmin"
+      })) as ExpenseCategory[];
       
-      // If no data, create some default categories
-      if (!data || data.length === 0) {
+      if (!mapped || mapped.length === 0) {
         console.warn("No categories found in database, creating defaults");
-        
-        // Default categories to use when none exist
         const defaultCategories: ExpenseCategory[] = [
           { id: 1, name: "Fijos", access_level: "all" },
           { id: 2, name: "Servicios", access_level: "all" },
-          { id: 3, name: "Impuestos y Tasas", access_level: "all" },
+          { id: 3, name: "Impuestos y Tasas", access_level: "superadmin" },
           { id: 4, name: "Mantenimiento", access_level: "all" },
           { id: 5, name: "Sueldos", access_level: "superadmin" },
-          { id: 6, name: "Varios", access_level: "all" }
+          { id: 6, name: "Varios", access_level: "all" },
+          { id: 7, name: "Honorarios", access_level: "superadmin" },
+          { id: 8, name: "Cargas Sociales", access_level: "superadmin" },
+          { id: 9, name: "Proveedores", access_level: "superadmin" },
+          { id: 10, name: "Insumos generales", access_level: "all" },
+          { id: 11, name: "Marketing", access_level: "superadmin" },
+          { id: 12, name: "Ingresos", access_level: "superadmin" },
         ];
-        
-        // Attempt to insert defaults (ignoring errors)
-        try {
-          for (const category of defaultCategories) {
-            await supabase
-              .from('expense_categories')
-              .insert(category);
-          }
-          console.log("Created default categories successfully");
-          return defaultCategories;
-        } catch (insertError) {
-          console.error("Error creating default categories:", insertError);
-          // Return hardcoded defaults even if insert fails
-          return defaultCategories;
-        }
+        return defaultCategories;
       }
       
-      console.log(`Categories fetched successfully: ${data.length}`, data);
-      return data as ExpenseCategory[];
+      console.log(`Categories fetched successfully: ${mapped.length}`, mapped);
+      return mapped;
     } catch (error) {
       console.error("Exception in fetchCategories:", error);
       toast.error(`Error fetching categories: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -89,7 +82,16 @@ export const categoryService = {
       return [
         { id: 1, name: "Fijos", access_level: "all" },
         { id: 2, name: "Servicios", access_level: "all" },
-        { id: 6, name: "Varios", access_level: "all" }
+        { id: 3, name: "Impuestos y Tasas", access_level: "superadmin" },
+        { id: 4, name: "Mantenimiento", access_level: "all" },
+        { id: 5, name: "Sueldos", access_level: "superadmin" },
+        { id: 6, name: "Varios", access_level: "all" },
+        { id: 7, name: "Honorarios", access_level: "superadmin" },
+        { id: 8, name: "Cargas Sociales", access_level: "superadmin" },
+        { id: 9, name: "Proveedores", access_level: "superadmin" },
+        { id: 10, name: "Insumos generales", access_level: "all" },
+        { id: 11, name: "Marketing", access_level: "superadmin" },
+        { id: 12, name: "Ingresos", access_level: "superadmin" },
       ];
     }
   }

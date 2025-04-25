@@ -8,7 +8,14 @@ export function useExpenseMutations() {
   const queryClient = useQueryClient();
 
   const addExpenseMutation = useMutation({
-    mutationFn: expenseService.addExpense,
+    mutationFn: (expense: NewExpense) => {
+      // If category is empty for any reason, set a default
+      if (!expense.category) {
+        console.log("Setting default category in mutation");
+        expense.category = "Varios";
+      }
+      return expenseService.addExpense(expense);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast.success("Gasto registrado correctamente");

@@ -22,19 +22,27 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
   
+  // Ensure we have at least one default category
+  const ensuredCategories = availableCategories?.length > 0 
+    ? availableCategories 
+    : [{ id: 999, name: "Varios", access_level: "all" }];
+    
   // Debug categories passed to form
   useEffect(() => {
+    console.log("==== EXPENSE FORM RENDER ====");
     console.log("ExpenseForm rendered with categories:", availableCategories);
-    if (availableCategories.length === 0) {
-      console.warn("No expense categories available in ExpenseForm. Check category loading.");
+    console.log("Ensured categories:", ensuredCategories); 
+    
+    if (!availableCategories || availableCategories.length === 0) {
+      console.warn("No expense categories available in ExpenseForm");
     }
-  }, [availableCategories]);
+  }, [availableCategories, ensuredCategories]);
   
   const [newExpense, setNewExpense] = useState<NewExpense>({
     date: format(new Date(), 'dd/MM/yyyy'),
     concept: "",
     amount: 0,
-    category: "",
+    category: ensuredCategories[0]?.name || "Varios",
     created_by: user?.username || "",
     details: "",
     due_date: "",
@@ -50,11 +58,11 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
 
   // Set a default category if available
   useEffect(() => {
-    if (availableCategories.length > 0 && !newExpense.category) {
-      console.log("Setting initial category:", availableCategories[0].name);
-      setNewExpense(prev => ({ ...prev, category: availableCategories[0].name }));
+    if (ensuredCategories.length > 0 && !newExpense.category) {
+      console.log("Setting initial category:", ensuredCategories[0].name);
+      setNewExpense(prev => ({ ...prev, category: ensuredCategories[0].name }));
     }
-  }, [availableCategories, newExpense.category]);
+  }, [ensuredCategories, newExpense.category]);
 
   const handleUpdate = (updates: Partial<NewExpense>) => {
     console.log("Updating expense form with:", updates);
@@ -72,9 +80,11 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
       return;
     }
     
+    // If category is empty, set to default
     if (!newExpense.category) {
-      toast.error("Por favor seleccione una categoría");
-      return;
+      const defaultCategory = ensuredCategories[0]?.name || "Varios";
+      setNewExpense(prev => ({ ...prev, category: defaultCategory }));
+      console.log("Set default category before submit:", defaultCategory);
     }
     
     onSubmit(newExpense);
@@ -85,7 +95,7 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
       <BasicExpenseInfo 
         expense={newExpense}
         onUpdate={handleUpdate}
-        availableCategories={availableCategories}
+        availableCategories={ensuredCategories}
       />
       
       <DetailedExpenseInfo

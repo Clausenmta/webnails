@@ -6,6 +6,7 @@ import { NewExpense } from "@/types/expenses";
 import { ExpenseCategory } from "@/services/categoryService";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface BasicExpenseInfoProps {
   expense: NewExpense;
@@ -17,25 +18,31 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
   const { isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   const [hasLogged, setHasLogged] = useState(false);
+  
+  // Ensure at least one category is always available
+  const ensuredCategories = availableCategories.length > 0 
+    ? availableCategories 
+    : [{ id: 999, name: "Varios", access_level: "all" }];
 
   // Filter categories based on user role
-  const filteredCategories = availableCategories.filter(
+  const filteredCategories = ensuredCategories.filter(
     category => category.access_level === 'all' || (isSuperAdmin && category.access_level === 'superadmin')
   );
 
   // Add detailed logging to help diagnose the issue
   useEffect(() => {
-    // Only log once to avoid console spam
+    // Log once to avoid console spam
     if (!hasLogged) {
-      console.log("=== EXPENSE CATEGORIES DEBUG ===");
+      console.log("=== EXPENSE FORM CATEGORIES DEBUG ===");
       console.log("Raw available categories:", availableCategories);
+      console.log("Ensured categories:", ensuredCategories);
       console.log("Filtered categories for current user:", filteredCategories);
       console.log("User is superadmin:", isSuperAdmin);
       console.log("Current expense category:", expense.category);
       console.log("================================");
       setHasLogged(true);
     }
-  }, [availableCategories, filteredCategories, isSuperAdmin, expense.category, hasLogged]);
+  }, [availableCategories, ensuredCategories, filteredCategories, isSuperAdmin, expense.category, hasLogged]);
 
   // Ensure a valid category is selected when categories are loaded
   useEffect(() => {
@@ -61,19 +68,27 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
           <Select 
             value={expense.category} 
             onValueChange={(value) => onUpdate({ category: value })}
+            defaultValue={filteredCategories[0]?.name}
           >
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="bg-white border-gray-300">
               <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
-            <SelectContent className="bg-white z-[100] max-h-60">
+            <SelectContent 
+              className="bg-white z-[100] max-h-60 shadow-lg border border-gray-200" 
+              position="popper"
+            >
               {filteredCategories.length > 0 ? (
                 filteredCategories.map(category => (
-                  <SelectItem key={category.id} value={category.name}>
+                  <SelectItem 
+                    key={category.id} 
+                    value={category.name}
+                    className="hover:bg-gray-100"
+                  >
                     {category.name}
                   </SelectItem>
                 ))
               ) : (
-                <SelectItem value="no-categories" disabled>No hay categorías disponibles</SelectItem>
+                <SelectItem value="varios">Varios</SelectItem>
               )}
             </SelectContent>
           </Select>

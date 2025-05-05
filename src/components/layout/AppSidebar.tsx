@@ -23,7 +23,8 @@ import {
   CreditCard,
   BarChart,
   Receipt,
-  Wrench
+  Wrench,
+  CalendarX2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
@@ -76,6 +77,12 @@ export function AppSidebar() {
       title: "Empleados",
       path: "/empleados",
       icon: Users,
+      requiredRole: 'superadmin' as UserRole,
+    },
+    {
+      title: "Ausencias",
+      path: "/ausencias",
+      icon: CalendarX2,
       requiredRole: 'superadmin' as UserRole,
     },
     {

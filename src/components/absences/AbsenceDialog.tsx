@@ -105,7 +105,7 @@ export default function AbsenceDialog({
       fecha_inicio: format(formData.fecha_inicio, 'yyyy-MM-dd'),
       fecha_fin: format(formData.fecha_fin, 'yyyy-MM-dd'),
       observaciones: formData.observaciones,
-      created_by: user?.email || 'system'
+      created_by: user?.username || 'system'
     };
 
     onSave(absenceData);

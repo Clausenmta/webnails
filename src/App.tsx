@@ -14,6 +14,7 @@ import GastosPage from "./pages/GastosPage";
 import EmpleadosPage from "./pages/EmpleadosPage";
 import ResultadosPage from "./pages/ResultadosPage";
 import FacturacionPage from "./pages/FacturacionPage";
+import AusenciasPage from "./pages/AusenciasPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -53,6 +54,11 @@ function App() {
                 <Route path="/empleados" element={
                   <ProtectedRoute requiredRole="superadmin">
                     <EmpleadosPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/ausencias" element={
+                  <ProtectedRoute requiredRole="superadmin">
+                    <AusenciasPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/resultados" element={

@@ -60,6 +60,47 @@ export type Database = {
         }
         Relationships: []
       }
+      ausencias_empleados: {
+        Row: {
+          created_at: string
+          created_by: string
+          employee_id: number
+          fecha_fin: string
+          fecha_inicio: string
+          id: number
+          observaciones: string | null
+          tipo_ausencia: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          employee_id: number
+          fecha_fin: string
+          fecha_inicio: string
+          id?: number
+          observaciones?: string | null
+          tipo_ausencia: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          employee_id?: number
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: number
+          observaciones?: string | null
+          tipo_ausencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ausencias_empleados_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           address: string | null

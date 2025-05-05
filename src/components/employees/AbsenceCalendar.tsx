@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -9,145 +8,162 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { es } from "date-fns/locale";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
 import { CalendarX2, Plus, UserRound } from "lucide-react";
-
-interface Absence {
-  id: number;
-  employeeId: number;
-  employeeName: string;
-  date: Date;
-  type: "vacation" | "sick" | "personal" | "other";
-  description: string;
-}
-
-interface Employee {
-  id: number;
-  name: string;
-  position: string;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { absenceService, Absence } from "@/services/absenceService";
+import AbsenceDialog from "@/components/absences/AbsenceDialog";
+import { Employee } from "@/types/employees";
 
 interface AbsenceCalendarProps {
   employees: Employee[];
+  currentEmployeeId?: number;
 }
 
-export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
-  const { isAuthorized } = useAuth();
-  const isSuperAdmin = isAuthorized('superadmin');
+export default function AbsenceCalendar({ employees, currentEmployeeId }: AbsenceCalendarProps) {
+  const { isAuthorized, user } = useAuth();
+  const queryClient = useQueryClient();
   
   const [date, setDate] = useState<Date>(new Date());
-  const [absences, setAbsences] = useState<Absence[]>([
-    { 
-      id: 1, 
-      employeeId: 1, 
-      employeeName: "María García", 
-      date: new Date(2025, 3, 15), 
-      type: "vacation",
-      description: "Vacaciones programadas" 
-    },
-    { 
-      id: 2, 
-      employeeId: 2, 
-      employeeName: "Laura Martínez", 
-      date: new Date(2025, 3, 20), 
-      type: "sick",
-      description: "Licencia médica" 
-    },
-    { 
-      id: 3, 
-      employeeId: 3, 
-      employeeName: "Juan Pérez", 
-      date: new Date(2025, 3, 8), 
-      type: "personal",
-      description: "Trámites personales" 
-    }
-  ]);
-  
   const [isAddAbsenceOpen, setIsAddAbsenceOpen] = useState(false);
+  const [isViewMode, setIsViewMode] = useState(false);
+  const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null);
   const [selectedDateAbsences, setSelectedDateAbsences] = useState<Absence[]>([]);
-  const [newAbsence, setNewAbsence] = useState<Omit<Absence, 'id'>>({
-    employeeId: employees[0]?.id || 0,
-    employeeName: employees[0]?.name || "",
-    date: new Date(),
-    type: "vacation",
-    description: ""
+  
+  // Query for absences
+  const { data: absences = [], isLoading } = useQuery({
+    queryKey: ['absences', currentEmployeeId],
+    queryFn: async () => {
+      // If a specific employee is selected, fetch only their absences
+      if (currentEmployeeId) {
+        return await absenceService.getEmployeeAbsences(currentEmployeeId);
+      }
+      // Otherwise fetch all absences
+      return await absenceService.fetchAbsences();
+    },
+    select: (data) => {
+      return data.map(absence => {
+        const employee = employees.find(emp => emp.id === absence.employee_id);
+        return {
+          ...absence,
+          employee_name: employee?.name || 'Empleado desconocido'
+        };
+      });
+    }
   });
   
-  // Tipos de ausencia
-  const absenceTypes = [
-    { value: "vacation", label: "Vacaciones" },
-    { value: "sick", label: "Enfermedad" },
-    { value: "personal", label: "Personal" },
-    { value: "other", label: "Otro" }
-  ];
+  // Mutations
+  const addAbsenceMutation = useMutation({
+    mutationFn: absenceService.addAbsence,
+    onSuccess: () => {
+      toast.success("Ausencia registrada correctamente");
+      queryClient.invalidateQueries({ queryKey: ['absences'] });
+      setIsAddAbsenceOpen(false);
+      setSelectedAbsence(null);
+    }
+  });
+
+  const updateAbsenceMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number, data: Partial<Absence> }) => 
+      absenceService.updateAbsence(id, data),
+    onSuccess: () => {
+      toast.success("Ausencia actualizada correctamente");
+      queryClient.invalidateQueries({ queryKey: ['absences'] });
+      setIsAddAbsenceOpen(false);
+      setSelectedAbsence(null);
+    }
+  });
+
+  const deleteAbsenceMutation = useMutation({
+    mutationFn: (id: number) => absenceService.deleteAbsence(id),
+    onSuccess: () => {
+      toast.success("Ausencia eliminada correctamente");
+      queryClient.invalidateQueries({ queryKey: ['absences'] });
+    }
+  });
   
+  // Effects
   useEffect(() => {
-    // Actualizar ausencias seleccionadas cuando cambia la fecha
-    const filtered = absences.filter(absence => 
-      isSameDay(absence.date, date)
-    );
-    setSelectedDateAbsences(filtered);
+    if (date && absences.length > 0) {
+      const filtered = absences.filter(absence => {
+        const fechaInicio = parseISO(absence.fecha_inicio);
+        const fechaFin = parseISO(absence.fecha_fin);
+        
+        // Check if the selected date falls between the start and end dates
+        return (date >= fechaInicio && date <= fechaFin);
+      });
+      
+      setSelectedDateAbsences(filtered);
+    } else {
+      setSelectedDateAbsences([]);
+    }
   }, [date, absences]);
   
+  // Handlers
   const handleAddAbsence = () => {
-    // Crear nueva ausencia
-    const id = Math.max(0, ...absences.map(a => a.id)) + 1;
-    
-    // Buscar el nombre del empleado
-    const employee = employees.find(e => e.id === newAbsence.employeeId);
-    const employeeName = employee ? employee.name : "Empleado";
-    
-    const absenceToAdd: Absence = {
-      ...newAbsence,
-      id,
-      employeeName
-    };
-    
-    setAbsences([...absences, absenceToAdd]);
-    
-    // Resetear formulario
-    setNewAbsence({
-      employeeId: employees[0]?.id || 0,
-      employeeName: employees[0]?.name || "",
-      date: new Date(),
-      type: "vacation",
-      description: ""
-    });
-    
-    setIsAddAbsenceOpen(false);
-    toast.success("Ausencia registrada correctamente");
+    setSelectedAbsence(null);
+    setIsViewMode(false);
+    setIsAddAbsenceOpen(true);
+  };
+  
+  const handleViewAbsence = (absence: Absence) => {
+    setSelectedAbsence(absence);
+    setIsViewMode(true);
+    setIsAddAbsenceOpen(true);
+  };
+  
+  const handleEditAbsence = (absence: Absence) => {
+    setSelectedAbsence(absence);
+    setIsViewMode(false);
+    setIsAddAbsenceOpen(true);
   };
   
   const handleDeleteAbsence = (id: number) => {
-    setAbsences(absences.filter(absence => absence.id !== id));
-    toast.success("Ausencia eliminada correctamente");
+    if (confirm("¿Está seguro que desea eliminar esta ausencia?")) {
+      deleteAbsenceMutation.mutate(id);
+    }
   };
   
-  // Función para colorear fechas con ausencias
-  const getDayClass = (day: Date) => {
-    const hasAbsence = absences.some(absence => isSameDay(absence.date, day));
-    
-    if (hasAbsence) {
-      return "bg-red-100 hover:bg-red-200 text-red-700";
+  const handleSaveAbsence = (absenceData: any) => {
+    // If we're editing an existing absence
+    if (selectedAbsence) {
+      updateAbsenceMutation.mutate({
+        id: selectedAbsence.id,
+        data: absenceData
+      });
+    } else {
+      // Creating a new absence
+      addAbsenceMutation.mutate(absenceData);
     }
-    
-    return undefined;
   };
+  
+  // Calendar day class modifier
+  const getAbsenceTypeClass = (type: string) => {
+    switch (type) {
+      case "Vacaciones":
+        return "bg-blue-100 text-blue-600";
+      case "Enfermedad":
+        return "bg-red-100 text-red-600";
+      case "Licencia":
+        return "bg-amber-100 text-amber-600";
+      case "Ausencia justificada":
+        return "bg-green-100 text-green-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <p>Cargando datos de ausencias...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -168,7 +184,13 @@ export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
                 className="rounded-md border shadow-sm"
                 locale={es}
                 modifiers={{
-                  absence: (date) => absences.some(absence => isSameDay(absence.date, date))
+                  absence: (date) => {
+                    return absences.some(absence => {
+                      const start = parseISO(absence.fecha_inicio);
+                      const end = parseISO(absence.fecha_fin);
+                      return date >= start && date <= end;
+                    });
+                  }
                 }}
                 modifiersClassNames={{
                   absence: "bg-red-100 text-red-800 font-medium"
@@ -177,7 +199,7 @@ export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
               
               <div className="mt-4 flex justify-end">
                 <Button
-                  onClick={() => setIsAddAbsenceOpen(true)}
+                  onClick={handleAddAbsence}
                   className="bg-salon-400 hover:bg-salon-500"
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -209,17 +231,19 @@ export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
                       className="flex items-start gap-4 p-4 border rounded-md"
                     >
                       <div className={`p-2 rounded-full ${
-                        absence.type === "vacation" ? "bg-blue-100" :
-                        absence.type === "sick" ? "bg-red-100" :
-                        absence.type === "personal" ? "bg-amber-100" : "bg-gray-100"
+                        absence.tipo_ausencia === "Vacaciones" ? "bg-blue-100" :
+                        absence.tipo_ausencia === "Enfermedad" ? "bg-red-100" :
+                        absence.tipo_ausencia === "Licencia" ? "bg-amber-100" :
+                        absence.tipo_ausencia === "Ausencia justificada" ? "bg-green-100" :
+                        "bg-gray-100"
                       }`}>
-                        {absence.type === "vacation" ? (
-                          <CalendarX2 className="h-5 w-5 text-blue-600" />
-                        ) : absence.type === "sick" ? (
-                          <CalendarX2 className="h-5 w-5 text-red-600" />
-                        ) : (
-                          <CalendarX2 className="h-5 w-5 text-amber-600" />
-                        )}
+                        <CalendarX2 className={`h-5 w-5 ${
+                          absence.tipo_ausencia === "Vacaciones" ? "text-blue-600" :
+                          absence.tipo_ausencia === "Enfermedad" ? "text-red-600" :
+                          absence.tipo_ausencia === "Licencia" ? "text-amber-600" :
+                          absence.tipo_ausencia === "Ausencia justificada" ? "text-green-600" :
+                          "text-gray-600"
+                        }`} />
                       </div>
                       
                       <div className="flex-1">
@@ -227,26 +251,46 @@ export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
                           <div>
                             <p className="font-medium flex items-center">
                               <UserRound className="h-4 w-4 mr-1" />
-                              {absence.employeeName}
+                              {absence.employee_name}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {absenceTypes.find(t => t.value === absence.type)?.label || absence.type}
+                              {absence.tipo_ausencia}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(parseISO(absence.fecha_inicio), "dd/MM/yyyy")} - 
+                              {format(parseISO(absence.fecha_fin), "dd/MM/yyyy")}
                             </p>
                           </div>
                           
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAbsence(absence.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            Eliminar
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewAbsence(absence)}
+                            >
+                              Ver
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditAbsence(absence)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAbsence(absence.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
                         </div>
                         
-                        {absence.description && (
+                        {absence.observaciones && (
                           <p className="mt-2 text-sm border-t pt-2">
-                            {absence.description}
+                            {absence.observaciones}
                           </p>
                         )}
                       </div>
@@ -265,98 +309,15 @@ export default function AbsenceCalendar({ employees }: AbsenceCalendarProps) {
           </Card>
         </div>
       </div>
-      
-      {/* Dialog para agregar ausencia */}
-      <Dialog open={isAddAbsenceOpen} onOpenChange={setIsAddAbsenceOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Ausencia</DialogTitle>
-            <DialogDescription>
-              Completa los detalles para registrar una ausencia.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="employee">Empleado</Label>
-              <Select
-                value={newAbsence.employeeId.toString()}
-                onValueChange={(value) => setNewAbsence({ ...newAbsence, employeeId: Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map(employee => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.name} - {employee.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="date">Fecha</Label>
-              <Input
-                id="date"
-                type="date"
-                value={format(newAbsence.date, "yyyy-MM-dd")}
-                onChange={(e) => {
-                  const date = e.target.value ? new Date(e.target.value) : new Date();
-                  setNewAbsence({ ...newAbsence, date });
-                }}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Ausencia</Label>
-              <Select
-                value={newAbsence.type}
-                onValueChange={(value) => 
-                  setNewAbsence({ 
-                    ...newAbsence, 
-                    type: value as "vacation" | "sick" | "personal" | "other" 
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {absenceTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción (opcional)</Label>
-              <Textarea
-                id="description"
-                value={newAbsence.description}
-                onChange={(e) => setNewAbsence({ ...newAbsence, description: e.target.value })}
-                placeholder="Detalles adicionales de la ausencia"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddAbsenceOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleAddAbsence}
-              className="bg-salon-400 hover:bg-salon-500"
-            >
-              Registrar Ausencia
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+      <AbsenceDialog 
+        open={isAddAbsenceOpen}
+        onOpenChange={setIsAddAbsenceOpen}
+        employees={employees}
+        absence={selectedAbsence}
+        onSave={handleSaveAbsence}
+        viewMode={isViewMode}
+      />
     </div>
   );
 }

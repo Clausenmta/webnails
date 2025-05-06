@@ -196,6 +196,7 @@ export default function AbsenceDialog({
                   onSelect={(date) => date && setFormData({ ...formData, fecha_inicio: date })}
                   initialFocus
                   locale={es}
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -226,6 +227,7 @@ export default function AbsenceDialog({
                   onSelect={(date) => date && setFormData({ ...formData, fecha_fin: date })}
                   initialFocus
                   locale={es}
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

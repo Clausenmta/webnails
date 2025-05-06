@@ -56,17 +56,17 @@ export default function AbsenceFilters({
           <div className="space-y-2">
             <Label>Empleado</Label>
             <Select
-              value={filters.employeeId ? filters.employeeId.toString() : ""}
+              value={filters.employeeId ? filters.employeeId.toString() : "all_employees"}
               onValueChange={(value) => setFilters({
                 ...filters,
-                employeeId: value ? Number(value) : null
+                employeeId: value === "all_employees" ? null : Number(value)
               })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos los empleados" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los empleados</SelectItem>
+                <SelectItem value="all_employees">Todos los empleados</SelectItem>
                 {employees.map(employee => (
                   <SelectItem key={employee.id} value={employee.id.toString()}>
                     {employee.name}
@@ -79,17 +79,17 @@ export default function AbsenceFilters({
           <div className="space-y-2">
             <Label>Tipo de Ausencia</Label>
             <Select
-              value={filters.tipoAusencia || ""}
+              value={filters.tipoAusencia || "all_types"}
               onValueChange={(value) => setFilters({
                 ...filters,
-                tipoAusencia: value || null
+                tipoAusencia: value === "all_types" ? null : value
               })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all_types">Todos los tipos</SelectItem>
                 {tiposAusencia.map(tipo => (
                   <SelectItem key={tipo.value} value={tipo.value}>
                     {tipo.label}

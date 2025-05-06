@@ -39,7 +39,7 @@ export function EmployeeAbsenceCalendar({
           mode="single"
           selected={date}
           onSelect={onDateChange}
-          className="rounded-md border shadow-sm"
+          className="rounded-md border shadow-sm pointer-events-auto"
           locale={es}
           modifiers={{
             absence: (date) => {

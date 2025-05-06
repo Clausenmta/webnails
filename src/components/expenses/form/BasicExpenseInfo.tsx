@@ -117,7 +117,7 @@ export function BasicExpenseInfo({ expense, onUpdate, availableCategories }: Bas
         <div className="space-y-2">
           <Label htmlFor="category">Categoría</Label>
           <Select 
-            value={expense.category} 
+            value={expense.category || (filteredCategories.length > 0 ? filteredCategories[0].name : "varios")} 
             onValueChange={(value) => onUpdate({ category: value })}
             defaultValue={filteredCategories[0]?.name}
           >

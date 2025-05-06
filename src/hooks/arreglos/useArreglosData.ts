@@ -31,8 +31,10 @@ export function useArreglosData() {
   });
 
   const updateArregloMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: number, updates: Partial<NewArreglo> }) => 
-      arreglosService.updateArreglo(id, updates),
+    mutationFn: ({ id, updates }: { id: number, updates: Partial<NewArreglo> }) => {
+      console.log('Updating arreglo with data:', updates); // Add this line for debugging
+      return arreglosService.updateArreglo(id, updates);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['arreglos'] });
       toast.success("Arreglo actualizado correctamente");

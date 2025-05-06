@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 interface ArreglosTableProps {
   arreglos: Arreglo[];
   onViewClick: (arreglo: Arreglo) => void;
-  onEditClick?: (arreglo: Arreglo) => void; // Nuevo handler (puedes pasarlo opcional)
+  onEditClick?: (arreglo: Arreglo) => void;
   onDeleteClick?: (arreglo: Arreglo) => void;
   sortConfig: {
     key: keyof Arreglo;
@@ -50,7 +50,6 @@ export default function ArreglosTable({
               {sortConfig.key === 'client_name' && (
                 <span>
                   <span className="sr-only">Ordenar</span>
-                  {/* Puedes mostrar el ícono de orden aquí si lo deseas */}
                 </span>
               )}
             </Button>
@@ -71,7 +70,7 @@ export default function ArreglosTable({
             <TableCell className="font-medium">{arreglo.client_name}</TableCell>
             <TableCell>{arreglo.description}</TableCell>
             <TableCell>{arreglo.created_by}</TableCell>
-            <TableCell>{arreglo.assigned_to}</TableCell>
+            <TableCell>{arreglo.assigned_to || '-'}</TableCell>
             <TableCell>
               <Badge variant={getStatusBadgeVariant(arreglo.status)}>
                 {arreglo.status}

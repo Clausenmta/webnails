@@ -21,7 +21,8 @@ export function useArreglosManagement() {
       arreglo.description.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       arreglo.status.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       (arreglo.assigned_to && arreglo.assigned_to.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
-      (arreglo.notes && arreglo.notes.toLowerCase().includes(filters.searchTerm.toLowerCase()));
+      (arreglo.notes && arreglo.notes.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
+      (arreglo.created_by && arreglo.created_by.toLowerCase().includes(filters.searchTerm.toLowerCase()));
 
     if (!matchesSearch) return false;
     

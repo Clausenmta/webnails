@@ -1,18 +1,15 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Download, 
   ArrowUp, 
   ArrowDown, 
-  DollarSign, 
-  Users, 
-  TrendingUp, 
   FileDown, 
   PlusCircle, 
   Pencil, 
-  Trash2 
+  Trash2,
+  Loader2
 } from "lucide-react";
 import {
   Table,
@@ -22,7 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, LineChart, Line } from "recharts";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { 
@@ -55,12 +51,10 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { exportReport } from "@/utils/reportExport";
-import { useQuery } from "@tanstack/react-query";
-import { expenseService } from "@/services/expenseService";
-import { stockService } from "@/services/stock";
-import { format, parseISO, isValid } from "date-fns";
+import { format } from "date-fns";
 import { initialExpensesService } from "@/services/initialExpensesService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRevenueData } from "@/hooks/useRevenueData";
 
 const initialExpenseCategories = [
   "Remodelación",
@@ -104,11 +98,14 @@ export default function ResultadosPage() {
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
   const [currentExpense, setCurrentExpense] = useState<InitialExpense | null>(null);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [serviceData, setServiceData] = useState<any[]>([]);
-  const [expenseDataByCategory, setExpenseDataByCategory] = useState<any[]>([]);
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
   
+  const {
+    serviceData,
+    totalServices,
+    pendingPayments,
+    isLoading
+  } = useRevenueData(selectedMonth, year);
+
   const [newExpense, setNewExpense] = useState<Omit<InitialExpense, 'id'>>({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -116,23 +113,7 @@ export default function ResultadosPage() {
     amount: 0
   });
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: expenseService.fetchExpenses
-  });
-  
-  const { data: stockItems = [] } = useQuery({
-    queryKey: ['stock'],
-    queryFn: stockService.fetchStock
-  });
-
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const queryClient = useQueryClient();
-
-  const { data: initialExpenses = [], isLoading: isFetchingInitialExpenses } = useQuery({
-    queryKey: ['initial_expenses'],
-    queryFn: initialExpensesService.fetchInitialExpenses
-  });
 
   const addExpenseMutation = useMutation<any, Error, ExpensePayload>({
     mutationFn: (expense) => initialExpensesService.addInitialExpense(expense),
@@ -200,6 +181,28 @@ export default function ResultadosPage() {
     setCurrentExpense(expense);
     setIsEditExpenseOpen(true);
   };
+
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [serviceDataState, setServiceData] = useState<any[]>([]);
+  const [expenseDataByCategory, setExpenseDataByCategory] = useState<any[]>([]);
+  const [pendingPaymentsState, setPendingPayments] = useState<any[]>([]);
+  
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: expenseService.fetchExpenses
+  });
+  
+  const { data: stockItems = [] } = useQuery({
+    queryKey: ['stock'],
+    queryFn: stockService.fetchStock
+  });
+
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+
+  const { data: initialExpenses = [], isLoading: isFetchingInitialExpenses } = useQuery({
+    queryKey: ['initial_expenses'],
+    queryFn: initialExpensesService.fetchInitialExpenses
+  });
 
   useEffect(() => {
     if (expenses.length > 0) {
@@ -350,8 +353,7 @@ export default function ResultadosPage() {
     setServiceData(tempServiceData);
   };
 
-  // Calcular totales para servicios y gastos
-  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  const totalServicesState = serviceDataState.reduce((sum, item) => sum + item.ingresos, 0);
   const totalExpenses = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
 
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || {
@@ -397,7 +399,7 @@ export default function ResultadosPage() {
       utilidad: currentMonthData.utilidad,
       revenueGrowth: revenueGrowth,
       profitGrowth: profitGrowth,
-      serviceData: serviceData,
+      serviceData: serviceDataState,
       expenseData: expenseDataByCategory
     };
     
@@ -415,7 +417,7 @@ export default function ResultadosPage() {
       utilidad: currentMonthData.utilidad,
       revenueGrowth: revenueGrowth,
       profitGrowth: profitGrowth,
-      serviceData: serviceData,
+      serviceData: serviceDataState,
       expenseData: expenseDataByCategory
     };
     
@@ -449,9 +451,9 @@ export default function ResultadosPage() {
                 <SelectValue placeholder="Seleccionar mes" />
               </SelectTrigger>
               <SelectContent>
-                {monthlyData.map((data) => (
-                  <SelectItem key={data.month} value={data.month}>
-                    {data.month}
+                {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -499,118 +501,74 @@ export default function ResultadosPage() {
             <CardTitle>Facturación por Servicio</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Servicio</TableHead>
-                  <TableHead className="text-right">Ingresos</TableHead>
-                  <TableHead className="text-right">% del Total</TableHead>
-                  <TableHead className="text-right">% vs Mes Anterior</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {serviceData.map((item) => {
-                  const percentage = totalServices > 0 
-                    ? ((item.ingresos / totalServices) * 100).toFixed(1) 
-                    : "0.0";
-                  
-                  const percentageChange = item.ingresosPrevMes > 0 
-                    ? ((item.ingresos - item.ingresosPrevMes) / item.ingresosPrevMes * 100).toFixed(1)
-                    : "0.0";
-                  
-                  return (
-                    <TableRow key={item.servicio}>
-                      <TableCell>{item.servicio}</TableCell>
-                      <TableCell className="text-right">$ {item.ingresos.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{percentage}%</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end">
-                          {parseFloat(percentageChange) >= 0 ? (
-                            <>
-                              <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
-                              <span className="text-emerald-500">{percentageChange}%</span>
-                            </>
-                          ) : (
-                            <>
-                              <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
-                              <span className="text-rose-500">{Math.abs(parseFloat(percentageChange))}%</span>
-                            </>
-                          )}
-                        </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Servicio</TableHead>
+                    <TableHead className="text-right">Ingresos</TableHead>
+                    <TableHead className="text-right">% del Total</TableHead>
+                    <TableHead className="text-right">% vs Mes Anterior</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {serviceData.length > 0 ? (
+                    serviceData.map((item) => {
+                      const percentage = totalServices > 0 
+                        ? ((item.ingresos / totalServices) * 100).toFixed(1) 
+                        : "0.0";
+                      
+                      const percentageChange = item.ingresosPrevMes > 0 
+                        ? ((item.ingresos - item.ingresosPrevMes) / item.ingresosPrevMes * 100).toFixed(1)
+                        : "0.0";
+                      
+                      return (
+                        <TableRow key={item.servicio}>
+                          <TableCell>{item.servicio}</TableCell>
+                          <TableCell className="text-right">$ {item.ingresos.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{percentage}%</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end">
+                              {parseFloat(percentageChange) >= 0 ? (
+                                <>
+                                  <ArrowUp className="mr-1 h-4 w-4 text-emerald-500" />
+                                  <span className="text-emerald-500">{percentageChange}%</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowDown className="mr-1 h-4 w-4 text-rose-500" />
+                                  <span className="text-rose-500">{Math.abs(parseFloat(percentageChange))}%</span>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No hay datos de ingresos para el periodo seleccionado
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                <TableRow className="font-bold bg-muted/30">
-                  <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-right">
-                    $ {totalServices.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">100%</TableCell>
-                  <TableCell className="text-right">-</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Gastos por Categoría</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead className="text-right">Monto</TableHead>
-                  <TableHead className="text-right">% del Total</TableHead>
-                  <TableHead className="text-right">% vs Mes Anterior</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {expenseDataByCategory.map((item) => {
-                  const percentage = totalExpenses > 0 
-                    ? ((item.monto / totalExpenses) * 100).toFixed(1) 
-                    : "0.0";
-                  
-                  const percentageChange = item.montoPrevMes > 0 
-                    ? ((item.monto - item.montoPrevMes) / item.montoPrevMes * 100).toFixed(1)
-                    : "0.0";
-                  
-                  return (
-                    <TableRow key={item.categoria}>
-                      <TableCell>{item.categoria}</TableCell>
-                      <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{percentage}%</TableCell>
+                  )}
+                  {serviceData.length > 0 && (
+                    <TableRow className="font-bold bg-muted/30">
+                      <TableCell>TOTAL</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end">
-                          {parseFloat(percentageChange) >= 0 ? (
-                            <>
-                              <ArrowUp className="mr-1 h-4 w-4 text-rose-500" />
-                              <span className="text-rose-500">{percentageChange}%</span>
-                            </>
-                          ) : (
-                            <>
-                              <ArrowDown className="mr-1 h-4 w-4 text-emerald-500" />
-                              <span className="text-emerald-500">{Math.abs(parseFloat(percentageChange))}%</span>
-                            </>
-                          )}
-                        </div>
+                        $ {totalServices.toLocaleString()}
                       </TableCell>
+                      <TableCell className="text-right">100%</TableCell>
+                      <TableCell className="text-right">-</TableCell>
                     </TableRow>
-                  );
-                })}
-                <TableRow className="font-bold bg-muted/30">
-                  <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-right">
-                    $ {totalExpenses.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">100%</TableCell>
-                  <TableCell className="text-right">-</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -619,42 +577,49 @@ export default function ResultadosPage() {
             <CardTitle>Pagos Pendientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right">Monto</TableHead>
-                  <TableHead className="text-center">Vencimiento</TableHead>
-                  <TableHead className="text-right">Medio de Pago</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingPayments.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.proveedor}</TableCell>
-                    <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
-                    <TableCell className="text-center">{item.vencimiento}</TableCell>
-                    <TableCell className="text-right">{item.medioPago}</TableCell>
-                  </TableRow>
-                ))}
-                {pendingPayments.length === 0 && (
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      No hay pagos pendientes registrados
-                    </TableCell>
+                    <TableHead>Proveedor</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="text-center">Vencimiento</TableHead>
+                    <TableHead className="text-right">Medio de Pago</TableHead>
                   </TableRow>
-                )}
-                {pendingPayments.length > 0 && (
-                  <TableRow className="font-bold bg-muted/30">
-                    <TableCell>TOTAL</TableCell>
-                    <TableCell className="text-right">
-                      $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell colSpan={2}></TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pendingPayments.length > 0 ? (
+                    pendingPayments.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.proveedor}</TableCell>
+                        <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
+                        <TableCell className="text-center">{item.vencimiento}</TableCell>
+                        <TableCell className="text-right">{item.medioPago}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                        No hay pagos pendientes registrados
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {pendingPayments.length > 0 && (
+                    <TableRow className="font-bold bg-muted/30">
+                      <TableCell>TOTAL</TableCell>
+                      <TableCell className="text-right">
+                        $ {pendingPayments.reduce((sum, item) => sum + item.monto, 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell colSpan={2}></TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 

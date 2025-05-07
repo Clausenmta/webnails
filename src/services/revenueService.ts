@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { IncomeExpense } from "@/types/revenue";
 
 type ServiceRevenue = {
   service_name: string;
@@ -38,7 +39,7 @@ export const revenueService = {
     }
   },
   
-  async fetchIncomeFromExpenses(month: number, year: number): Promise<any[]> {
+  async fetchIncomeFromExpenses(month: number, year: number): Promise<IncomeExpense[]> {
     try {
       console.log(`Fetching income expenses for month ${month+1}/${year}`);
       

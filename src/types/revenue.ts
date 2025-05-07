@@ -17,3 +17,16 @@ export interface InitialExpense {
   category: string;
   amount: number;
 }
+
+export interface IncomeExpense {
+  id: number;
+  date: string;
+  concept: string;
+  amount: number;
+  category: string;
+  created_by: string;
+  provider?: string;
+  payment_method?: string;
+  due_date?: string;
+  status?: string;
+}

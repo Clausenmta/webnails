@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -23,21 +22,26 @@ import { useQuery } from "@tanstack/react-query";
 import { giftCardService } from "@/services/giftCardService";
 import { arreglosService } from "@/services/arreglosService";
 import { stockService } from "@/services/stock";
+import { useArreglosRevenue } from "@/hooks/useArreglosRevenue";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   const [currentDate, setCurrentDate] = useState(new Date());
   
+  // Use our new hook to get revenue data
+  const { 
+    monthlyRevenue, 
+    previousMonthRevenue, 
+    percentageChange,
+    pendingArreglos,
+    oldPendingArreglos
+  } = useArreglosRevenue();
+  
   // Consultas para obtener datos reales
   const { data: giftCards = [] } = useQuery({
     queryKey: ['giftCards'],
     queryFn: giftCardService.fetchGiftCards,
-  });
-  
-  const { data: arreglos = [] } = useQuery({
-    queryKey: ['arreglos'],
-    queryFn: arreglosService.fetchArreglos,
   });
   
   const { data: stockItems = [] } = useQuery({
@@ -53,15 +57,6 @@ export default function DashboardPage() {
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 30 && diffDays > 0; // Próximas a vencer en 30 días
-  });
-  
-  const pendingArreglos = arreglos.filter(arreglo => arreglo.status === 'pendiente');
-  const oldPendingArreglos = pendingArreglos.filter(arreglo => {
-    const arregloDate = new Date(arreglo.date);
-    const today = new Date();
-    const diffTime = today.getTime() - arregloDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 5;
   });
   
   const lowStockItems = stockItems.filter(item => 
@@ -145,12 +140,11 @@ export default function DashboardPage() {
     }
     
     // Alerta de arreglo pendiente
-    if (pendingArreglos.length > 0) {
-      const oldestArreglo = pendingArreglos[0];
+    if (pendingArreglos > 0) {
       alerts.push({
         icon: Wrench,
-        title: `Arreglo pendiente: Cliente ${oldestArreglo.client_name}`,
-        description: `Registrado hace 7 días`,
+        title: `Arreglos pendientes`,
+        description: `Hay arreglos pendientes`,
         requiredRole: undefined,
       });
     }
@@ -217,9 +211,9 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4 text-salon-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$487,650</div>
+              <div className="text-2xl font-bold">${monthlyRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                +12.5% respecto al mes pasado
+                {percentageChange > 0 ? '+' : ''}{percentageChange.toFixed(1)}% respecto al mes pasado
               </p>
             </CardContent>
           </Card>
@@ -254,9 +248,9 @@ export default function DashboardPage() {
             <Wrench className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingArreglos.length}</div>
+            <div className="text-2xl font-bold">{pendingArreglos}</div>
             <p className="text-xs text-muted-foreground">
-              {oldPendingArreglos.length} con más de 5 días
+              {oldPendingArreglos} con más de 5 días
             </p>
           </CardContent>
         </Card>

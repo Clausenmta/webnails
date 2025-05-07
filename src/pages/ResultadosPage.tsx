@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -53,8 +53,10 @@ import { toast } from "sonner";
 import { exportReport } from "@/utils/reportExport";
 import { format } from "date-fns";
 import { initialExpensesService } from "@/services/initialExpensesService";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useRevenueData } from "@/hooks/useRevenueData";
+import { expenseService } from "@/services/expenseService";
+import { stockService } from "@/services/stockService";
 
 const initialExpenseCategories = [
   "Remodelación",

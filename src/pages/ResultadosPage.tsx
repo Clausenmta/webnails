@@ -57,6 +57,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useRevenueData } from "@/hooks/useRevenueData";
 import { expenseService } from "@/services/expenseService";
 import { stockService } from "@/services/stockService";
+import { ExpensesByCategory } from "@/components/revenue/ExpensesByCategory";
 
 const initialExpenseCategories = [
   "Remodelación",
@@ -497,7 +498,7 @@ export default function ResultadosPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 space-y-4">
+      <div className="grid grid-cols-1 gap-4">
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Facturación por Servicio</CardTitle>
@@ -573,6 +574,8 @@ export default function ResultadosPage() {
             )}
           </CardContent>
         </Card>
+
+        <ExpensesByCategory expenseDataByCategory={expenseDataByCategory} isLoading={isLoadingExpenses} />
 
         <Card className="col-span-1">
           <CardHeader>

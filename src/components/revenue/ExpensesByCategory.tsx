@@ -1,0 +1,99 @@
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Loader2 } from "lucide-react";
+
+interface ExpensesByCategoryProps {
+  expenseDataByCategory: {
+    categoria: string;
+    monto: number;
+    montoPrevMes: number;
+  }[];
+  isLoading: boolean;
+}
+
+export function ExpensesByCategory({ expenseDataByCategory, isLoading }: ExpensesByCategoryProps) {
+  const totalExpense = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gastos por Categoría</CardTitle>
+        <CardDescription>Desglose y comparativo con el mes anterior</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Categoría</TableHead>
+                <TableHead className="text-right">Monto Total</TableHead>
+                <TableHead className="text-right">% del Total</TableHead>
+                <TableHead className="text-right">Vs Mes Anterior</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {expenseDataByCategory.length > 0 ? (
+                expenseDataByCategory
+                  .sort((a, b) => b.monto - a.monto)
+                  .map((item, index) => {
+                    const percent = totalExpense > 0 ? ((item.monto / totalExpense) * 100).toFixed(1) : "0.0";
+                    
+                    let delta = 0;
+                    if (item.montoPrevMes > 0) {
+                      delta = ((item.monto - item.montoPrevMes) / item.montoPrevMes) * 100;
+                    }
+
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>{item.categoria}</TableCell>
+                        <TableCell className="text-right">$ {item.monto.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{percent}%</TableCell>
+                        <TableCell className="text-right">
+                          {item.montoPrevMes > 0 ? (
+                            <span className={delta >= 0 ? "text-rose-500" : "text-emerald-500"}>
+                              {delta >= 0 ? "+" : "-"}{Math.abs(delta).toFixed(1)}%
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No hay datos de gastos para el periodo seleccionado
+                    </TableCell>
+                  </TableRow>
+                )
+              }
+              {expenseDataByCategory.length > 0 && (
+                <TableRow className="font-bold bg-muted/30">
+                  <TableCell>TOTAL</TableCell>
+                  <TableCell className="text-right">
+                    $ {totalExpense.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">100%</TableCell>
+                  <TableCell className="text-right"></TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

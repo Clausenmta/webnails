@@ -7,18 +7,25 @@ import { UserRole } from '@/types/auth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: UserRole;
+  requiredPermission?: string;
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { isAuthenticated, isAuthorized } = useAuth();
+const ProtectedRoute = ({ children, requiredRole, requiredPermission }: ProtectedRouteProps) => {
+  const { isAuthenticated, isAuthorized, hasSpecialPermission } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && !isAuthorized(requiredRole)) {
-    // If specific role is required and user doesn't have it
+  // Verificar permiso especial si se requiere
+  if (requiredPermission && !hasSpecialPermission(requiredPermission)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Verificar rol si se requiere
+  if (requiredRole && !isAuthorized(requiredRole) && 
+      !(requiredPermission && hasSpecialPermission(requiredPermission))) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -57,7 +57,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/ausencias" element={
-                  <ProtectedRoute requiredRole="superadmin">
+                  <ProtectedRoute requiredRole="superadmin" requiredPermission="ausencias">
                     <AusenciasPage />
                   </ProtectedRoute>
                 } />

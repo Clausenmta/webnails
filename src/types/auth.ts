@@ -15,6 +15,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isAuthorized: (requiredRole: UserRole) => boolean;
   updateUserRole: (email: string, newRole: UserRole) => void;
+  hasSpecialPermission: (permissionName: string) => boolean;
 }
 
 // Tipos de exportación

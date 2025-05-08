@@ -32,14 +32,23 @@ import { UserRole } from "@/types/auth";
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasSpecialPermission } = useAuth();
   
   // Función para verificar si un item de menú debe mostrarse según el rol del usuario
-  const shouldShowMenuItem = (requiredRole?: UserRole): boolean => {
-    if (!requiredRole) return true; // Si no hay rol requerido, mostrar a todos
+  const shouldShowMenuItem = (requiredRole?: UserRole, specialPermission?: string): boolean => {
     if (!user) return false; // Si no hay usuario, no mostrar
-    if (user.role === 'superadmin') return true; // Superadmin puede ver todo
-    return user.role === requiredRole; // Verificar si el rol del usuario coincide con el requerido
+    
+    // Si se especifica un permiso especial, verificar
+    if (specialPermission && hasSpecialPermission(specialPermission)) return true;
+    
+    // Si no hay rol requerido, mostrar a todos
+    if (!requiredRole) return true;
+    
+    // Superadmin puede ver todo
+    if (user.role === 'superadmin') return true;
+    
+    // Verificar si el rol del usuario coincide con el requerido
+    return user.role === requiredRole;
   };
   
   const mainMenuItems = [
@@ -48,54 +57,63 @@ export function AppSidebar() {
       path: "/",
       icon: LayoutDashboard,
       requiredRole: undefined,
+      specialPermission: undefined,
     },
     {
       title: "Gift Cards",
       path: "/gift-cards",
       icon: CreditCard,
       requiredRole: undefined,
+      specialPermission: undefined,
     },
     {
       title: "Stock",
       path: "/stock",
       icon: Package,
       requiredRole: undefined,
+      specialPermission: undefined,
     },
     {
       title: "Arreglos",
       path: "/arreglos",
       icon: Wrench,
       requiredRole: undefined,
+      specialPermission: undefined,
     },
     {
       title: "Gastos",
       path: "/gastos",
       icon: DollarSign,
       requiredRole: undefined,
+      specialPermission: undefined,
     },
     {
       title: "Empleados",
       path: "/empleados",
       icon: Users,
       requiredRole: 'superadmin' as UserRole,
+      specialPermission: undefined,
     },
     {
       title: "Ausencias",
       path: "/ausencias",
       icon: CalendarX2,
       requiredRole: 'superadmin' as UserRole,
+      specialPermission: 'ausencias',
     },
     {
       title: "Resultados",
       path: "/resultados",
       icon: BarChart,
       requiredRole: 'superadmin' as UserRole,
+      specialPermission: undefined,
     },
     {
       title: "Facturación",
       path: "/facturacion",
       icon: Receipt,
       requiredRole: 'superadmin' as UserRole,
+      specialPermission: undefined,
     },
   ];
 
@@ -127,7 +145,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems
-                .filter(item => shouldShowMenuItem(item.requiredRole))
+                .filter(item => shouldShowMenuItem(item.requiredRole, item.specialPermission))
                 .map((item) => (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton 

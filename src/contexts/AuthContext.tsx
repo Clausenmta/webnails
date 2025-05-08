@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthContextType } from '@/types/auth';
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,11 @@ const userRoleMap: Record<string, UserRole> = {
   'nailsandcofisherton@gmail.com': 'employee',
 };
 
+// Lista de permisos especiales para usuarios específicos
+const specialPermissions: Record<string, string[]> = {
+  'nailsandcofisherton@gmail.com': ['ausencias']
+};
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => false,
@@ -18,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isAuthorized: () => false,
   updateUserRole: () => {},
+  hasSpecialPermission: () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -31,6 +38,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const determineUserRole = (email: string | undefined): UserRole => {
     if (!email) return 'employee';
     return userRoleMap[email.toLowerCase()] || 'employee';
+  };
+
+  // Función para verificar permisos especiales
+  const hasSpecialPermission = (permissionName: string): boolean => {
+    if (!user || !user.username) return false;
+    
+    // Los superadmin tienen todos los permisos
+    if (user.role === 'superadmin') return true;
+    
+    // Verificar si el usuario tiene permisos especiales
+    const userPermissions = specialPermissions[user.username.toLowerCase()] || [];
+    return userPermissions.includes(permissionName);
   };
 
   // Función para actualizar el rol de un usuario
@@ -182,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user,
         isAuthorized,
         updateUserRole,
+        hasSpecialPermission,
       }}
     >
       {!isLoading && children}

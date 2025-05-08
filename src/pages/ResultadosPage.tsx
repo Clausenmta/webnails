@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -500,6 +501,15 @@ export default function ResultadosPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
+        {/* Monthly Result Panel - Moved to the top */}
+        <MonthlyResult
+          totalRevenue={totalServices}
+          totalExpenses={totalExpenses}
+          prevMonthRevenue={serviceData.reduce((sum, item) => sum + item.ingresosPrevMes, 0)}
+          prevMonthExpenses={expenseDataByCategory.reduce((sum, item) => sum + item.montoPrevMes, 0)}
+          isLoading={isLoading || isLoadingExpenses}
+        />
+
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Facturación por Servicio</CardTitle>
@@ -577,15 +587,6 @@ export default function ResultadosPage() {
         </Card>
 
         <ExpensesByCategory expenseDataByCategory={expenseDataByCategory} isLoading={isLoadingExpenses} />
-
-        {/* New Monthly Result Panel */}
-        <MonthlyResult
-          totalRevenue={totalServices}
-          totalExpenses={totalExpenses}
-          prevMonthRevenue={serviceData.reduce((sum, item) => sum + item.ingresosPrevMes, 0)}
-          prevMonthExpenses={expenseDataByCategory.reduce((sum, item) => sum + item.montoPrevMes, 0)}
-          isLoading={isLoading || isLoadingExpenses}
-        />
 
         <Card className="col-span-1">
           <CardHeader>

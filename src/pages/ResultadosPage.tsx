@@ -239,15 +239,9 @@ export default function ResultadosPage() {
           const month = parseInt(dateParts[1]) - 1;
           const expenseYear = parseInt(dateParts[2]);
           
-         if (
-  expenseYear === currentYear &&
-  month >= 0 &&
-  month < 12 &&
-  expense.category !== "Ingresos"
-) {
-  expensesByMonth[month] = (expensesByMonth[month] || 0) + expense.amount;
-}
-
+          if (expenseYear === currentYear && month >= 0 && month < 12) {
+            expensesByMonth[month] = (expensesByMonth[month] || 0) + expense.amount;
+          }
         }
       } catch (error) {
         console.error('Error parsing date:', expense.date);
@@ -365,7 +359,10 @@ export default function ResultadosPage() {
   };
 
   const totalServicesState = serviceDataState.reduce((sum, item) => sum + item.ingresos, 0);
-  const totalExpenses = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
+  const totalExpenses = expenseDataByCategory
+  .filter(item => item.categoria !== "Ingresos")
+  .reduce((sum, item) => sum + item.monto, 0);
+
 
   const currentMonthData = monthlyData.find(data => data.month === selectedMonth) || {
     month: selectedMonth,

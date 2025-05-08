@@ -23,7 +23,7 @@ export const absenceTypeService = {
         throw new Error(error.message);
       }
       
-      return data || [];
+      return (data as AbsenceType[]) || [];
     } catch (error) {
       console.error("Error in fetchAbsenceTypes:", error);
       throw error;

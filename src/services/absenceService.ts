@@ -57,7 +57,7 @@ export const absenceService = {
     try {
       const { data, error } = await supabase
         .from('ausencias_empleados')
-        .insert(absence)
+        .insert(absence as any)
         .select()
         .single();
 
@@ -78,7 +78,7 @@ export const absenceService = {
     try {
       const { data, error } = await supabase
         .from('ausencias_empleados')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();

@@ -10,7 +10,7 @@ import { Employee } from "@/types/employees";
 
 export interface AbsenceFiltersState {
   employeeId: number | null;
-  tipoAusencia: TipoAusenciaEnum | null;
+  tipoAusencia: string | null;
   startDate: Date;
   endDate: Date;
 }

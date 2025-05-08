@@ -11,15 +11,8 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Employee } from "@/types/employees";
-
-// Tipos de ausencia
-const tiposAusencia = [
-  { value: "Enfermedad", label: "Enfermedad" },
-  { value: "Vacaciones", label: "Vacaciones" },
-  { value: "Licencia", label: "Licencia" },
-  { value: "Ausencia justificada", label: "Ausencia justificada" },
-  { value: "Otros", label: "Otros" }
-];
+import { useQuery } from "@tanstack/react-query";
+import { absenceTypeService, TipoAusenciaEnum } from "@/services/absenceTypeService";
 
 interface FiltersType {
   employeeId: number | null;
@@ -39,6 +32,11 @@ export default function AbsenceFilters({
   filters,
   setFilters
 }: AbsenceFiltersProps) {
+  // Fetch absence types from the database
+  const { data: absenceTypes = [], isLoading: isLoadingTypes } = useQuery({
+    queryKey: ['absenceTypes'],
+    queryFn: absenceTypeService.fetchAbsenceTypes
+  });
   
   const handleReset = () => {
     setFilters({
@@ -90,11 +88,15 @@ export default function AbsenceFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all_types">Todos los tipos</SelectItem>
-                {tiposAusencia.map(tipo => (
-                  <SelectItem key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </SelectItem>
-                ))}
+                {isLoadingTypes ? (
+                  <SelectItem value="" disabled>Cargando tipos...</SelectItem>
+                ) : (
+                  absenceTypes.map(tipo => (
+                    <SelectItem key={tipo.id} value={tipo.nombre}>
+                      {tipo.nombre}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

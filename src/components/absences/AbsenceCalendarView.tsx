@@ -28,6 +28,34 @@ export function AbsenceCalendarView({
   onEditAbsence,
   onDeleteAbsence
 }: AbsenceCalendarViewProps) {
+  // Helper function to get background color based on absence type
+  const getAbsenceTypeBackground = (type: string) => {
+    switch (type) {
+      case "Vacaciones": return "bg-blue-100";
+      case "Enfermedad": return "bg-red-100";
+      case "Licencia": return "bg-amber-100";
+      case "Enfermedad certificado": return "bg-orange-100";
+      case "Personal": return "bg-purple-100";
+      case "Franco": return "bg-green-100";
+      case "Liberada": return "bg-teal-100";
+      default: return "bg-gray-100";
+    }
+  };
+  
+  // Helper function to get text color based on absence type
+  const getAbsenceTypeTextColor = (type: string) => {
+    switch (type) {
+      case "Vacaciones": return "text-blue-600";
+      case "Enfermedad": return "text-red-600";
+      case "Licencia": return "text-amber-600";
+      case "Enfermedad certificado": return "text-orange-600";
+      case "Personal": return "text-purple-600";
+      case "Franco": return "text-green-600";
+      case "Liberada": return "text-teal-600";
+      default: return "text-gray-600";
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-start">
       <div className="md:w-1/2">
@@ -79,20 +107,8 @@ export function AbsenceCalendarView({
                     key={absence.id}
                     className="flex items-start gap-4 p-4 border rounded-md"
                   >
-                    <div className={`p-2 rounded-full ${
-                      absence.tipo_ausencia === "Vacaciones" ? "bg-blue-100" :
-                      absence.tipo_ausencia === "Enfermedad" ? "bg-red-100" :
-                      absence.tipo_ausencia === "Licencia" ? "bg-amber-100" :
-                      absence.tipo_ausencia === "Ausencia justificada" ? "bg-green-100" :
-                      "bg-gray-100"
-                    }`}>
-                      <CalendarX2 className={`h-5 w-5 ${
-                        absence.tipo_ausencia === "Vacaciones" ? "text-blue-600" :
-                        absence.tipo_ausencia === "Enfermedad" ? "text-red-600" :
-                        absence.tipo_ausencia === "Licencia" ? "text-amber-600" :
-                        absence.tipo_ausencia === "Ausencia justificada" ? "text-green-600" :
-                        "text-gray-600"
-                      }`} />
+                    <div className={`p-2 rounded-full ${getAbsenceTypeBackground(absence.tipo_ausencia)}`}>
+                      <CalendarX2 className={`h-5 w-5 ${getAbsenceTypeTextColor(absence.tipo_ausencia)}`} />
                     </div>
                     
                     <div className="flex-1">

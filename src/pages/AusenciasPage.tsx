@@ -5,7 +5,7 @@ import AbsenceList from "@/components/absences/AbsenceList";
 import AbsenceFilters from "@/components/absences/AbsenceFilters";
 import { AbsenceHeader } from "@/components/absences/AbsenceHeader";
 import { AbsenceCalendarView } from "@/components/absences/AbsenceCalendarView";
-import { useAbsenceManagement } from "@/hooks/useAbsenceManagement";
+import { useAbsenceManagement, AbsenceFiltersState } from "@/hooks/useAbsenceManagement";
 
 export default function AusenciasPage() {
   const {
@@ -46,7 +46,7 @@ export default function AusenciasPage() {
       <AbsenceFilters 
         employees={employees} 
         filters={filters}
-        setFilters={setFilters}
+        setFilters={(newFilters) => setFilters(newFilters as AbsenceFiltersState)}
       />
 
       <Tabs defaultValue="calendar">

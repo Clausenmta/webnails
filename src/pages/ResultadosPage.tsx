@@ -58,6 +58,7 @@ import { useRevenueData } from "@/hooks/useRevenueData";
 import { expenseService } from "@/services/expenseService";
 import { stockService } from "@/services/stockService";
 import { ExpensesByCategory } from "@/components/revenue/ExpensesByCategory";
+import { MonthlyResult } from "@/components/revenue/MonthlyResult";
 
 const initialExpenseCategories = [
   "Remodelación",
@@ -576,6 +577,15 @@ export default function ResultadosPage() {
         </Card>
 
         <ExpensesByCategory expenseDataByCategory={expenseDataByCategory} isLoading={isLoadingExpenses} />
+
+        {/* New Monthly Result Panel */}
+        <MonthlyResult
+          totalRevenue={totalServices}
+          totalExpenses={totalExpenses}
+          prevMonthRevenue={serviceData.reduce((sum, item) => sum + item.ingresosPrevMes, 0)}
+          prevMonthExpenses={expenseDataByCategory.reduce((sum, item) => sum + item.montoPrevMes, 0)}
+          isLoading={isLoading || isLoadingExpenses}
+        />
 
         <Card className="col-span-1">
           <CardHeader>

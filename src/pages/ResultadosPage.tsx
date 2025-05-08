@@ -239,9 +239,15 @@ export default function ResultadosPage() {
           const month = parseInt(dateParts[1]) - 1;
           const expenseYear = parseInt(dateParts[2]);
           
-          if (expenseYear === currentYear && month >= 0 && month < 12) {
-            expensesByMonth[month] = (expensesByMonth[month] || 0) + expense.amount;
-          }
+         if (
+  expenseYear === currentYear &&
+  month >= 0 &&
+  month < 12 &&
+  expense.category !== "Ingresos"
+) {
+  expensesByMonth[month] = (expensesByMonth[month] || 0) + expense.amount;
+}
+
         }
       } catch (error) {
         console.error('Error parsing date:', expense.date);

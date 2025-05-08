@@ -69,7 +69,7 @@ export type Database = {
           fecha_inicio: string
           id: number
           observaciones: string | null
-          tipo_ausencia: string
+          tipo_ausencia: Database["public"]["Enums"]["tipo_ausencia_enum"]
         }
         Insert: {
           created_at?: string
@@ -79,7 +79,7 @@ export type Database = {
           fecha_inicio: string
           id?: number
           observaciones?: string | null
-          tipo_ausencia: string
+          tipo_ausencia: Database["public"]["Enums"]["tipo_ausencia_enum"]
         }
         Update: {
           created_at?: string
@@ -89,7 +89,7 @@ export type Database = {
           fecha_inicio?: string
           id?: number
           observaciones?: string | null
-          tipo_ausencia?: string
+          tipo_ausencia?: Database["public"]["Enums"]["tipo_ausencia_enum"]
         }
         Relationships: [
           {
@@ -374,6 +374,21 @@ export type Database = {
         }
         Relationships: []
       }
+      tipo_ausencia_opciones: {
+        Row: {
+          id: number
+          nombre: string | null
+        }
+        Insert: {
+          id?: number
+          nombre?: string | null
+        }
+        Update: {
+          id?: number
+          nombre?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -382,7 +397,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tipo_ausencia_enum:
+        | "Vacaciones"
+        | "Enfermedad"
+        | "Enfermedad certificado"
+        | "Personal"
+        | "Franco"
+        | "Liberada"
+        | "Licencia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -497,6 +519,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      tipo_ausencia_enum: [
+        "Vacaciones",
+        "Enfermedad",
+        "Enfermedad certificado",
+        "Personal",
+        "Franco",
+        "Liberada",
+        "Licencia",
+      ],
+    },
   },
 } as const

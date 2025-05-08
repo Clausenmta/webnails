@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { absenceService, type Absence } from "@/services/absenceService";
 import { employeeService } from "@/services/employeeService";
+import { absenceTypeService } from "@/services/absenceTypeService";
 import { Employee } from "@/types/employees";
 
 export interface AbsenceFiltersState {
@@ -67,6 +67,12 @@ export function useAbsenceManagement() {
         };
       });
     }
+  });
+  
+  // Query for absence types
+  const { data: absenceTypes = [], isLoading: isLoadingAbsenceTypes } = useQuery({
+    queryKey: ['absenceTypes'],
+    queryFn: absenceTypeService.fetchAbsenceTypes
   });
 
   // Apply filters to absences
@@ -206,10 +212,12 @@ export function useAbsenceManagement() {
     setFilters,
     employees,
     absences,
+    absenceTypes,
     filteredAbsences,
     absencesByDate,
     isLoadingEmployees,
     isLoadingAbsences,
+    isLoadingAbsenceTypes,
     handleAddAbsence,
     handleEditAbsence,
     handleViewAbsence,

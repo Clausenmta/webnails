@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { absenceService, Absence } from "@/services/absenceService";
 import { Employee } from "@/types/employees";
 import { useAuth } from "@/contexts/AuthContext";
+import { absenceTypeService } from "@/services/absenceTypeService";
 
 export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: number) {
   const { user } = useAuth();
@@ -36,6 +37,12 @@ export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: n
         };
       });
     }
+  });
+  
+  // Query for absence types to make them available in the hook
+  const { data: absenceTypes = [] } = useQuery({
+    queryKey: ['absenceTypes'],
+    queryFn: absenceTypeService.fetchAbsenceTypes
   });
   
   // Mutations
@@ -133,6 +140,7 @@ export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: n
     isViewMode,
     selectedAbsence,
     selectedDateAbsences,
+    absenceTypes,
     handleAddAbsence,
     handleViewAbsence,
     handleEditAbsence,

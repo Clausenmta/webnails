@@ -23,15 +23,8 @@ import { cn } from "@/lib/utils";
 import { Employee } from "@/types/employees";
 import { useAuth } from "@/contexts/AuthContext";
 import { Absence } from "@/services/absenceService";
-
-// Tipos de ausencia
-const tiposAusencia = [
-  { value: "Enfermedad", label: "Enfermedad" },
-  { value: "Vacaciones", label: "Vacaciones" },
-  { value: "Licencia", label: "Licencia" },
-  { value: "Ausencia justificada", label: "Ausencia justificada" },
-  { value: "Otros", label: "Otros" }
-];
+import { useQuery } from "@tanstack/react-query";
+import { absenceTypeService, AbsenceType } from "@/services/absenceTypeService";
 
 interface AbsenceDialogProps {
   open: boolean;
@@ -52,9 +45,15 @@ export default function AbsenceDialog({
 }: AbsenceDialogProps) {
   const { user } = useAuth();
   
+  // Fetch absence types from the database
+  const { data: absenceTypes = [], isLoading: isLoadingTypes } = useQuery({
+    queryKey: ['absenceTypes'],
+    queryFn: absenceTypeService.fetchAbsenceTypes
+  });
+  
   const [formData, setFormData] = useState({
     employee_id: 0,
-    tipo_ausencia: "Vacaciones",
+    tipo_ausencia: "",
     fecha_inicio: new Date(),
     fecha_fin: new Date(),
     observaciones: ""
@@ -74,18 +73,23 @@ export default function AbsenceDialog({
       // Default values for new absence
       setFormData({
         employee_id: employees.length > 0 ? employees[0].id : 0,
-        tipo_ausencia: "Vacaciones",
+        tipo_ausencia: absenceTypes.length > 0 ? absenceTypes[0].nombre : "",
         fecha_inicio: new Date(),
         fecha_fin: new Date(),
         observaciones: ""
       });
     }
-  }, [open, absence, employees]);
+  }, [open, absence, employees, absenceTypes]);
 
   const handleSubmit = () => {
     // Validate required fields
     if (!formData.employee_id) {
       toast.error("Debe seleccionar un empleado");
+      return;
+    }
+
+    if (!formData.tipo_ausencia) {
+      toast.error("Debe seleccionar un tipo de ausencia");
       return;
     }
 
@@ -156,17 +160,24 @@ export default function AbsenceDialog({
             <Select 
               value={formData.tipo_ausencia}
               onValueChange={(value) => setFormData({ ...formData, tipo_ausencia: value })}
-              disabled={viewMode}
+              disabled={viewMode || isLoadingTypes}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
               <SelectContent>
-                {tiposAusencia.map(tipo => (
-                  <SelectItem key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </SelectItem>
-                ))}
+                {isLoadingTypes ? (
+                  <SelectItem value="loading">Cargando opciones...</SelectItem>
+                ) : (
+                  absenceTypes.map(type => (
+                    <SelectItem key={type.id} value={type.nombre}>
+                      {type.nombre}
+                    </SelectItem>
+                  ))
+                )}
+                {!isLoadingTypes && absenceTypes.length === 0 && (
+                  <SelectItem value="no-options">No hay tipos disponibles</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>

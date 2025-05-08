@@ -1,15 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { absenceService, type Absence } from "@/services/absenceService";
+import { absenceService, type Absence, AbsenceCreate } from "@/services/absenceService";
 import { employeeService } from "@/services/employeeService";
-import { absenceTypeService } from "@/services/absenceTypeService";
+import { absenceTypeService, TipoAusenciaEnum } from "@/services/absenceTypeService";
 import { Employee } from "@/types/employees";
 
 export interface AbsenceFiltersState {
   employeeId: number | null;
-  tipoAusencia: string | null;
+  tipoAusencia: TipoAusenciaEnum | null;
   startDate: Date;
   endDate: Date;
 }
@@ -93,7 +94,7 @@ export function useAbsenceManagement() {
 
   // Mutations
   const addAbsenceMutation = useMutation({
-    mutationFn: absenceService.addAbsence,
+    mutationFn: (absence: AbsenceCreate) => absenceService.addAbsence(absence),
     onSuccess: () => {
       toast.success("Ausencia registrada correctamente");
       queryClient.invalidateQueries({ queryKey: ['absences'] });
@@ -103,7 +104,7 @@ export function useAbsenceManagement() {
   });
 
   const updateAbsenceMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number, data: Partial<Absence> }) => 
+    mutationFn: ({ id, data }: { id: number, data: Partial<AbsenceCreate> }) => 
       absenceService.updateAbsence(id, data),
     onSuccess: () => {
       toast.success("Ausencia actualizada correctamente");
@@ -163,7 +164,7 @@ export function useAbsenceManagement() {
     }
   };
 
-  const handleSaveAbsence = (absenceData: any) => {
+  const handleSaveAbsence = (absenceData: AbsenceCreate) => {
     if (selectedAbsence) {
       // Update existing absence
       updateAbsenceMutation.mutate({

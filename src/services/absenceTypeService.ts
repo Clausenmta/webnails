@@ -1,9 +1,13 @@
 
 import { supabase } from "@/lib/supabase";
+import { Database } from "@/integrations/supabase/types";
+
+// Define the enum type from the database
+export type TipoAusenciaEnum = Database["public"]["Enums"]["tipo_ausencia_enum"];
 
 export interface AbsenceType {
   id: number;
-  nombre: string;
+  nombre: TipoAusenciaEnum;
 }
 
 export const absenceTypeService = {

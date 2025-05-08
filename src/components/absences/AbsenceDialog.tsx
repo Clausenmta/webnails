@@ -24,7 +24,7 @@ import { Employee } from "@/types/employees";
 import { useAuth } from "@/contexts/AuthContext";
 import { Absence } from "@/services/absenceService";
 import { useQuery } from "@tanstack/react-query";
-import { absenceTypeService, AbsenceType } from "@/services/absenceTypeService";
+import { absenceTypeService, TipoAusenciaEnum } from "@/services/absenceTypeService";
 
 interface AbsenceDialogProps {
   open: boolean;
@@ -53,7 +53,7 @@ export default function AbsenceDialog({
   
   const [formData, setFormData] = useState({
     employee_id: 0,
-    tipo_ausencia: "",
+    tipo_ausencia: "" as TipoAusenciaEnum | "",
     fecha_inicio: new Date(),
     fecha_fin: new Date(),
     observaciones: ""
@@ -73,7 +73,7 @@ export default function AbsenceDialog({
       // Default values for new absence
       setFormData({
         employee_id: employees.length > 0 ? employees[0].id : 0,
-        tipo_ausencia: absenceTypes.length > 0 ? absenceTypes[0].nombre : "",
+        tipo_ausencia: absenceTypes.length > 0 ? absenceTypes[0].nombre : "" as TipoAusenciaEnum | "",
         fecha_inicio: new Date(),
         fecha_fin: new Date(),
         observaciones: ""
@@ -103,9 +103,14 @@ export default function AbsenceDialog({
       return;
     }
 
+    if (!formData.tipo_ausencia) {
+      toast.error("Debe seleccionar un tipo de ausencia válido");
+      return;
+    }
+
     const absenceData = {
       employee_id: formData.employee_id,
-      tipo_ausencia: formData.tipo_ausencia,
+      tipo_ausencia: formData.tipo_ausencia as TipoAusenciaEnum,
       fecha_inicio: format(formData.fecha_inicio, 'yyyy-MM-dd'),
       fecha_fin: format(formData.fecha_fin, 'yyyy-MM-dd'),
       observaciones: formData.observaciones,
@@ -159,7 +164,10 @@ export default function AbsenceDialog({
             <Label>Tipo de Ausencia</Label>
             <Select 
               value={formData.tipo_ausencia}
-              onValueChange={(value) => setFormData({ ...formData, tipo_ausencia: value })}
+              onValueChange={(value) => setFormData({ 
+                ...formData, 
+                tipo_ausencia: value as TipoAusenciaEnum 
+              })}
               disabled={viewMode || isLoadingTypes}
             >
               <SelectTrigger>
@@ -167,7 +175,7 @@ export default function AbsenceDialog({
               </SelectTrigger>
               <SelectContent>
                 {isLoadingTypes ? (
-                  <SelectItem value="loading">Cargando opciones...</SelectItem>
+                  <SelectItem value="">Cargando opciones...</SelectItem>
                 ) : (
                   absenceTypes.map(type => (
                     <SelectItem key={type.id} value={type.nombre}>
@@ -176,7 +184,7 @@ export default function AbsenceDialog({
                   ))
                 )}
                 {!isLoadingTypes && absenceTypes.length === 0 && (
-                  <SelectItem value="no-options">No hay tipos disponibles</SelectItem>
+                  <SelectItem value="">No hay tipos disponibles</SelectItem>
                 )}
               </SelectContent>
             </Select>

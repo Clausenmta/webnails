@@ -1,10 +1,11 @@
 
 import { supabase } from "@/lib/supabase";
+import { TipoAusenciaEnum } from "./absenceTypeService";
 
 export interface Absence {
   id: number;
   employee_id: number;
-  tipo_ausencia: string;
+  tipo_ausencia: TipoAusenciaEnum;
   fecha_inicio: string;
   fecha_fin: string;
   observaciones?: string;
@@ -15,7 +16,7 @@ export interface Absence {
 
 export interface AbsenceCreate {
   employee_id: number;
-  tipo_ausencia: string;
+  tipo_ausencia: TipoAusenciaEnum;
   fecha_inicio: string;
   fecha_fin: string;
   observaciones?: string;

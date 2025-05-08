@@ -1,11 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { absenceService, Absence } from "@/services/absenceService";
+import { absenceService, Absence, AbsenceCreate } from "@/services/absenceService";
 import { Employee } from "@/types/employees";
 import { useAuth } from "@/contexts/AuthContext";
-import { absenceTypeService } from "@/services/absenceTypeService";
+import { absenceTypeService, TipoAusenciaEnum } from "@/services/absenceTypeService";
 
 export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: number) {
   const { user } = useAuth();
@@ -47,7 +48,7 @@ export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: n
   
   // Mutations
   const addAbsenceMutation = useMutation({
-    mutationFn: absenceService.addAbsence,
+    mutationFn: (absence: AbsenceCreate) => absenceService.addAbsence(absence),
     onSuccess: () => {
       toast.success("Ausencia registrada correctamente");
       queryClient.invalidateQueries({ queryKey: ['absences'] });
@@ -57,7 +58,7 @@ export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: n
   });
 
   const updateAbsenceMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number, data: Partial<Absence> }) => 
+    mutationFn: ({ id, data }: { id: number, data: Partial<AbsenceCreate> }) => 
       absenceService.updateAbsence(id, data),
     onSuccess: () => {
       toast.success("Ausencia actualizada correctamente");
@@ -117,7 +118,7 @@ export function useEmployeeAbsences(employees: Employee[], currentEmployeeId?: n
     }
   };
   
-  const handleSaveAbsence = (absenceData: any) => {
+  const handleSaveAbsence = (absenceData: AbsenceCreate) => {
     // If we're editing an existing absence
     if (selectedAbsence) {
       updateAbsenceMutation.mutate({

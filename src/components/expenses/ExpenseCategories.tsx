@@ -12,7 +12,9 @@ function calcSums(expenses: Expense[]) {
   const result: Record<string, number> = {};
   expenseCategories.forEach(cat => result[cat] = 0);
   expenses.forEach(exp => {
-    if (result[exp.category] !== undefined) result[exp.category] += exp.amount;
+    if (result[exp.category] !== undefined && exp.category !== "Ingresos") {
+      result[exp.category] += exp.amount;
+    }
   });
   return result;
 }
@@ -21,7 +23,10 @@ export function ExpenseCategories({ filteredExpenses, prevMonthExpenses }: Expen
   const thisMonth = calcSums(filteredExpenses);
   const prevMonth = calcSums(prevMonthExpenses);
 
-  const total = Object.values(thisMonth).reduce((a, b) => a + b, 0);
+  // Filtrar la categoría "Ingresos" del cálculo total
+  const total = Object.entries(thisMonth)
+    .filter(([category]) => category !== "Ingresos")
+    .reduce((a, [_, value]) => a + value, 0);
 
   return (
     <Card>
@@ -47,7 +52,7 @@ export function ExpenseCategories({ filteredExpenses, prevMonthExpenses }: Expen
                   value: thisMonth[cat],
                   prev: prevMonth[cat]
                 }))
-                .filter(({value}) => value > 0)
+                .filter(({cat, value}) => value > 0 && cat !== "Ingresos")
                 .sort((a, b) => b.value - a.value)
                 .map(({cat, value, prev}, index) => {
                   const percent = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";

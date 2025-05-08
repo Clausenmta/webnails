@@ -20,7 +20,9 @@ interface ExpensesByCategoryProps {
 }
 
 export function ExpensesByCategory({ expenseDataByCategory, isLoading }: ExpensesByCategoryProps) {
-  const totalExpense = expenseDataByCategory.reduce((sum, item) => sum + item.monto, 0);
+  // Filtrar la categoría "Ingresos" y recalcular el total
+  const filteredExpenses = expenseDataByCategory.filter(item => item.categoria !== "Ingresos");
+  const totalExpense = filteredExpenses.reduce((sum, item) => sum + item.monto, 0);
 
   return (
     <Card>
@@ -44,8 +46,8 @@ export function ExpensesByCategory({ expenseDataByCategory, isLoading }: Expense
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenseDataByCategory.length > 0 ? (
-                expenseDataByCategory
+              {filteredExpenses.length > 0 ? (
+                filteredExpenses
                   .sort((a, b) => b.monto - a.monto)
                   .map((item, index) => {
                     const percent = totalExpense > 0 ? ((item.monto / totalExpense) * 100).toFixed(1) : "0.0";
@@ -80,7 +82,7 @@ export function ExpensesByCategory({ expenseDataByCategory, isLoading }: Expense
                   </TableRow>
                 )
               }
-              {expenseDataByCategory.length > 0 && (
+              {filteredExpenses.length > 0 && (
                 <TableRow className="font-bold bg-muted/30">
                   <TableCell>TOTAL</TableCell>
                   <TableCell className="text-right">

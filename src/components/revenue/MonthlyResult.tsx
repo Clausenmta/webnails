@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowUp, ArrowDown, DollarSign, Percent, TrendingUp, TrendingDown } from "lucide-react";
 interface MonthlyResultProps {
@@ -19,7 +20,7 @@ export function MonthlyResult({
   const prevMonthProfit = prevMonthRevenue - prevMonthExpenses;
 
   // Calculate profit percentage of total revenue
-  const profitPercentage = totalRevenue > 0 ? profit / totalRevenue * 100 : 0;
+  const profitPercentage = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
   // Calculate percentage change compared to previous month
   const profitChange = prevMonthProfit !== 0 ? (profit - prevMonthProfit) / Math.abs(prevMonthProfit) * 100 : 0;
@@ -96,9 +97,14 @@ export function MonthlyResult({
           <div className="bg-muted/30 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Percent className="h-5 w-5 text-salon-400" />
-              <h3 className="text-sm font-medium">Rentabildiad</h3>
+              <h3 className="text-sm font-medium">Rentabilidad</h3>
             </div>
-            <p className="text-2xl font-bold">{profitPercentage.toFixed(1)}%</p>
+            <p className={`text-2xl font-bold ${profitPercentage >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+              {profitPercentage.toFixed(1)}%
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              % de los ingresos totales
+            </p>
           </div>
         </div>
       </CardContent>

@@ -1,8 +1,7 @@
-
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { IncomeExpense } from "@/types/revenue";
+import { IncomeExpense, ServiceRevenue as ServiceRevenueType } from "@/types/revenue";
 
 type ServiceRevenue = {
   service_name: string;
@@ -14,7 +13,7 @@ type ServiceRevenue = {
 };
 
 export const revenueService = {
-  async fetchRevenueByService(month: string, year: string): Promise<ServiceRevenue[]> {
+  async fetchRevenueByService(month: string, year: string): Promise<ServiceRevenueType[]> {
     try {
       console.log(`Fetching revenue data for ${month}/${year}`);
       
@@ -69,7 +68,7 @@ export const revenueService = {
     }
   },
   
-  async fetchPendingPayments(): Promise<any[]> {
+  async fetchPendingPayments(): Promise<IncomeExpense[]> {
     try {
       console.log("Fetching pending payments");
       
@@ -102,7 +101,7 @@ export const revenueService = {
       });
       
       console.log(`Fetched ${pendingPayments.length} pending payments`);
-      return pendingPayments;
+      return pendingPayments as IncomeExpense[];
     } catch (error) {
       console.error("Error in fetchPendingPayments:", error);
       toast.error(`Error al obtener pagos pendientes: ${error instanceof Error ? error.message : 'Error desconocido'}`);

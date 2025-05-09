@@ -9,8 +9,9 @@ export interface IncomeExpense {
   details?: string;
   due_date?: string; // "DD/MM/YYYY" - opcional para gastos con vencimiento
   provider?: string; // opcional para gastos con vencimiento
-  status?: "pending" | "paid"; // opcional para gastos con vencimiento
+  status?: "pending" | "paid" | string; // Updated to accept any string value
   payment_method?: string;
+  created_at?: string; // Adding this field as it appears in the database
 }
 
 export interface ServiceRevenue {

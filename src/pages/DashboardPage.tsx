@@ -12,7 +12,10 @@ import {
   ArrowRight,
   AlertTriangle,
   Clock,
-  Download
+  Calendar,
+  CalendarDays,
+  ShoppingBag,
+  House
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +28,10 @@ import { arreglosService } from "@/services/arreglosService";
 import { stockService } from "@/services/stock";
 import { useArreglosRevenue } from "@/hooks/useArreglosRevenue";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { revenueService } from "@/services/revenueService";
+import { expenseService } from "@/services/expenseService";
+import { format, differenceInDays } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
@@ -56,32 +63,87 @@ export default function DashboardPage() {
     queryFn: arreglosService.fetchArreglos,
   });
 
-  // Calcular estadísticas basadas en datos reales
-  const activeGiftCards = giftCards.filter(card => card.status === 'active');
-  const expiringGiftCards = activeGiftCards.filter(card => {
-    const expiryDate = new Date(card.expiry_date);
-    const today = new Date();
-    const diffTime = expiryDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 30 && diffDays > 0; // Próximas a vencer en 30 días
+  // Consulta para obtener pagos pendientes reales
+  const { data: pendingPaymentsData = [], isLoading: isLoadingPayments } = useQuery({
+    queryKey: ['pendingPayments'],
+    queryFn: revenueService.fetchPendingPayments,
+    enabled: isSuperAdmin, // Solo cargar para superadmin
   });
   
+  // Consulta para obtener gastos con vencimiento (alquiler, servicios, etc.)
+  const { data: expenses = [], isLoading: isLoadingExpenses } = useQuery({
+    queryKey: ['expenses'],
+    queryFn: expenseService.fetchExpenses,
+    enabled: isSuperAdmin, // Solo cargar para superadmin
+  });
+
+  // Calcular estadísticas basadas en datos reales
+  const activeGiftCards = giftCards.filter(card => card.status === 'active');
+  
+  // Obtener gift cards que vencen en los próximos 30 días
+  const expiringGiftCards = activeGiftCards.filter(card => {
+    try {
+      const expiryDate = new Date(card.expiry_date);
+      const today = new Date();
+      const diffDays = differenceInDays(expiryDate, today);
+      return diffDays <= 30 && diffDays > 0; // Próximas a vencer en 30 días
+    } catch (e) {
+      console.error("Error al procesar fecha de vencimiento de gift card:", e);
+      return false;
+    }
+  });
+  
+  // Ordenar gift cards por fecha de vencimiento (primero las que vencen antes)
+  const sortedExpiringCards = [...expiringGiftCards].sort((a, b) => {
+    const dateA = new Date(a.expiry_date);
+    const dateB = new Date(b.expiry_date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  // Encontrar productos con stock bajo
   const lowStockItems = stockItems.filter(item => 
     item.quantity <= (item.min_stock_level || 5)
   );
   
+  // Encontrar productos con stock crítico (menos de la mitad del nivel mínimo)
   const criticalStockItems = lowStockItems.filter(item => 
     item.quantity <= (item.min_stock_level || 5) / 2
   );
   
-  const pendingPayments = [
-    {
-      title: "Pago de Alquiler",
-      dueDate: "10/05/2025",
-      amount: 150000,
-      days: 3
-    }
-  ]; // Esto podría venir de una tabla de pagos recurrentes en el futuro
+  // Procesar pagos pendientes reales de la base de datos
+  const upcomingExpenses = expenses
+    .filter(expense => {
+      if (!expense.due_date || expense.status === 'paid') return false;
+      
+      try {
+        // Parsear la fecha DD/MM/YYYY
+        const [day, month, year] = expense.due_date.split('/').map(Number);
+        const dueDate = new Date(year, month - 1, day);
+        const today = new Date();
+        
+        // Comprobar que la fecha es futura y dentro de los próximos 30 días
+        const diffDays = differenceInDays(dueDate, today);
+        return diffDays >= 0 && diffDays <= 30;
+      } catch (e) {
+        console.error("Error al procesar fecha de vencimiento:", e, expense);
+        return false;
+      }
+    })
+    .map(expense => ({
+      title: expense.concept,
+      dueDate: expense.due_date,
+      amount: expense.amount,
+      days: differenceInDays(
+        new Date(
+          parseInt(expense.due_date.split('/')[2]),
+          parseInt(expense.due_date.split('/')[1]) - 1,
+          parseInt(expense.due_date.split('/')[0])
+        ),
+        new Date()
+      ),
+      category: expense.category
+    }))
+    .sort((a, b) => a.days - b.days);
 
   // Filtrar accesos rápidos según el rol del usuario
   const quickAccessLinks = [
@@ -122,14 +184,18 @@ export default function DashboardPage() {
     // Alertas de stock bajo
     if (lowStockItems.length > 0) {
       // Mostrar hasta 3 productos con stock bajo
-      const criticalStockToShow = lowStockItems.slice(0, 3);
+      const criticalStockToShow = criticalStockItems.length > 0
+        ? criticalStockItems.slice(0, 3)
+        : lowStockItems.slice(0, 3);
       
       criticalStockToShow.forEach(item => {
         alerts.push({
-          icon: AlertTriangle,
-          title: `Stock Bajo: ${item.product_name}`,
-          description: `Quedan ${item.quantity} unidades en inventario`,
-          variant: "warning",
+          icon: item.quantity === 0 ? ShoppingBag : AlertTriangle,
+          title: `Stock ${item.quantity === 0 ? 'Agotado' : 'Bajo'}: ${item.product_name}`,
+          description: item.quantity === 0 
+            ? `No quedan unidades en inventario` 
+            : `Quedan ${item.quantity} unidades en inventario`,
+          variant: item.quantity === 0 ? "destructive" : "warning",
           requiredRole: undefined,
         });
       });
@@ -147,36 +213,31 @@ export default function DashboardPage() {
     }
     
     // Alerta de vencimiento de gift card
-    if (expiringGiftCards.length > 0) {
-      const sortedExpiringCards = [...expiringGiftCards].sort((a, b) => {
-        const dateA = new Date(a.expiry_date);
-        const dateB = new Date(b.expiry_date);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
+    if (sortedExpiringCards.length > 0) {
       // Mostrar hasta 2 gift cards próximas a vencer
-      const cardsToShow = sortedExpiringCards.slice(0, 2);
-      
-      cardsToShow.forEach(card => {
-        const expiryDate = new Date(card.expiry_date);
-        const today = new Date();
-        const diffTime = expiryDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        alerts.push({
-          icon: Clock,
-          title: `Gift Card próxima a vencer: ${card.code}`,
-          description: `Vence el ${card.expiry_date} (en ${diffDays} días)`,
-          variant: "warning",
-          requiredRole: undefined,
-        });
+      sortedExpiringCards.slice(0, 2).forEach(card => {
+        try {
+          const expiryDate = new Date(card.expiry_date);
+          const today = new Date();
+          const diffDays = differenceInDays(expiryDate, today);
+          
+          alerts.push({
+            icon: CalendarDays,
+            title: `Gift Card próxima a vencer: ${card.code}`,
+            description: `Vence el ${format(expiryDate, 'dd/MM/yyyy')} (en ${diffDays} días)`,
+            variant: diffDays <= 7 ? "destructive" : "warning",
+            requiredRole: undefined,
+          });
+        } catch (e) {
+          console.error("Error al procesar alerta de gift card:", e);
+        }
       });
       
       // Si hay más gift cards por vencer, mostrar un resumen
-      if (expiringGiftCards.length > 2) {
+      if (sortedExpiringCards.length > 2) {
         alerts.push({
-          icon: CreditCard,
-          title: `${expiringGiftCards.length - 2} gift cards más por vencer`,
+          icon: Calendar,
+          title: `${sortedExpiringCards.length - 2} gift cards más por vencer`,
           description: `Revisar en la sección de Gift Cards`,
           variant: "default",
           requiredRole: undefined,
@@ -184,17 +245,33 @@ export default function DashboardPage() {
       }
     }
     
-    // Alerta de pago pendiente (solo para superadmin)
-    if (isSuperAdmin && pendingPayments.length > 0) {
-      pendingPayments.forEach(payment => {
+    // Alerta de pagos pendientes (alquiler, servicios, etc.) - solo para superadmin
+    if (isSuperAdmin && upcomingExpenses.length > 0) {
+      // Mostrar hasta 3 pagos próximos más urgentes
+      upcomingExpenses.slice(0, 3).forEach(payment => {
+        const isRent = payment.category === 'Fijos' || 
+                      payment.title.toLowerCase().includes('alquiler') || 
+                      payment.title.toLowerCase().includes('renta');
+        
         alerts.push({
-          icon: DollarSign,
-          title: `${payment.title} Pendiente`,
+          icon: isRent ? House : DollarSign,
+          title: `${isRent ? 'Pago de Alquiler' : payment.title} Pendiente`,
           description: `Vence el ${payment.dueDate} (en ${payment.days} días)`,
-          variant: "destructive",
+          variant: payment.days <= 7 ? "destructive" : "warning",
           requiredRole: 'superadmin' as const,
         });
       });
+      
+      // Si hay más pagos pendientes, mostrar un resumen
+      if (upcomingExpenses.length > 3) {
+        alerts.push({
+          icon: DollarSign,
+          title: `${upcomingExpenses.length - 3} pagos más pendientes`,
+          description: `Revisar en la sección de Gastos`,
+          variant: "default",
+          requiredRole: 'superadmin' as const,
+        });
+      }
     }
     
     // Alerta de arreglos pendientes
@@ -286,7 +363,7 @@ export default function DashboardPage() {
               {isLoadingGiftCards ? "..." : activeGiftCards.length}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isLoadingGiftCards ? "Cargando..." : `${expiringGiftCards.length} próximas a vencer`}
+              {isLoadingGiftCards ? "Cargando..." : `${sortedExpiringCards.length} próximas a vencer`}
             </p>
           </CardContent>
         </Card>
@@ -349,13 +426,13 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {isLoadingGiftCards || isLoadingStock || isLoadingArreglos ? (
+            {isLoadingGiftCards || isLoadingStock || isLoadingArreglos || isLoadingPayments ? (
               <div className="text-center py-8 text-muted-foreground">
                 Cargando alertas...
               </div>
             ) : alertItems.length > 0 ? (
               alertItems.map((alert, index) => (
-                <Alert key={index} variant={alert.variant as "default" | "destructive"}>
+                <Alert key={index} variant={alert.variant as "default" | "destructive" | "warning"}>
                   <alert.icon className="h-5 w-5 text-amber-500" />
                   <AlertTitle>{alert.title}</AlertTitle>
                   <AlertDescription>{alert.description}</AlertDescription>

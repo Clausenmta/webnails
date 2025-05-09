@@ -1,32 +1,32 @@
 
+export interface IncomeExpense {
+  id: number;
+  date: string; // "DD/MM/YYYY"
+  concept: string;
+  amount: number;
+  category: string;
+  created_by: string;
+  details?: string;
+  due_date?: string; // "DD/MM/YYYY" - opcional para gastos con vencimiento
+  provider?: string; // opcional para gastos con vencimiento
+  status?: "pending" | "paid"; // opcional para gastos con vencimiento
+  payment_method?: string;
+}
+
 export interface ServiceRevenue {
-  id: string;
   service_name: string;
   revenue: number;
   quantity: number;
   month: string;
   year: string;
-  created_at: string;
-  created_by?: string;
-}
-
-export interface InitialExpense {
   id: string;
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
 }
 
-export interface IncomeExpense {
+export interface PendingPayment {
   id: number;
-  date: string;
   concept: string;
   amount: number;
+  due_date: string;
   category: string;
-  created_by: string;
-  provider?: string;
-  payment_method?: string;
-  due_date?: string;
-  status?: string;
+  days_remaining: number;
 }

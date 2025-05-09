@@ -1,3 +1,4 @@
+
 // Handles both Add and Edit Product dialogs
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -79,7 +80,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
         </div>
         <div className="space-y-2">
           <Label htmlFor="location">Ubicación</Label>
-          <Select value={product.location || ''} onValueChange={value => setProduct({
+          <Select value={product.location || 'default-location'} onValueChange={value => setProduct({
           ...product,
           location: value
         })}>

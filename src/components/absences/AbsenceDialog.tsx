@@ -175,7 +175,7 @@ export default function AbsenceDialog({
               </SelectTrigger>
               <SelectContent>
                 {isLoadingTypes ? (
-                  <SelectItem value="">Cargando opciones...</SelectItem>
+                  <SelectItem value="cargando">Cargando opciones...</SelectItem>
                 ) : (
                   absenceTypes.map(type => (
                     <SelectItem key={type.id} value={type.nombre}>
@@ -184,7 +184,7 @@ export default function AbsenceDialog({
                   ))
                 )}
                 {!isLoadingTypes && absenceTypes.length === 0 && (
-                  <SelectItem value="">No hay tipos disponibles</SelectItem>
+                  <SelectItem value="no-disponible">No hay tipos disponibles</SelectItem>
                 )}
               </SelectContent>
             </Select>
@@ -278,3 +278,4 @@ export default function AbsenceDialog({
     </Dialog>
   );
 }
+

@@ -89,7 +89,7 @@ export default function AbsenceFilters({
               <SelectContent>
                 <SelectItem value="all_types">Todos los tipos</SelectItem>
                 {isLoadingTypes ? (
-                  <SelectItem value="" disabled>Cargando tipos...</SelectItem>
+                  <SelectItem value="loading">Cargando tipos...</SelectItem>
                 ) : (
                   absenceTypes.map(tipo => (
                     <SelectItem key={tipo.id} value={tipo.nombre}>

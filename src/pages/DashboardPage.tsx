@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -23,6 +24,7 @@ import { giftCardService } from "@/services/giftCardService";
 import { arreglosService } from "@/services/arreglosService";
 import { stockService } from "@/services/stock";
 import { useArreglosRevenue } from "@/hooks/useArreglosRevenue";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
@@ -39,14 +41,19 @@ export default function DashboardPage() {
   } = useArreglosRevenue();
   
   // Consultas para obtener datos reales
-  const { data: giftCards = [] } = useQuery({
+  const { data: giftCards = [], isLoading: isLoadingGiftCards } = useQuery({
     queryKey: ['giftCards'],
     queryFn: giftCardService.fetchGiftCards,
   });
   
-  const { data: stockItems = [] } = useQuery({
+  const { data: stockItems = [], isLoading: isLoadingStock } = useQuery({
     queryKey: ['stock'],
     queryFn: stockService.fetchStock,
+  });
+  
+  const { data: arreglos = [], isLoading: isLoadingArreglos } = useQuery({
+    queryKey: ['arreglos'],
+    queryFn: arreglosService.fetchArreglos,
   });
 
   // Calcular estadísticas basadas en datos reales
@@ -60,11 +67,21 @@ export default function DashboardPage() {
   });
   
   const lowStockItems = stockItems.filter(item => 
-    item.quantity < (item.min_stock_level || 10)
+    item.quantity <= (item.min_stock_level || 5)
   );
+  
   const criticalStockItems = lowStockItems.filter(item => 
-    item.quantity <= (item.min_stock_level || 10) / 2
+    item.quantity <= (item.min_stock_level || 5) / 2
   );
+  
+  const pendingPayments = [
+    {
+      title: "Pago de Alquiler",
+      dueDate: "10/05/2025",
+      amount: 150000,
+      days: 3
+    }
+  ]; // Esto podría venir de una tabla de pagos recurrentes en el futuro
 
   // Filtrar accesos rápidos según el rol del usuario
   const quickAccessLinks = [
@@ -102,49 +119,91 @@ export default function DashboardPage() {
   const generateAlerts = () => {
     const alerts = [];
     
-    // Alerta de stock bajo
+    // Alertas de stock bajo
     if (lowStockItems.length > 0) {
-      const criticalItem = lowStockItems[0];
-      alerts.push({
-        icon: AlertTriangle,
-        title: `Stock Bajo: ${criticalItem.product_name}`,
-        description: `Quedan ${criticalItem.quantity} unidades en inventario`,
-        requiredRole: undefined,
+      // Mostrar hasta 3 productos con stock bajo
+      const criticalStockToShow = lowStockItems.slice(0, 3);
+      
+      criticalStockToShow.forEach(item => {
+        alerts.push({
+          icon: AlertTriangle,
+          title: `Stock Bajo: ${item.product_name}`,
+          description: `Quedan ${item.quantity} unidades en inventario`,
+          variant: "warning",
+          requiredRole: undefined,
+        });
       });
+      
+      // Si hay más productos con stock bajo, mostrar un resumen
+      if (lowStockItems.length > 3) {
+        alerts.push({
+          icon: Package,
+          title: `${lowStockItems.length - 3} productos más con stock bajo`,
+          description: `Revisar en la sección de inventario`,
+          variant: "default",
+          requiredRole: undefined,
+        });
+      }
     }
     
     // Alerta de vencimiento de gift card
     if (expiringGiftCards.length > 0) {
-      const nextExpiringCard = expiringGiftCards[0];
-      const expiryDate = new Date(nextExpiringCard.expiry_date);
-      const today = new Date();
-      const diffTime = expiryDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      alerts.push({
-        icon: Clock,
-        title: `Vencimiento de Gift Card #${nextExpiringCard.code}`,
-        description: `Vence el ${nextExpiringCard.expiry_date} (${diffDays} días)`,
-        requiredRole: undefined,
+      const sortedExpiringCards = [...expiringGiftCards].sort((a, b) => {
+        const dateA = new Date(a.expiry_date);
+        const dateB = new Date(b.expiry_date);
+        return dateA.getTime() - dateB.getTime();
       });
+      
+      // Mostrar hasta 2 gift cards próximas a vencer
+      const cardsToShow = sortedExpiringCards.slice(0, 2);
+      
+      cardsToShow.forEach(card => {
+        const expiryDate = new Date(card.expiry_date);
+        const today = new Date();
+        const diffTime = expiryDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        alerts.push({
+          icon: Clock,
+          title: `Gift Card próxima a vencer: ${card.code}`,
+          description: `Vence el ${card.expiry_date} (en ${diffDays} días)`,
+          variant: "warning",
+          requiredRole: undefined,
+        });
+      });
+      
+      // Si hay más gift cards por vencer, mostrar un resumen
+      if (expiringGiftCards.length > 2) {
+        alerts.push({
+          icon: CreditCard,
+          title: `${expiringGiftCards.length - 2} gift cards más por vencer`,
+          description: `Revisar en la sección de Gift Cards`,
+          variant: "default",
+          requiredRole: undefined,
+        });
+      }
     }
     
     // Alerta de pago pendiente (solo para superadmin)
-    if (isSuperAdmin) {
-      alerts.push({
-        icon: DollarSign,
-        title: "Pago de Alquiler Pendiente",
-        description: "Vence el 10/05/2025 (en 3 días)",
-        requiredRole: 'superadmin' as const,
+    if (isSuperAdmin && pendingPayments.length > 0) {
+      pendingPayments.forEach(payment => {
+        alerts.push({
+          icon: DollarSign,
+          title: `${payment.title} Pendiente`,
+          description: `Vence el ${payment.dueDate} (en ${payment.days} días)`,
+          variant: "destructive",
+          requiredRole: 'superadmin' as const,
+        });
       });
     }
     
-    // Alerta de arreglo pendiente
+    // Alerta de arreglos pendientes
     if (pendingArreglos > 0) {
       alerts.push({
         icon: Wrench,
-        title: `Arreglos pendientes`,
-        description: `Hay arreglos pendientes`,
+        title: `${pendingArreglos} arreglos pendientes`,
+        description: oldPendingArreglos > 0 ? `${oldPendingArreglos} con más de 5 días` : `Todos dentro del plazo normal`,
+        variant: oldPendingArreglos > 0 ? "warning" : "default",
         requiredRole: undefined,
       });
     }
@@ -162,7 +221,6 @@ export default function DashboardPage() {
   // Función para cambiar el mes
   const handleMonthChange = (date: Date) => {
     setCurrentDate(date);
-    // Aquí se cargarían los datos según el mes seleccionado
     console.log("Mes seleccionado:", date);
   };
 
@@ -224,9 +282,11 @@ export default function DashboardPage() {
             <CreditCard className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeGiftCards.length}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingGiftCards ? "..." : activeGiftCards.length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {expiringGiftCards.length} próximas a vencer
+              {isLoadingGiftCards ? "Cargando..." : `${expiringGiftCards.length} próximas a vencer`}
             </p>
           </CardContent>
         </Card>
@@ -236,9 +296,11 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lowStockItems.length}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingStock ? "..." : lowStockItems.length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {criticalStockItems.length} críticos para reponer
+              {isLoadingStock ? "Cargando..." : `${criticalStockItems.length} críticos para reponer`}
             </p>
           </CardContent>
         </Card>
@@ -248,9 +310,11 @@ export default function DashboardPage() {
             <Wrench className="h-4 w-4 text-salon-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingArreglos}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingArreglos ? "..." : pendingArreglos}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {oldPendingArreglos} con más de 5 días
+              {isLoadingArreglos ? "Cargando..." : `${oldPendingArreglos} con más de 5 días`}
             </p>
           </CardContent>
         </Card>
@@ -285,17 +349,23 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {alertItems.map((alert, index) => (
-              <div className="rounded-lg border p-3" key={index}>
-                <div className="flex items-center gap-3">
-                  <alert.icon className="h-5 w-5 text-amber-500" />
-                  <div>
-                    <p className="text-sm font-medium">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground">{alert.description}</p>
-                  </div>
-                </div>
+            {isLoadingGiftCards || isLoadingStock || isLoadingArreglos ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Cargando alertas...
               </div>
-            ))}
+            ) : alertItems.length > 0 ? (
+              alertItems.map((alert, index) => (
+                <Alert key={index} variant={alert.variant as "default" | "destructive"}>
+                  <alert.icon className="h-5 w-5 text-amber-500" />
+                  <AlertTitle>{alert.title}</AlertTitle>
+                  <AlertDescription>{alert.description}</AlertDescription>
+                </Alert>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No hay alertas para mostrar
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

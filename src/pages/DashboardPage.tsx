@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -32,6 +31,14 @@ import { revenueService } from "@/services/revenueService";
 import { expenseService } from "@/services/expenseService";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem, 
+  CarouselNext, 
+  CarouselPrevious 
+} from "@/components/ui/carousel";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function DashboardPage() {
   const { user, isAuthorized } = useAuth();
@@ -183,19 +190,28 @@ export default function DashboardPage() {
     
     // Alertas de stock bajo
     if (lowStockItems.length > 0) {
-      // Mostrar hasta 3 productos con stock bajo
-      const criticalStockToShow = criticalStockItems.length > 0
-        ? criticalStockItems.slice(0, 3)
-        : lowStockItems.slice(0, 3);
+      // Mostrar productos con stock agotado primero
+      const noStockItems = lowStockItems.filter(item => item.quantity === 0);
+      const lowStockItemsFiltered = lowStockItems.filter(item => item.quantity > 0);
       
-      criticalStockToShow.forEach(item => {
+      // Mostrar productos agotados
+      noStockItems.forEach(item => {
         alerts.push({
-          icon: item.quantity === 0 ? ShoppingBag : AlertTriangle,
-          title: `Stock ${item.quantity === 0 ? 'Agotado' : 'Bajo'}: ${item.product_name}`,
-          description: item.quantity === 0 
-            ? `No quedan unidades en inventario` 
-            : `Quedan ${item.quantity} unidades en inventario`,
-          variant: item.quantity === 0 ? "destructive" : "warning",
+          icon: ShoppingBag,
+          title: `Stock Agotado: ${item.product_name}`,
+          description: `No quedan unidades en inventario`,
+          variant: "error",
+          requiredRole: undefined,
+        });
+      });
+      
+      // Mostrar productos con stock bajo
+      lowStockItemsFiltered.slice(0, Math.max(0, 3 - noStockItems.length)).forEach(item => {
+        alerts.push({
+          icon: AlertTriangle,
+          title: `Stock Bajo: ${item.product_name}`,
+          description: `Quedan ${item.quantity} unidades en inventario`,
+          variant: "warning",
           requiredRole: undefined,
         });
       });
@@ -206,7 +222,7 @@ export default function DashboardPage() {
           icon: Package,
           title: `${lowStockItems.length - 3} productos más con stock bajo`,
           description: `Revisar en la sección de inventario`,
-          variant: "default",
+          variant: "info",
           requiredRole: undefined,
         });
       }
@@ -225,7 +241,7 @@ export default function DashboardPage() {
             icon: CalendarDays,
             title: `Gift Card próxima a vencer: ${card.code}`,
             description: `Vence el ${format(expiryDate, 'dd/MM/yyyy')} (en ${diffDays} días)`,
-            variant: diffDays <= 7 ? "destructive" : "warning",
+            variant: diffDays <= 3 ? "error" : "warning",
             requiredRole: undefined,
           });
         } catch (e) {
@@ -239,7 +255,7 @@ export default function DashboardPage() {
           icon: Calendar,
           title: `${sortedExpiringCards.length - 2} gift cards más por vencer`,
           description: `Revisar en la sección de Gift Cards`,
-          variant: "default",
+          variant: "info",
           requiredRole: undefined,
         });
       }
@@ -248,7 +264,7 @@ export default function DashboardPage() {
     // Alerta de pagos pendientes (alquiler, servicios, etc.) - solo para superadmin
     if (isSuperAdmin && upcomingExpenses.length > 0) {
       // Mostrar hasta 3 pagos próximos más urgentes
-      upcomingExpenses.slice(0, 3).forEach(payment => {
+      upcomingExpenses.slice(0, 2).forEach(payment => {
         const isRent = payment.category === 'Fijos' || 
                       payment.title.toLowerCase().includes('alquiler') || 
                       payment.title.toLowerCase().includes('renta');
@@ -257,18 +273,18 @@ export default function DashboardPage() {
           icon: isRent ? House : DollarSign,
           title: `${isRent ? 'Pago de Alquiler' : payment.title} Pendiente`,
           description: `Vence el ${payment.dueDate} (en ${payment.days} días)`,
-          variant: payment.days <= 7 ? "destructive" : "warning",
+          variant: payment.days <= 3 ? "error" : "warning",
           requiredRole: 'superadmin' as const,
         });
       });
       
       // Si hay más pagos pendientes, mostrar un resumen
-      if (upcomingExpenses.length > 3) {
+      if (upcomingExpenses.length > 2) {
         alerts.push({
           icon: DollarSign,
-          title: `${upcomingExpenses.length - 3} pagos más pendientes`,
+          title: `${upcomingExpenses.length - 2} pagos más pendientes`,
           description: `Revisar en la sección de Gastos`,
-          variant: "default",
+          variant: "info",
           requiredRole: 'superadmin' as const,
         });
       }
@@ -280,7 +296,7 @@ export default function DashboardPage() {
         icon: Wrench,
         title: `${pendingArreglos} arreglos pendientes`,
         description: oldPendingArreglos > 0 ? `${oldPendingArreglos} con más de 5 días` : `Todos dentro del plazo normal`,
-        variant: oldPendingArreglos > 0 ? "warning" : "default",
+        variant: oldPendingArreglos > 0 ? "warning" : "info",
         requiredRole: undefined,
       });
     }
@@ -425,19 +441,35 @@ export default function DashboardPage() {
               Alertas Recientes
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent>
             {isLoadingGiftCards || isLoadingStock || isLoadingArreglos || isLoadingPayments ? (
               <div className="text-center py-8 text-muted-foreground">
                 Cargando alertas...
               </div>
             ) : alertItems.length > 0 ? (
-              alertItems.map((alert, index) => (
-                <Alert key={index} variant={alert.variant as "default" | "destructive" | "warning"}>
-                  <alert.icon className="h-5 w-5 text-amber-500" />
-                  <AlertTitle>{alert.title}</AlertTitle>
-                  <AlertDescription>{alert.description}</AlertDescription>
-                </Alert>
-              ))
+              <Carousel 
+                opts={{
+                  align: "start",
+                  loop: alertItems.length > 4,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {alertItems.map((alert, index) => (
+                    <CarouselItem key={index} className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                      <Alert variant={alert.variant as "default" | "destructive" | "warning" | "error" | "info" | "success"}>
+                        <alert.icon className="h-5 w-5" />
+                        <AlertTitle>{alert.title}</AlertTitle>
+                        <AlertDescription>{alert.description}</AlertDescription>
+                      </Alert>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="flex justify-end gap-2 pt-2">
+                  <CarouselPrevious className="relative static -translate-y-0 translate-x-0 rounded border border-input bg-background" />
+                  <CarouselNext className="relative static -translate-y-0 translate-x-0 rounded border border-input bg-background" />
+                </div>
+              </Carousel>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 No hay alertas para mostrar

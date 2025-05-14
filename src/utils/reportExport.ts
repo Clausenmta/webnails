@@ -1,4 +1,3 @@
-
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { ExportOptions } from '@/types/auth';
@@ -17,7 +16,7 @@ declare module "jspdf" {
   }
 }
 
-export const exportReport = (data: any, options: ExportOptions) => {
+export const exportReport = (data: any, options: ExportOptions = {}): boolean => {
   const { filename, format } = options;
   
   try {

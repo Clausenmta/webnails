@@ -172,9 +172,11 @@ export default function SalaryCalculationDialog({
     const totalSalary = commission + salaryData.reception + salaryData.sac + 
                         salaryData.training + salaryData.vacation + extrasTotal;
     
+    // Fórmula actualizada para incluir recepción
     const cash = commission + salaryData.sac - 
                  salaryData.advance - salaryData.receipt + 
-                 salaryData.training + salaryData.vacation + extrasTotal;
+                 salaryData.training + salaryData.vacation + extrasTotal +
+                 salaryData.reception;
     
     setSalaryData(prev => ({
       ...prev,
@@ -947,7 +949,7 @@ export default function SalaryCalculationDialog({
             </div>
 
             <div className="bg-muted rounded-md p-3 mt-2">
-              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras</p>
+              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción</p>
             </div>
           </>
         )}

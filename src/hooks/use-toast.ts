@@ -46,11 +46,11 @@ type ToastContextType = {
 
 export const ToastContext = React.createContext<ToastContextType | null>(null)
 
-export function ToastProvider({
-  children,
-}: {
+interface ToastProviderProps {
   children: React.ReactNode
-}) {
+}
+
+export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = React.useState<Toast[]>([])
 
   const addToast = React.useCallback(
@@ -129,11 +129,14 @@ export function ToastProvider({
     }
   }, [toasts, addToast, updateToast, dismissToast, removeToast])
 
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-    </ToastContext.Provider>
+  // Create provider element
+  const provider = React.createElement(
+    ToastContext.Provider,
+    { value },
+    children
   )
+  
+  return provider
 }
 
 // The main useToast hook

@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,10 +16,11 @@ import ArreglosPage from './pages/ArreglosPage';
 import GiftCardsPage from './pages/GiftCardsPage';
 import StockPage from './pages/StockPage';
 import FacturacionPage from './pages/FacturacionPage';
-import { Toaster } from './components/ui/toaster';
 import NotFound from './pages/NotFound';
 import Index from './pages/Index';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { AppLayout } from './components/layout/AppLayout';
+import { Toaster } from './components/ui/toaster';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -39,78 +41,24 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/empleados" 
-                element={
-                  <ProtectedRoute>
-                    <EmpleadosPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/gastos" 
-                element={
-                  <ProtectedRoute>
-                    <GastosPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/resultados" 
-                element={
-                  <ProtectedRoute>
-                    <ResultadosPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/ausencias" 
-                element={
-                  <ProtectedRoute>
-                    <AusenciasPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/arreglos" 
-                element={
-                  <ProtectedRoute>
-                    <ArreglosPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/tarjetas" 
-                element={
-                  <ProtectedRoute>
-                    <GiftCardsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/stock" 
-                element={
-                  <ProtectedRoute>
-                    <StockPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/facturacion" 
-                element={
-                  <ProtectedRoute>
-                    <FacturacionPage />
-                  </ProtectedRoute>
-                } 
-              />
+              
+              {/* Rutas protegidas con la barra lateral */}
+              <Route element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/empleados" element={<EmpleadosPage />} />
+                <Route path="/gastos" element={<GastosPage />} />
+                <Route path="/resultados" element={<ResultadosPage />} />
+                <Route path="/ausencias" element={<AusenciasPage />} />
+                <Route path="/arreglos" element={<ArreglosPage />} />
+                <Route path="/gift-cards" element={<GiftCardsPage />} />
+                <Route path="/stock" element={<StockPage />} />
+                <Route path="/facturacion" element={<FacturacionPage />} />
+              </Route>
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

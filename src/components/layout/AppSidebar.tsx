@@ -54,7 +54,7 @@ export function AppSidebar() {
   const mainMenuItems = [
     {
       title: "Dashboard",
-      path: "/",
+      path: "/dashboard",
       icon: LayoutDashboard,
       requiredRole: undefined,
       specialPermission: undefined,
@@ -126,7 +126,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center">
+          <Link to="/dashboard" className="flex items-center">
             <div className="h-8 w-auto">
               <img 
                 src="https://nailsandco.com.ar/wp-content/uploads/2024/03/NAILSCO.png" 

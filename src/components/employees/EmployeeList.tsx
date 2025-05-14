@@ -82,7 +82,7 @@ export function EmployeeList({
                     >
                       Ver Perfil
                     </Button>
-                    {employee.status === "active" && employee.position !== "Recepcionista" && (
+                    {employee.status === "active" && (
                       <Button
                         variant="outline"
                         size="sm"

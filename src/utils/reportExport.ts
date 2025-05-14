@@ -64,16 +64,153 @@ export const exportReport = (data: any, options: ExportOptions) => {
       return true;
     } 
     else if (format === 'pdf') {
-      // Implementación real con jsPDF
+      // Implementación mejorada de exportación a PDF
       const doc = new jsPDF();
       
-      // Título
-      doc.setFontSize(16);
-      doc.setTextColor(40, 40, 40);
-      doc.text(filename, 14, 22);
+      // Configurar fuentes y colores para mejorar la estética
+      doc.setFont("helvetica");
       
-      // Si es un array, convertirlo a tabla
-      if (Array.isArray(data)) {
+      // Título con estilo mejorado
+      doc.setFontSize(22);
+      doc.setTextColor(128, 0, 128); // Color púrpura para el título principal
+      doc.text("Nails & Co", doc.internal.pageSize.getWidth() / 2, 20, { align: "center" });
+      
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40); // Color gris oscuro para subtítulos
+      doc.text(filename, doc.internal.pageSize.getWidth() / 2, 30, { align: "center" });
+      
+      // Si es objeto específico de recibo de sueldo, usar formato especial
+      if (data && data.employeeData && data.salaryData) {
+        const { employeeData, salaryData } = data;
+        
+        // Información de cabecera
+        doc.setFontSize(12);
+        doc.text(`Empleado: ${employeeData.name}`, 20, 45);
+        doc.text(`Posición: ${employeeData.position}`, 20, 52);
+        doc.text(`Período: ${salaryData.date}`, 20, 59);
+        
+        // Sección de facturación
+        doc.setFontSize(14);
+        doc.setTextColor(80, 80, 80);
+        doc.text("Detalles de facturación", 20, 70);
+        
+        const billingData = [
+          ["Concepto", "Monto"],
+          ["Facturación Total", `$${salaryData.totalBilling.toLocaleString('es-AR')}`],
+          [`Comisión (${salaryData.commissionRate}%)`, `$${salaryData.commission.toLocaleString('es-AR')}`]
+        ];
+        
+        doc.autoTable({
+          startY: 75,
+          head: [billingData[0]],
+          body: billingData.slice(1),
+          theme: 'striped',
+          headStyles: { 
+            fillColor: [128, 0, 128], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 10,
+            cellPadding: 4
+          }
+        });
+        
+        // Componentes del sueldo
+        const componentY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.setTextColor(80, 80, 80);
+        doc.text("Componentes del sueldo", 20, componentY);
+        
+        const componentsData = [
+          ["Concepto", "Monto"],
+          ["Adelanto", `$${salaryData.advance.toLocaleString('es-AR')}`],
+          ["Capacitación", `$${salaryData.training.toLocaleString('es-AR')}`],
+          ["Vacaciones", `$${salaryData.vacation.toLocaleString('es-AR')}`],
+          ["Recepción", `$${salaryData.reception.toLocaleString('es-AR')}`],
+          ["SAC", `$${salaryData.sac.toLocaleString('es-AR')}`],
+          ["Recibo", `$${salaryData.receipt.toLocaleString('es-AR')}`]
+        ];
+        
+        // Agregar extras si existen
+        if (salaryData.extras && salaryData.extras.length > 0) {
+          salaryData.extras.forEach(extra => {
+            componentsData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
+          });
+        }
+        
+        doc.autoTable({
+          startY: componentY + 5,
+          head: [componentsData[0]],
+          body: componentsData.slice(1),
+          theme: 'striped',
+          headStyles: { 
+            fillColor: [128, 0, 128], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 10,
+            cellPadding: 4
+          }
+        });
+        
+        // Totales con estilo destacado
+        const totalsY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.setTextColor(80, 80, 80);
+        doc.text("Totales", 20, totalsY);
+        
+        const totalsData = [
+          ["Concepto", "Monto"],
+          ["Efectivo", `$${salaryData.cash.toLocaleString('es-AR')}`],
+          ["TOTAL SUELDO", `$${salaryData.totalSalary.toLocaleString('es-AR')}`]
+        ];
+        
+        doc.autoTable({
+          startY: totalsY + 5,
+          head: [totalsData[0]],
+          body: totalsData.slice(1),
+          theme: 'striped',
+          headStyles: { 
+            fillColor: [128, 0, 128], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          bodyStyles: {
+            fontSize: 10,
+            cellPadding: 4
+          },
+          // Destacar la última fila (total sueldo)
+          didParseCell: function(data) {
+            if (data.row.index === 1 && data.column.index === 1) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 12;
+            }
+          }
+        });
+        
+        // Agregar líneas para firmas
+        const signatureY = doc.lastAutoTable.finalY + 30;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(25, signatureY, 95, signatureY);
+        doc.line(pageWidth - 95, signatureY, pageWidth - 25, signatureY);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80);
+        doc.text("Firma del empleado", 60, signatureY + 10, { align: "center" });
+        doc.text("Firma del empleador", pageWidth - 60, signatureY + 10, { align: "center" });
+        
+        // Pie de página con fecha de impresión
+        const currentDate = new Date().toLocaleDateString('es-AR');
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Generado el ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      } 
+      else if (Array.isArray(data)) {
+        // Para arrays generales, mantener el formato de tabla
         // Extraer headers del primer objeto
         const headers = Object.keys(data[0] || {});
         const rows = data.map(item => 
@@ -83,10 +220,10 @@ export const exportReport = (data: any, options: ExportOptions) => {
         doc.autoTable({
           head: [headers],
           body: rows,
-          startY: 30,
+          startY: 40,
           theme: 'grid',
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [100, 100, 100] }
+          styles: { fontSize: 10, cellPadding: 3 },
+          headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] }
         });
       } 
       else if (typeof data === 'object') {
@@ -100,14 +237,14 @@ export const exportReport = (data: any, options: ExportOptions) => {
         
         doc.autoTable({
           body: rows,
-          startY: 30,
+          startY: 40,
           theme: 'grid',
-          styles: { fontSize: 8, cellPadding: 2 }
+          styles: { fontSize: 10, cellPadding: 3 }
         });
       } 
       else {
         // Fallback para otros tipos de datos
-        doc.text(String(data), 14, 30);
+        doc.text(String(data), 14, 40);
       }
       
       // Guardar PDF

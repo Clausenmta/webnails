@@ -13,12 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Employee } from "@/types/employees";
 import { toast } from "sonner";
-import { Calculator, Download, Save, List, Edit, Trash2, FileText, ArrowLeft } from "lucide-react";
+import { Calculator, Download, Save, FileText, ArrowLeft, Edit, Trash2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { exportReport } from "@/utils/reportExport";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -268,133 +269,172 @@ export default function SalaryCalculationDialog({
     }
   };
 
+  // Actualización del método de exportación
   const handleExport = () => {
     if (!employee || !selectedSalary) return;
     
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    // Preparamos los datos con formato específico para la exportación
+    const exportData = {
+      employeeData: {
+        name: employee.name,
+        position: employee.position,
+        id: employee.id
+      },
+      salaryData: selectedSalary
+    };
     
-    doc.setFontSize(20);
-    doc.setTextColor(128, 0, 128);
-    doc.text("Nails & Co", pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Recibo de Sueldo", pageWidth / 2, 30, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.text(`Empleado: ${employee.name}`, 20, 45);
-    doc.text(`Posición: ${employee.position}`, 20, 52);
-    doc.text(`Período: ${selectedSalary.date}`, 20, 59);
-    
-    doc.setFontSize(14);
-    doc.text("Detalle de sueldo", 20, 70);
-    
-    const tableData = [
-      ["Concepto", "Monto"],
-      ["Facturación Total", `$${selectedSalary.totalBilling.toLocaleString('es-AR')}`],
-      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`],
-      ["Adelanto", `$${selectedSalary.advance.toLocaleString('es-AR')}`],
-      ["Capacitación", `$${selectedSalary.training.toLocaleString('es-AR')}`],
-      ["Vacaciones", `$${selectedSalary.vacation.toLocaleString('es-AR')}`],
-      ["Recepción", `$${selectedSalary.reception.toLocaleString('es-AR')}`],
-      ["SAC", `$${selectedSalary.sac.toLocaleString('es-AR')}`],
-      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`],
-    ];
-    
-    selectedSalary.extras.forEach(extra => {
-      tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
+    // Usamos la función mejorada de exportación
+    exportReport(exportData, {
+      filename: `Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}`,
+      format: 'pdf'
     });
-    
-    tableData.push(
-      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
-      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
-    );
-    
-    doc.autoTable({
-      startY: 75,
-      head: [tableData[0]],
-      body: tableData.slice(1),
-      theme: 'striped',
-      headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] },
-      foot: [["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]],
-      footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
-    });
-    
-    const signatureY = doc.lastAutoTable.finalY + 20;
-    doc.text("_________________________", 40, signatureY);
-    doc.text("_________________________", pageWidth - 40, signatureY, { align: "right" });
-    doc.text("Firma del empleado", 40, signatureY + 10);
-    doc.text("Firma del empleador", pageWidth - 40, signatureY + 10, { align: "right" });
-    
-    const pdfBlob = doc.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    setPdfPreview(pdfUrl);
-    
-    doc.save(`Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}.pdf`);
-    
-    toast.success(`Recibo de sueldo exportado para ${employee?.name}`);
   };
 
   const handlePreviewPdf = () => {
     if (!employee || !selectedSalary) return;
     
+    // Usar el mismo formato para la previsualización
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    doc.setFontSize(20);
-    doc.setTextColor(128, 0, 128);
+    // Configurar fuentes y colores para la previsualización
+    doc.setFont("helvetica");
+    
+    // Título con estilo mejorado
+    doc.setFontSize(22);
+    doc.setTextColor(128, 0, 128); // Color púrpura para el título principal
     doc.text("Nails & Co", pageWidth / 2, 20, { align: "center" });
     
     doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(40, 40, 40); // Color gris oscuro para subtítulos
     doc.text("Recibo de Sueldo", pageWidth / 2, 30, { align: "center" });
     
+    // Información de cabecera
     doc.setFontSize(12);
     doc.text(`Empleado: ${employee.name}`, 20, 45);
     doc.text(`Posición: ${employee.position}`, 20, 52);
     doc.text(`Período: ${selectedSalary.date}`, 20, 59);
     
+    // Sección de facturación
     doc.setFontSize(14);
-    doc.text("Detalle de sueldo", 20, 70);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Detalles de facturación", 20, 70);
     
-    const tableData = [
+    const billingData = [
       ["Concepto", "Monto"],
       ["Facturación Total", `$${selectedSalary.totalBilling.toLocaleString('es-AR')}`],
-      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`],
+      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`]
+    ];
+    
+    doc.autoTable({
+      startY: 75,
+      head: [billingData[0]],
+      body: billingData.slice(1),
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [128, 0, 128], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 10,
+        cellPadding: 4
+      }
+    });
+    
+    // Componentes del sueldo
+    const componentY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Componentes del sueldo", 20, componentY);
+    
+    const componentsData = [
+      ["Concepto", "Monto"],
       ["Adelanto", `$${selectedSalary.advance.toLocaleString('es-AR')}`],
       ["Capacitación", `$${selectedSalary.training.toLocaleString('es-AR')}`],
       ["Vacaciones", `$${selectedSalary.vacation.toLocaleString('es-AR')}`],
       ["Recepción", `$${selectedSalary.reception.toLocaleString('es-AR')}`],
       ["SAC", `$${selectedSalary.sac.toLocaleString('es-AR')}`],
-      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`],
+      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`]
     ];
     
-    selectedSalary.extras.forEach(extra => {
-      tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
-    });
-    
-    tableData.push(
-      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
-      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
-    );
+    // Agregar extras si existen
+    if (selectedSalary.extras && selectedSalary.extras.length > 0) {
+      selectedSalary.extras.forEach(extra => {
+        componentsData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
+      });
+    }
     
     doc.autoTable({
-      startY: 75,
-      head: [tableData[0]],
-      body: tableData.slice(1),
+      startY: componentY + 5,
+      head: [componentsData[0]],
+      body: componentsData.slice(1),
       theme: 'striped',
-      headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] },
-      foot: [["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]],
-      footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
+      headStyles: { 
+        fillColor: [128, 0, 128], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { 
+        fontSize: 10,
+        cellPadding: 4
+      }
     });
     
-    const signatureY = doc.lastAutoTable.finalY + 20;
-    doc.text("_________________________", 40, signatureY);
-    doc.text("_________________________", pageWidth - 40, signatureY, { align: "right" });
-    doc.text("Firma del empleado", 40, signatureY + 10);
-    doc.text("Firma del empleador", pageWidth - 40, signatureY + 10, { align: "right" });
+    // Totales con estilo destacado
+    const totalsY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Totales", 20, totalsY);
     
+    const totalsData = [
+      ["Concepto", "Monto"],
+      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
+      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
+    ];
+    
+    doc.autoTable({
+      startY: totalsY + 5,
+      head: [totalsData[0]],
+      body: totalsData.slice(1),
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [128, 0, 128], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      bodyStyles: {
+        fontSize: 10,
+        cellPadding: 4
+      },
+      // Destacar la última fila (total sueldo)
+      didParseCell: function(data) {
+        if (data.row.index === 1 && data.column.index === 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fontSize = 12;
+        }
+      }
+    });
+    
+    // Agregar líneas para firmas
+    const signatureY = doc.lastAutoTable.finalY + 30;
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(25, signatureY, 95, signatureY);
+    doc.line(pageWidth - 95, signatureY, pageWidth - 25, signatureY);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Firma del empleado", 60, signatureY + 10, { align: "center" });
+    doc.text("Firma del empleador", pageWidth - 60, signatureY + 10, { align: "center" });
+    
+    // Pie de página con fecha de impresión
+    const currentDate = new Date().toLocaleDateString('es-AR');
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generado el ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+    
+    // Crear la vista previa
     const pdfBlob = doc.output('blob');
     const pdfUrl = URL.createObjectURL(pdfBlob);
     setPdfPreview(pdfUrl);

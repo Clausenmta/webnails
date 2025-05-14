@@ -1,6 +1,6 @@
 
 import { type ToastActionElement, type ToastProps } from "@/components/ui/toast"
-import { useToast as useSonnerToast } from "sonner"
+import * as React from "react"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
@@ -12,33 +12,25 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
-const actionTypes = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-} as const
-
 let count = 0
 
 function generateId() {
   return `${count++}`
 }
 
-// Create a context and provider for toasts
-import * as React from "react"
-
-type Toast = {
+// Create the toast context type
+export type Toast = {
   id: string
   title?: string
   description?: string
   action?: React.ReactNode
   variant?: "default" | "destructive"
+  className?: string
 }
 
-type ToastContextType = {
+export interface ToastContextType {
   toasts: Toast[]
-  addToast: (toast: Omit<Toast, "id">) => void
+  addToast: (toast: Omit<Toast, "id">) => string
   updateToast: (id: string, toast: Partial<Toast>) => void
   dismissToast: (id: string) => void
   removeToast: (id: string) => void
@@ -55,9 +47,9 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   const addToast = React.useCallback(
     (toast: Omit<Toast, "id">) => {
+      const id = generateId()
+      
       setToasts((prevToasts) => {
-        const id = generateId()
-
         // Check if we already have the maximum number of toasts
         if (prevToasts.length >= TOAST_LIMIT) {
           const nextToasts = [...prevToasts]
@@ -67,6 +59,8 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
         return [...prevToasts, { id, ...toast }]
       })
+      
+      return id
     },
     [setToasts]
   )
@@ -150,44 +144,73 @@ export const useToast = () => {
   return context
 }
 
-// Simple toast utility functions
-export const toast = {
-  success: (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (context) {
-      context.addToast({
-        title: title || "Success",
-        description: message,
-        variant: "default"
-      })
-    }
-  },
-  error: (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (context) {
-      context.addToast({
-        title: title || "Error",
-        description: message,
-        variant: "destructive"
-      })
-    }
-  },
-  info: (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (context) {
-      context.addToast({
-        title: title || "Info",
-        description: message,
-      })
-    }
-  },
-  warning: (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (context) {
-      context.addToast({
-        title: title || "Warning",
-        description: message,
-      })
-    }
-  },
+// Define the toast function interface with callable signature and methods
+interface ToastFunction {
+  (props: Omit<Toast, "id">): string;
+  success: (message: string, title?: string) => string;
+  error: (message: string, title?: string) => string;
+  warning: (message: string, title?: string) => string;
+  info: (message: string, title?: string) => string;
 }
+
+// Create the toast function that can be called directly or via methods
+const createToastFunction = (): ToastFunction => {
+  const toastFn = ((props: Omit<Toast, "id">) => {
+    const context = React.useContext(ToastContext)
+    if (!context) {
+      console.error("Toast used outside of provider, this won't work")
+      return ""
+    }
+    return context.addToast(props)
+  }) as ToastFunction
+
+  // Add success method
+  toastFn.success = (message: string, title?: string) => {
+    const context = React.useContext(ToastContext)
+    if (!context) return ""
+    return context.addToast({
+      title: title || "Success",
+      description: message,
+      variant: "default",
+      className: "bg-green-100 border-green-300 text-green-800"
+    })
+  }
+
+  // Add error method
+  toastFn.error = (message: string, title?: string) => {
+    const context = React.useContext(ToastContext)
+    if (!context) return ""
+    return context.addToast({
+      title: title || "Error",
+      description: message,
+      variant: "destructive"
+    })
+  }
+
+  // Add warning method
+  toastFn.warning = (message: string, title?: string) => {
+    const context = React.useContext(ToastContext)
+    if (!context) return ""
+    return context.addToast({
+      title: title || "Warning",
+      description: message,
+      className: "bg-yellow-100 border-yellow-300 text-yellow-800"
+    })
+  }
+
+  // Add info method
+  toastFn.info = (message: string, title?: string) => {
+    const context = React.useContext(ToastContext)
+    if (!context) return ""
+    return context.addToast({
+      title: title || "Info",
+      description: message,
+      className: "bg-blue-100 border-blue-300 text-blue-800"
+    })
+  }
+
+  return toastFn
+}
+
+// Export the toast function
+export const toast = createToastFunction()

@@ -1,10 +1,10 @@
 
 import React from "react";
-import { ToastContext } from "./use-toast";
+import { ToastContext, type ToastContextType } from "./use-toast";
 
 interface ToastProviderProps {
   children: React.ReactNode;
-  value: any;
+  value: ToastContextType;
 }
 
 export const ToastContextProvider: React.FC<ToastProviderProps> = ({ 

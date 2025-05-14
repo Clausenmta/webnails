@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -13,23 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Employee } from "@/types/employees";
-import { toast } from "sonner";
-import { Calculator, Download, Save, FileText, ArrowLeft, Edit, Trash2 } from "lucide-react";
-import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import { toast } from "@/hooks/use-toast";
+import { Calculator, Download, Save, FileText, ArrowLeft, Edit, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { exportReport } from "@/utils/reportExport";
-
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => any;
-    lastAutoTable: {
-      finalY: number;
-    };
-  }
-}
+import { exportReport, generatePdfPreview } from "@/utils/reportExport";
 
 type SalaryCalculationDialogProps = {
   open: boolean;
@@ -156,6 +144,7 @@ export default function SalaryCalculationDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pdfPreview, setPdfPreview] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     if (employee) {
@@ -276,175 +265,77 @@ export default function SalaryCalculationDialog({
     }
   };
 
-  // Actualización del método de exportación
+  // Método actualizado para exportar
   const handleExport = () => {
-    if (!employee || !selectedSalary) return;
-    
-    // Preparamos los datos con formato específico para la exportación
-    const exportData = {
-      employeeData: {
-        name: employee.name,
-        position: employee.position,
-        id: employee.id
-      },
-      salaryData: selectedSalary
-    };
-    
-    // Usamos la función mejorada de exportación
-    exportReport(exportData, {
-      filename: `Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}`,
-      format: 'pdf'
-    });
-  };
-
-  const handlePreviewPdf = () => {
-    if (!employee || !selectedSalary) return;
-    
-    // Usar el mismo formato para la previsualización
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Configurar fuentes y colores para la previsualización
-    doc.setFont("helvetica");
-    
-    // Título con estilo mejorado
-    doc.setFontSize(22);
-    doc.setTextColor(128, 0, 128); // Color púrpura para el título principal
-    doc.text("Nails & Co", pageWidth / 2, 20, { align: "center" });
-    
-    doc.setFontSize(16);
-    doc.setTextColor(40, 40, 40); // Color gris oscuro para subtítulos
-    doc.text("Recibo de Sueldo", pageWidth / 2, 30, { align: "center" });
-    
-    // Información de cabecera
-    doc.setFontSize(12);
-    doc.text(`Empleado: ${employee.name}`, 20, 45);
-    doc.text(`Posición: ${employee.position}`, 20, 52);
-    doc.text(`Período: ${selectedSalary.date}`, 20, 59);
-    
-    // Sección de facturación
-    doc.setFontSize(14);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Detalles de facturación", 20, 70);
-    
-    const billingData = [
-      ["Concepto", "Monto"],
-      ["Facturación Total", `$${selectedSalary.totalBilling.toLocaleString('es-AR')}`],
-      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`]
-    ];
-    
-    doc.autoTable({
-      startY: 75,
-      head: [billingData[0]],
-      body: billingData.slice(1),
-      theme: 'striped',
-      headStyles: { 
-        fillColor: [128, 0, 128], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      styles: { 
-        fontSize: 10,
-        cellPadding: 4
-      }
-    });
-    
-    // Componentes del sueldo
-    const componentY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Componentes del sueldo", 20, componentY);
-    
-    const componentsData = [
-      ["Concepto", "Monto"],
-      ["Adelanto", `$${selectedSalary.advance.toLocaleString('es-AR')}`],
-      ["Capacitación", `$${selectedSalary.training.toLocaleString('es-AR')}`],
-      ["Vacaciones", `$${selectedSalary.vacation.toLocaleString('es-AR')}`],
-      ["Recepción", `$${selectedSalary.reception.toLocaleString('es-AR')}`],
-      ["SAC", `$${selectedSalary.sac.toLocaleString('es-AR')}`],
-      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`]
-    ];
-    
-    // Agregar extras si existen
-    if (selectedSalary.extras && selectedSalary.extras.length > 0) {
-      selectedSalary.extras.forEach(extra => {
-        componentsData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
-      });
+    if (!employee || !selectedSalary) {
+      toast.error("No hay datos para exportar");
+      return;
     }
     
-    doc.autoTable({
-      startY: componentY + 5,
-      head: [componentsData[0]],
-      body: componentsData.slice(1),
-      theme: 'striped',
-      headStyles: { 
-        fillColor: [128, 0, 128], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      styles: { 
-        fontSize: 10,
-        cellPadding: 4
+    setIsGeneratingPdf(true);
+    
+    try {
+      // Preparamos los datos con formato específico para la exportación
+      const exportData = {
+        employeeData: {
+          name: employee.name,
+          position: employee.position,
+          id: employee.id
+        },
+        salaryData: selectedSalary
+      };
+      
+      // Usamos la función mejorada de exportación
+      const success = exportReport(exportData, {
+        filename: `Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}`,
+        format: 'pdf'
+      });
+      
+      if (!success) {
+        toast.error("Error al exportar el PDF. Verifique los datos.");
       }
-    });
+    } catch (error) {
+      console.error("Error en exportación:", error);
+      toast.error(`Error al exportar: ${error instanceof Error ? error.message : 'Verifique los datos'}`);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Método actualizado para la vista previa del PDF
+  const handlePreviewPdf = () => {
+    if (!employee || !selectedSalary) {
+      toast.error("No hay datos para previsualizar");
+      return;
+    }
     
-    // Totales con estilo destacado
-    const totalsY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Totales", 20, totalsY);
+    setIsGeneratingPdf(true);
     
-    const totalsData = [
-      ["Concepto", "Monto"],
-      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
-      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
-    ];
-    
-    doc.autoTable({
-      startY: totalsY + 5,
-      head: [totalsData[0]],
-      body: totalsData.slice(1),
-      theme: 'striped',
-      headStyles: { 
-        fillColor: [128, 0, 128], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      bodyStyles: {
-        fontSize: 10,
-        cellPadding: 4
-      },
-      // Destacar la última fila (total sueldo)
-      didParseCell: function(data) {
-        if (data.row.index === 1 && data.column.index === 1) {
-          data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.fontSize = 12;
-        }
+    try {
+      // Preparamos los datos para la vista previa
+      const exportData = {
+        employeeData: {
+          name: employee.name,
+          position: employee.position,
+          id: employee.id
+        },
+        salaryData: selectedSalary
+      };
+      
+      // Usar la función dedicada para generar la vista previa
+      const pdfUrl = generatePdfPreview(exportData);
+      
+      if (pdfUrl) {
+        setPdfPreview(pdfUrl);
+      } else {
+        toast.error("Error al generar la vista previa. Verifique los datos.");
       }
-    });
-    
-    // Agregar líneas para firmas
-    const signatureY = doc.lastAutoTable.finalY + 30;
-    
-    doc.setDrawColor(200, 200, 200);
-    doc.line(25, signatureY, 95, signatureY);
-    doc.line(pageWidth - 95, signatureY, pageWidth - 25, signatureY);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(80, 80, 80);
-    doc.text("Firma del empleado", 60, signatureY + 10, { align: "center" });
-    doc.text("Firma del empleador", pageWidth - 60, signatureY + 10, { align: "center" });
-    
-    // Pie de página con fecha de impresión
-    const currentDate = new Date().toLocaleDateString('es-AR');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Generado el ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
-    
-    // Crear la vista previa
-    const pdfBlob = doc.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    setPdfPreview(pdfUrl);
+    } catch (error) {
+      console.error("Error en vista previa:", error);
+      toast.error(`Error al generar vista previa: ${error instanceof Error ? error.message : 'Verifique los datos'}`);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -748,15 +639,25 @@ export default function SalaryCalculationDialog({
                   <Button
                     variant="outline"
                     onClick={handlePreviewPdf}
+                    disabled={isGeneratingPdf}
                   >
-                    <FileText className="mr-2 h-4 w-4" />
+                    {isGeneratingPdf ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="mr-2 h-4 w-4" />
+                    )}
                     Vista previa
                   </Button>
                   <Button
                     variant="outline"
                     onClick={handleExport}
+                    disabled={isGeneratingPdf}
                   >
-                    <Download className="mr-2 h-4 w-4" />
+                    {isGeneratingPdf ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
                     Exportar PDF
                   </Button>
                   <Button
@@ -782,132 +683,133 @@ export default function SalaryCalculationDialog({
         )}
 
         {isCalculating && !isLoading && !isViewingDetails && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="totalBilling">Facturación Total</Label>
-                  <Input
-                    id="totalBilling"
-                    name="totalBilling"
-                    type="number"
-                    value={salaryData.totalBilling || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="commissionRate">
-                    Porcentaje de Comisión ({salaryData.commissionRate}%)
-                  </Label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      id="commission"
-                      readOnly
-                      value={salaryData.commission.toFixed(2)}
-                      className="bg-muted"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="advance">Adelanto</Label>
-                  <Input
-                    id="advance"
-                    name="advance"
-                    type="number"
-                    value={salaryData.advance || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="training">Capacitación</Label>
-                  <Input
-                    id="training"
-                    name="training"
-                    type="number"
-                    value={salaryData.training || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vacation">Vacaciones</Label>
-                  <Input
-                    id="vacation"
-                    name="vacation"
-                    type="number"
-                    value={salaryData.vacation || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="totalBilling">Facturación Total</Label>
+                <Input
+                  id="totalBilling"
+                  name="totalBilling"
+                  type="number"
+                  value={salaryData.totalBilling || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reception">Recepción</Label>
+              <div className="space-y-2">
+                <Label htmlFor="commissionRate">
+                  Porcentaje de Comisión ({salaryData.commissionRate}%)
+                </Label>
+                <div className="flex items-center space-x-2">
                   <Input
-                    id="reception"
-                    name="reception"
-                    type="number"
-                    value={salaryData.reception || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sac">SAC</Label>
-                  <Input
-                    id="sac"
-                    name="sac"
-                    type="number"
-                    value={salaryData.sac || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="receipt">Recibo</Label>
-                  <Input
-                    id="receipt"
-                    name="receipt"
-                    type="number"
-                    value={salaryData.receipt || ""}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cash">Efectivo (calculado)</Label>
-                  <Input
-                    id="cash"
+                    id="commission"
                     readOnly
-                    value={salaryData.cash.toFixed(2)}
+                    value={salaryData.commission.toFixed(2)}
                     className="bg-muted"
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="totalSalary" className="font-semibold">TOTAL SUELDO</Label>
-                  <Input
-                    id="totalSalary"
-                    readOnly
-                    value={salaryData.totalSalary.toFixed(2)}
-                    className="bg-muted font-bold text-lg"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="advance">Adelanto</Label>
+                <Input
+                  id="advance"
+                  name="advance"
+                  type="number"
+                  value={salaryData.advance || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="training">Capacitación</Label>
+                <Input
+                  id="training"
+                  name="training"
+                  type="number"
+                  value={salaryData.training || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vacation">Vacaciones</Label>
+                <Input
+                  id="vacation"
+                  name="vacation"
+                  type="number"
+                  value={salaryData.vacation || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
               </div>
             </div>
-            
-            <div className="space-y-4 border-t pt-4">
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reception">Recepción</Label>
+                <Input
+                  id="reception"
+                  name="reception"
+                  type="number"
+                  value={salaryData.reception || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sac">SAC</Label>
+                <Input
+                  id="sac"
+                  name="sac"
+                  type="number"
+                  value={salaryData.sac || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="receipt">Recibo</Label>
+                <Input
+                  id="receipt"
+                  name="receipt"
+                  type="number"
+                  value={salaryData.receipt || ""}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cash">Efectivo (calculado)</Label>
+                <Input
+                  id="cash"
+                  readOnly
+                  value={salaryData.cash.toFixed(2)}
+                  className="bg-muted"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="totalSalary" className="font-semibold">TOTAL SUELDO</Label>
+                <Input
+                  id="totalSalary"
+                  readOnly
+                  value={salaryData.totalSalary.toFixed(2)}
+                  className="bg-muted font-bold text-lg"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isCalculating && !isLoading && !isViewingDetails && (
+          <div className="space-y-4 border-t pt-4">
               <Label className="font-semibold">Extras</Label>
               
               {salaryData.extras.length > 0 && (
@@ -961,11 +863,12 @@ export default function SalaryCalculationDialog({
                 </div>
               </div>
             </div>
+        )}
 
-            <div className="bg-muted rounded-md p-3 mt-2">
-              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción</p>
-            </div>
-          </>
+        {isCalculating && !isLoading && !isViewingDetails && (
+          <div className="bg-muted rounded-md p-3 mt-2">
+            <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción</p>
+          </div>
         )}
 
         <DialogFooter className="mt-6 flex-wrap gap-2">

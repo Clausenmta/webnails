@@ -123,14 +123,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     }
   }, [toasts, addToast, updateToast, dismissToast, removeToast])
 
-  // Create provider element
-  const provider = React.createElement(
-    ToastContext.Provider,
-    { value },
-    children
-  )
-  
-  return provider
+  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 }
 
 // The main useToast hook
@@ -144,8 +137,8 @@ export const useToast = () => {
   return context
 }
 
-// Define the toast function interface with callable signature and methods
-interface ToastFunction {
+// Function to create toast without having to call useToast
+type ToastFunction = {
   (props: Omit<Toast, "id">): string;
   success: (message: string, title?: string) => string;
   error: (message: string, title?: string) => string;
@@ -153,12 +146,13 @@ interface ToastFunction {
   info: (message: string, title?: string) => string;
 }
 
-// Create the toast function that can be called directly or via methods
-const createToastFunction = (): ToastFunction => {
+// Create a toast function for direct access without hooks
+function createToastFunction(): ToastFunction {
   const toastFn = ((props: Omit<Toast, "id">) => {
+    // Get the context for internal use
     const context = React.useContext(ToastContext)
     if (!context) {
-      console.error("Toast used outside of provider, this won't work")
+      console.error("Toast function used outside of provider")
       return ""
     }
     return context.addToast(props)

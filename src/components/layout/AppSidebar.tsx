@@ -122,9 +122,13 @@ export function AppSidebar() {
     navigate("/login");
   };
 
+  const isCurrentPath = (path: string) => {
+    return location.pathname === path;
+  };
+
   return (
-    <Sidebar>
-      <SidebarHeader className="flex items-center justify-between px-4 py-2">
+    <Sidebar className="border-r">
+      <SidebarHeader className="flex items-center justify-between py-4 px-5">
         <div className="flex items-center gap-2">
           <Link to="/dashboard" className="flex items-center">
             <div className="h-8 w-auto">
@@ -136,12 +140,12 @@ export function AppSidebar() {
             </div>
           </Link>
         </div>
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger className="md:hidden text-salon-600" />
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="px-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold text-salon-500 px-2 mb-2">Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems
@@ -150,11 +154,14 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton 
                       asChild
-                      className={location.pathname === item.path ? "bg-salon-100 text-salon-700" : ""}
+                      className={isCurrentPath(item.path) 
+                        ? "bg-salon-100 text-salon-700 font-medium" 
+                        : "text-salon-600 hover:bg-salon-50 hover:text-salon-900 transition-colors"
+                      }
                     >
-                      <Link to={item.path} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <Link to={item.path} className="flex items-center gap-3 py-2.5 px-3 rounded-md">
+                        <item.icon className={`h-[18px] w-[18px] ${isCurrentPath(item.path) ? 'text-salon-600' : 'text-salon-500'}`} />
+                        <span className="text-sm">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -169,7 +176,7 @@ export function AppSidebar() {
         <Button 
           variant="outline" 
           size="sm" 
-          className="w-full justify-start gap-2 text-muted-foreground"
+          className="w-full justify-start gap-2 text-salon-600 hover:text-salon-700 hover:bg-salon-50"
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />

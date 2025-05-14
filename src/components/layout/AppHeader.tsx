@@ -74,19 +74,19 @@ export function AppHeader() {
   };
 
   return (
-    <header className="border-b bg-white py-2 px-6">
+    <header className="border-b bg-white py-3 px-6 shadow-sm">
       <div className="flex h-12 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger />
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="text-salon-600 hover:bg-salon-50" />
           {/* Logo removed from header, only kept in sidebar */}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
             size="icon" 
             aria-label="Verificar Roles"
             onClick={toggleRoleInfo}
-            className="text-muted-foreground"
+            className="text-salon-600 hover:bg-salon-50"
           >
             <ShieldCheck className="h-5 w-5" />
           </Button>
@@ -96,7 +96,7 @@ export function AppHeader() {
               size="icon" 
               aria-label="Gestionar Roles"
               onClick={toggleRoleManager}
-              className="text-muted-foreground"
+              className="text-salon-600 hover:bg-salon-50"
             >
               <Settings className="h-5 w-5" />
             </Button>
@@ -105,8 +105,10 @@ export function AppHeader() {
             variant="ghost" 
             size="icon" 
             aria-label="Notificaciones"
+            className="text-salon-600 hover:bg-salon-50 relative"
           >
-            <Bell className="h-5 w-5 text-muted-foreground" />
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1.5 h-2 w-2 rounded-full bg-salon-500"></span>
           </Button>
           <DropdownMenu 
             open={isMenuOpen} 
@@ -114,20 +116,26 @@ export function AppHeader() {
           >
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="rounded-full" size="icon">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-9 w-9 border-2 border-salon-100">
                   <AvatarImage src="/placeholder.svg" alt="Avatar" />
-                  <AvatarFallback className="bg-salon-400 text-white">{getUserInitials()}</AvatarFallback>
+                  <AvatarFallback className="bg-salon-400 text-white font-medium">{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-50 bg-white">
-              <DropdownMenuLabel>
-                {user?.name} ({user?.role === 'superadmin' ? 'Administrador' : 'Empleado'})
+            <DropdownMenuContent align="end" className="z-50 bg-white w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.role === 'superadmin' ? 'Administrador' : 'Empleado'}
+                  </p>
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link 
                   to="/perfil"
+                  className="cursor-pointer"
                   onClick={handleNavigation}
                 >
                   Perfil
@@ -136,13 +144,17 @@ export function AppHeader() {
               <DropdownMenuItem asChild>
                 <Link 
                   to="/configuracion"
+                  className="cursor-pointer"
                   onClick={handleNavigation}
                 >
                   Configuración
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="text-red-600 cursor-pointer focus:text-red-600"
+              >
                 Cerrar Sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -163,4 +175,4 @@ export function AppHeader() {
       )}
     </header>
   );
-};
+}

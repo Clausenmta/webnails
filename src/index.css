@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 260 33% 98%;
+    --background: 260 33% 99%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -33,7 +33,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 255 86% 75%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 260 33% 98%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -92,12 +92,17 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+  
+  html {
+    @apply scroll-smooth;
   }
 }
 
 @layer components {
   .salon-card {
-    @apply bg-white rounded-lg border border-border shadow-sm p-6;
+    @apply bg-white rounded-lg border border-border shadow-sm p-6 transition-all hover:shadow-md;
   }
   
   .dashboard-card {
@@ -105,6 +110,50 @@
   }
 
   .stats-card {
-    @apply bg-white rounded-lg border-l-4 border border-salon-400 shadow-sm p-4;
+    @apply bg-white rounded-lg border-l-4 border border-salon-400 shadow-sm p-4 transition-all hover:shadow-md;
   }
+  
+  .page-header {
+    @apply mb-8;
+  }
+  
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  
+  .page-description {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+  
+  .data-table {
+    @apply w-full border-collapse rounded-lg overflow-hidden;
+  }
+  
+  .data-table th {
+    @apply bg-secondary text-left text-sm font-medium text-foreground p-3 border-b;
+  }
+  
+  .data-table td {
+    @apply p-3 border-b border-border text-sm;
+  }
+  
+  .data-table tr:hover {
+    @apply bg-secondary/50;
+  }
+  
+  .badge-pending {
+    @apply bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium;
+  }
+  
+  .badge-completed {
+    @apply bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium;
+  }
+  
+  .badge-active {
+    @apply bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium;
+  }
+}
+
+#root {
+  @apply min-h-screen w-full;
 }

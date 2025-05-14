@@ -5,6 +5,7 @@ import { ExportOptions } from '@/types/auth';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { formatCurrency } from '@/lib/utils';
 
 // Añadir esta definición para TypeScript
 declare module "jspdf" {
@@ -67,21 +68,27 @@ export const exportReport = (data: any, options: ExportOptions) => {
       // Implementación mejorada de exportación a PDF
       const doc = new jsPDF();
       
-      // Configurar fuentes y colores para mejorar la estética
-      doc.setFont("helvetica");
-      
-      // Título con estilo mejorado
-      doc.setFontSize(22);
-      doc.setTextColor(128, 0, 128); // Color púrpura para el título principal
-      doc.text("Nails & Co", doc.internal.pageSize.getWidth() / 2, 20, { align: "center" });
-      
-      doc.setFontSize(16);
-      doc.setTextColor(40, 40, 40); // Color gris oscuro para subtítulos
-      doc.text(filename, doc.internal.pageSize.getWidth() / 2, 30, { align: "center" });
-      
-      // Si es objeto específico de recibo de sueldo, usar formato especial
-      if (data && data.employeeData && data.salaryData) {
+      try {
+        // Verificar que tenemos los datos correctos
+        if (!data || !data.employeeData || !data.salaryData) {
+          console.error('Datos de exportación incompletos:', data);
+          toast.error('Datos de exportación incompletos');
+          return false;
+        }
+        
         const { employeeData, salaryData } = data;
+        
+        // Configurar fuentes y colores para mejorar la estética
+        doc.setFont("helvetica");
+        
+        // Título con estilo mejorado
+        doc.setFontSize(22);
+        doc.setTextColor(128, 0, 128); // Color púrpura para el título principal
+        doc.text("Nails & Co", doc.internal.pageSize.getWidth() / 2, 20, { align: "center" });
+        
+        doc.setFontSize(16);
+        doc.setTextColor(40, 40, 40); // Color gris oscuro para subtítulos
+        doc.text("Recibo de Sueldo", doc.internal.pageSize.getWidth() / 2, 30, { align: "center" });
         
         // Información de cabecera
         doc.setFontSize(12);
@@ -208,53 +215,24 @@ export const exportReport = (data: any, options: ExportOptions) => {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(`Generado el ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
-      } 
-      else if (Array.isArray(data)) {
-        // Para arrays generales, mantener el formato de tabla
-        // Extraer headers del primer objeto
-        const headers = Object.keys(data[0] || {});
-        const rows = data.map(item => 
-          headers.map(header => item[header]?.toString() || '')
-        );
         
-        doc.autoTable({
-          head: [headers],
-          body: rows,
-          startY: 40,
-          theme: 'grid',
-          styles: { fontSize: 10, cellPadding: 3 },
-          headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] }
-        });
-      } 
-      else if (typeof data === 'object') {
-        // Para un objeto con propiedades
-        const rows = Object.entries(data).map(([key, value]) => {
-          if (typeof value === 'object' && value !== null) {
-            return [key, JSON.stringify(value)];
-          }
-          return [key, value?.toString() || ''];
-        });
-        
-        doc.autoTable({
-          body: rows,
-          startY: 40,
-          theme: 'grid',
-          styles: { fontSize: 10, cellPadding: 3 }
-        });
-      } 
-      else {
-        // Fallback para otros tipos de datos
-        doc.text(String(data), 14, 40);
+        // Guardar PDF
+        doc.save(`${filename}.pdf`);
+        toast.success(`Reporte exportado como PDF correctamente`);
+        return true;
+      } catch (error) {
+        console.error('Error en la generación del PDF:', error);
+        toast.error('Error al generar el PDF. Verifique los datos.');
+        return false;
       }
-      
-      // Guardar PDF
-      doc.save(`${filename}.pdf`);
-      toast.success(`Reporte exportado como PDF correctamente`);
-      return true;
     }
     
-    // Fix for the toUpperCase error - ensure format is a string before calling toUpperCase
-    toast.success(`Reporte exportado como ${String(format).toUpperCase()} correctamente`);
+    // Si llegamos aquí, es un formato no reconocido
+    if (typeof format === 'string') {
+      toast.success(`Reporte exportado como ${format.toUpperCase()} correctamente`);
+    } else {
+      toast.success('Reporte exportado correctamente');
+    }
     return true;
   } catch (error) {
     console.error('Error al exportar reporte:', error);

@@ -14,10 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Employee } from "@/types/employees";
 import { toast } from "sonner";
-import { Calculator, Download, Save, List } from "lucide-react";
+import { Calculator, Download, Save, List, Edit, Trash2, FileText, ArrowLeft } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -55,6 +57,7 @@ type SalaryDetails = {
   totalSalary: number; // calculated
 };
 
+// Mock data for salary history
 const mockSalaryHistory: Record<number, SalaryDetails[]> = {
   1: [
     {
@@ -75,6 +78,45 @@ const mockSalaryHistory: Record<number, SalaryDetails[]> = {
       ],
       cash: 46000,
       totalSalary: 54000,
+    },
+    {
+      id: 2,
+      employeeId: 1,
+      date: "abril 2025",
+      totalBilling: 350000,
+      commission: 105000,
+      commissionRate: 30,
+      advance: 25000,
+      training: 7000,
+      vacation: 5000,
+      reception: 12000,
+      sac: 8500,
+      receipt: 45000,
+      extras: [
+        { amount: 4500, concept: "Capacitación especial" }
+      ],
+      cash: 71000,
+      totalSalary: 116000,
+    },
+    {
+      id: 3,
+      employeeId: 1,
+      date: "mayo 2025",
+      totalBilling: 2654000,
+      commission: 796200,
+      commissionRate: 30,
+      advance: 35000,
+      training: 10000,
+      vacation: 30000,
+      reception: 15000,
+      sac: 15000,
+      receipt: 150000,
+      extras: [
+        { amount: 20000, concept: "Bono por rendimiento" },
+        { amount: 12500, concept: "Presentismo" }
+      ],
+      cash: 897945.25,
+      totalSalary: 1054874.53,
     }
   ],
 };
@@ -105,6 +147,11 @@ export default function SalaryCalculationDialog({
   const [showHistory, setShowHistory] = useState(true); // Iniciar mostrando el historial
   const [isCalculating, setIsCalculating] = useState(false);
   const [salaryHistory, setSalaryHistory] = useState<SalaryDetails[]>([]);
+  const [selectedSalary, setSelectedSalary] = useState<SalaryDetails | null>(null);
+  const [isViewingDetails, setIsViewingDetails] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (employee) {
@@ -148,23 +195,84 @@ export default function SalaryCalculationDialog({
   ]);
 
   const handleSave = () => {
-    const newSalaryRecord = {
-      ...salaryData,
-      id: Date.now(),
-    };
+    setIsLoading(true);
     
-    const updatedHistory = [newSalaryRecord, ...salaryHistory];
-    setSalaryHistory(updatedHistory);
-    
-    mockSalaryHistory[employee?.id || 0] = updatedHistory;
-    
-    toast.success(`Cálculo de sueldo para ${employee?.name} guardado exitosamente`);
-    
-    setShowHistory(true);
+    setTimeout(() => {
+      let newSalaryRecord: SalaryDetails;
+      
+      if (isEditing && selectedSalary?.id) {
+        // Update existing record
+        newSalaryRecord = {
+          ...salaryData,
+          id: selectedSalary.id
+        };
+        
+        const updatedHistory = salaryHistory.map(salary => 
+          salary.id === selectedSalary.id ? newSalaryRecord : salary
+        );
+        
+        setSalaryHistory(updatedHistory);
+        toast.success(`Sueldo de ${employee?.name} actualizado exitosamente`);
+        mockSalaryHistory[employee?.id || 0] = updatedHistory;
+      } else {
+        // Create new record
+        newSalaryRecord = {
+          ...salaryData,
+          id: Date.now(),
+        };
+        
+        const updatedHistory = [newSalaryRecord, ...salaryHistory];
+        setSalaryHistory(updatedHistory);
+        mockSalaryHistory[employee?.id || 0] = updatedHistory;
+        toast.success(`Cálculo de sueldo para ${employee?.name} guardado exitosamente`);
+      }
+      
+      setIsLoading(false);
+      setIsEditing(false);
+      setIsViewingDetails(false);
+      setShowHistory(true);
+      setSelectedSalary(null);
+    }, 600);
+  };
+
+  const handleViewDetails = (salary: SalaryDetails) => {
+    setSelectedSalary(salary);
+    setIsViewingDetails(true);
+    setShowHistory(false);
+  };
+
+  const handleEditSalary = () => {
+    if (selectedSalary) {
+      setSalaryData(selectedSalary);
+      setIsViewingDetails(false);
+      setIsEditing(true);
+      setIsCalculating(true);
+    }
+  };
+
+  const handleDeleteSalary = () => {
+    if (selectedSalary) {
+      setIsLoading(true);
+      
+      setTimeout(() => {
+        const updatedHistory = salaryHistory.filter(
+          salary => salary.id !== selectedSalary.id
+        );
+        
+        setSalaryHistory(updatedHistory);
+        mockSalaryHistory[employee?.id || 0] = updatedHistory;
+        
+        toast.success(`Registro de sueldo eliminado exitosamente`);
+        setIsLoading(false);
+        setIsViewingDetails(false);
+        setShowHistory(true);
+        setSelectedSalary(null);
+      }, 600);
+    }
   };
 
   const handleExport = () => {
-    if (!employee) return;
+    if (!employee || !selectedSalary) return;
     
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -180,30 +288,30 @@ export default function SalaryCalculationDialog({
     doc.setFontSize(12);
     doc.text(`Empleado: ${employee.name}`, 20, 45);
     doc.text(`Posición: ${employee.position}`, 20, 52);
-    doc.text(`Período: ${salaryData.date}`, 20, 59);
+    doc.text(`Período: ${selectedSalary.date}`, 20, 59);
     
     doc.setFontSize(14);
     doc.text("Detalle de sueldo", 20, 70);
     
     const tableData = [
       ["Concepto", "Monto"],
-      ["Facturación Total", `$${salaryData.totalBilling.toFixed(2)}`],
-      [`Comisión (${salaryData.commissionRate}%)`, `$${salaryData.commission.toFixed(2)}`],
-      ["Adelanto", `$${salaryData.advance.toFixed(2)}`],
-      ["Capacitación", `$${salaryData.training.toFixed(2)}`],
-      ["Vacaciones", `$${salaryData.vacation.toFixed(2)}`],
-      ["Recepción", `$${salaryData.reception.toFixed(2)}`],
-      ["SAC", `$${salaryData.sac.toFixed(2)}`],
-      ["Recibo", `$${salaryData.receipt.toFixed(2)}`],
+      ["Facturación Total", `$${selectedSalary.totalBilling.toLocaleString('es-AR')}`],
+      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`],
+      ["Adelanto", `$${selectedSalary.advance.toLocaleString('es-AR')}`],
+      ["Capacitación", `$${selectedSalary.training.toLocaleString('es-AR')}`],
+      ["Vacaciones", `$${selectedSalary.vacation.toLocaleString('es-AR')}`],
+      ["Recepción", `$${selectedSalary.reception.toLocaleString('es-AR')}`],
+      ["SAC", `$${selectedSalary.sac.toLocaleString('es-AR')}`],
+      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`],
     ];
     
-    salaryData.extras.forEach(extra => {
-      tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toFixed(2)}`]);
+    selectedSalary.extras.forEach(extra => {
+      tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
     });
     
     tableData.push(
-      ["Efectivo", `$${salaryData.cash.toFixed(2)}`],
-      ["TOTAL SUELDO", `$${salaryData.totalSalary.toFixed(2)}`]
+      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
+      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
     );
     
     doc.autoTable({
@@ -212,7 +320,7 @@ export default function SalaryCalculationDialog({
       body: tableData.slice(1),
       theme: 'striped',
       headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] },
-      foot: [["TOTAL SUELDO", `$${salaryData.totalSalary.toFixed(2)}`]],
+      foot: [["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]],
       footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
     });
     
@@ -222,9 +330,78 @@ export default function SalaryCalculationDialog({
     doc.text("Firma del empleado", 40, signatureY + 10);
     doc.text("Firma del empleador", pageWidth - 40, signatureY + 10, { align: "right" });
     
-    doc.save(`Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${salaryData.date.replace(/\s+/g, '_')}.pdf`);
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    setPdfPreview(pdfUrl);
+    
+    // También guarda el PDF para descarga
+    doc.save(`Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}.pdf`);
     
     toast.success(`Recibo de sueldo exportado para ${employee?.name}`);
+  };
+
+  const handlePreviewPdf = () => {
+    if (!employee || !selectedSalary) return;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.setFontSize(20);
+    doc.setTextColor(128, 0, 128);
+    doc.text("Nails & Co", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Recibo de Sueldo", pageWidth / 2, 30, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.text(`Empleado: ${employee.name}`, 20, 45);
+    doc.text(`Posición: ${employee.position}`, 20, 52);
+    doc.text(`Período: ${selectedSalary.date}`, 20, 59);
+    
+    doc.setFontSize(14);
+    doc.text("Detalle de sueldo", 20, 70);
+    
+    const tableData = [
+      ["Concepto", "Monto"],
+      ["Facturación Total", `$${selectedSalary.totalBilling.toLocaleString('es-AR')}`],
+      [`Comisión (${selectedSalary.commissionRate}%)`, `$${selectedSalary.commission.toLocaleString('es-AR')}`],
+      ["Adelanto", `$${selectedSalary.advance.toLocaleString('es-AR')}`],
+      ["Capacitación", `$${selectedSalary.training.toLocaleString('es-AR')}`],
+      ["Vacaciones", `$${selectedSalary.vacation.toLocaleString('es-AR')}`],
+      ["Recepción", `$${selectedSalary.reception.toLocaleString('es-AR')}`],
+      ["SAC", `$${selectedSalary.sac.toLocaleString('es-AR')}`],
+      ["Recibo", `$${selectedSalary.receipt.toLocaleString('es-AR')}`],
+    ];
+    
+    selectedSalary.extras.forEach(extra => {
+      tableData.push([`Extra: ${extra.concept}`, `$${extra.amount.toLocaleString('es-AR')}`]);
+    });
+    
+    tableData.push(
+      ["Efectivo", `$${selectedSalary.cash.toLocaleString('es-AR')}`],
+      ["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]
+    );
+    
+    doc.autoTable({
+      startY: 75,
+      head: [tableData[0]],
+      body: tableData.slice(1),
+      theme: 'striped',
+      headStyles: { fillColor: [128, 0, 128], textColor: [255, 255, 255] },
+      foot: [["TOTAL SUELDO", `$${selectedSalary.totalSalary.toLocaleString('es-AR')}`]],
+      footStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
+    });
+    
+    const signatureY = doc.lastAutoTable.finalY + 20;
+    doc.text("_________________________", 40, signatureY);
+    doc.text("_________________________", pageWidth - 40, signatureY, { align: "right" });
+    doc.text("Firma del empleado", 40, signatureY + 10);
+    doc.text("Firma del empleador", pageWidth - 40, signatureY + 10, { align: "right" });
+    
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    setPdfPreview(pdfUrl);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,6 +440,9 @@ export default function SalaryCalculationDialog({
   };
 
   const startCalculation = () => {
+    setPdfPreview(null);
+    setSelectedSalary(null);
+    setIsViewingDetails(false);
     setShowHistory(false);
     setIsCalculating(true);
   };
@@ -277,18 +457,27 @@ export default function SalaryCalculationDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
-            <span>Cálculo de Sueldo</span>
-            {isCalculating && (
+            {isViewingDetails ? (
+              <span>Detalle de Sueldo</span>
+            ) : isCalculating ? (
+              <span>Cálculo de Sueldo</span>
+            ) : (
+              <span>Historial de Sueldos</span>
+            )}
+            {(isCalculating || isViewingDetails) && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
+                  setPdfPreview(null);
                   setShowHistory(true);
                   setIsCalculating(false);
+                  setIsViewingDetails(false);
+                  setSelectedSalary(null);
                 }}
                 className="flex items-center gap-2"
               >
-                <List className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
                 Volver al historial
               </Button>
             )}
@@ -298,7 +487,15 @@ export default function SalaryCalculationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {showHistory ? (
+        {isLoading && (
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        )}
+
+        {showHistory && !isLoading && (
           <div className="py-4">
             <h3 className="text-lg font-semibold mb-4">Historial de Sueldos</h3>
             
@@ -308,39 +505,52 @@ export default function SalaryCalculationDialog({
                   <Card className="border shadow-sm">
                     <CardContent className="pt-6">
                       <p className="text-sm text-muted-foreground">Total en Efectivo</p>
-                      <p className="text-2xl font-bold">${totalCashPayment.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${totalCashPayment.toLocaleString('es-AR')}</p>
                     </CardContent>
                   </Card>
                   <Card className="border shadow-sm">
                     <CardContent className="pt-6">
                       <p className="text-sm text-muted-foreground">Total Sueldos</p>
-                      <p className="text-2xl font-bold">${totalSalary.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${totalSalary.toLocaleString('es-AR')}</p>
                     </CardContent>
                   </Card>
                 </div>
                 
                 {salaryHistory.map((salary, index) => (
-                  <div key={index} className="border rounded-md p-4">
+                  <div key={index} className="border rounded-md p-4 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => handleViewDetails(salary)}>
                     <div className="flex justify-between mb-2">
                       <h4 className="font-medium">{salary.date}</h4>
-                      <span className="font-bold">${salary.totalSalary.toFixed(2)}</span>
+                      <span className="font-bold">${salary.totalSalary.toLocaleString('es-AR')}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Facturación: ${salary.totalBilling.toFixed(2)}</div>
-                      <div>Comisión ({salary.commissionRate}%): ${salary.commission.toFixed(2)}</div>
-                      <div>Efectivo: ${salary.cash.toFixed(2)}</div>
+                      <div>Facturación: ${salary.totalBilling.toLocaleString('es-AR')}</div>
+                      <div>Comisión ({salary.commissionRate}%): ${salary.commission.toLocaleString('es-AR')}</div>
+                      <div>Efectivo: ${salary.cash.toLocaleString('es-AR')}</div>
                       {salary.extras.length > 0 && (
                         <div className="col-span-2 mt-2">
                           <p className="font-medium">Extras:</p>
                           <ul className="list-disc list-inside pl-2">
                             {salary.extras.map((extra, i) => (
                               <li key={i}>
-                                {extra.concept}: ${extra.amount.toFixed(2)}
+                                {extra.concept}: ${extra.amount.toLocaleString('es-AR')}
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
+                    </div>
+                    <div className="flex justify-end mt-2 space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(salary);
+                        }}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Ver detalle
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -368,7 +578,158 @@ export default function SalaryCalculationDialog({
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {isViewingDetails && selectedSalary && !isLoading && (
+          <div className="py-4">
+            {pdfPreview ? (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">Vista previa del PDF</h3>
+                <AspectRatio ratio={1/1.4} className="bg-white">
+                  <iframe 
+                    src={pdfPreview} 
+                    className="w-full h-full rounded-md border"
+                    title="PDF Preview"
+                  />
+                </AspectRatio>
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setPdfPreview(null)}
+                  >
+                    Cerrar vista previa
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3 className="font-semibold mb-2">{selectedSalary.date}</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground">Total en Efectivo</p>
+                      <p className="text-2xl font-bold">${selectedSalary.cash.toLocaleString('es-AR')}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border shadow-sm">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground">Total Sueldo</p>
+                      <p className="text-2xl font-bold">${selectedSalary.totalSalary.toLocaleString('es-AR')}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="bg-slate-50 rounded-md p-4 mb-4">
+                  <h4 className="font-medium mb-2">Detalles de facturación</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Facturación Total:</span>
+                      <span className="font-medium">${selectedSalary.totalBilling.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Comisión ({selectedSalary.commissionRate}%):</span>
+                      <span className="font-medium">${selectedSalary.commission.toLocaleString('es-AR')}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-50 rounded-md p-4 mb-4">
+                  <h4 className="font-medium mb-2">Componentes del sueldo</h4>
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Adelanto:</span>
+                      <span>${selectedSalary.advance.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Capacitación:</span>
+                      <span>${selectedSalary.training.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Vacaciones:</span>
+                      <span>${selectedSalary.vacation.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Recepción:</span>
+                      <span>${selectedSalary.reception.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">SAC:</span>
+                      <span>${selectedSalary.sac.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Recibo:</span>
+                      <span>${selectedSalary.receipt.toLocaleString('es-AR')}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {selectedSalary.extras.length > 0 && (
+                  <div className="bg-slate-50 rounded-md p-4 mb-4">
+                    <h4 className="font-medium mb-2">Extras</h4>
+                    <div className="space-y-2">
+                      {selectedSalary.extras.map((extra, index) => (
+                        <div key={index} className="flex justify-between border-b pb-1">
+                          <span className="text-muted-foreground">{extra.concept}:</span>
+                          <span>${extra.amount.toLocaleString('es-AR')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-slate-50 rounded-md p-4 mb-4">
+                  <h4 className="font-medium mb-2">Totales</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="text-muted-foreground">Efectivo:</span>
+                      <span className="font-semibold">${selectedSalary.cash.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">TOTAL SUELDO:</span>
+                      <span className="font-bold text-lg">${selectedSalary.totalSalary.toLocaleString('es-AR')}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap justify-end gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviewPdf}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Vista previa
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleExport}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleEditSalary}
+                    className="text-blue-600 hover:text-blue-800 border-blue-600 hover:border-blue-800 hover:bg-blue-50"
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleDeleteSalary}
+                    className="text-red-600 hover:text-red-800 border-red-600 hover:border-red-800 hover:bg-red-50"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {isCalculating && !isLoading && !isViewingDetails && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
               <div className="space-y-4">
@@ -562,19 +923,11 @@ export default function SalaryCalculationDialog({
           >
             Cancelar
           </Button>
-          {!showHistory && (
+          {isCalculating && !isViewingDetails && (
             <>
-              <Button 
-                type="button" 
-                onClick={handleExport}
-                variant="outline"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Exportar Recibo
-              </Button>
               <Button onClick={handleSave}>
                 <Save className="mr-2 h-4 w-4" />
-                Guardar Cálculo
+                {isEditing ? "Guardar Cambios" : "Guardar Cálculo"}
               </Button>
             </>
           )}

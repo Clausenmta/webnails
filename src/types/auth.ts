@@ -20,6 +20,6 @@ export interface AuthContextType {
 
 // Tipos de exportación
 export interface ExportOptions {
-  filename: string;
-  format: 'pdf' | 'excel' | 'txt';
+  filename?: string;
+  format?: 'pdf' | 'excel' | 'txt';
 }

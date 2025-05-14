@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -121,27 +122,30 @@ const mockSalaryHistory: Record<number, SalaryDetails[]> = {
   ],
 };
 
+// Default empty salary data for new calculations
+const getDefaultSalaryData = (employee: Employee | null): SalaryDetails => ({
+  employeeId: employee?.id || 0,
+  date: new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" }),
+  totalBilling: 0,
+  commission: 0,
+  commissionRate: employee?.position === "Manicurista" ? 32 : 30,
+  advance: 0,
+  training: 0,
+  vacation: 0,
+  reception: 0,
+  sac: 0,
+  receipt: 0,
+  extras: [],
+  cash: 0,
+  totalSalary: 0,
+});
+
 export default function SalaryCalculationDialog({
   open,
   onOpenChange,
   employee,
 }: SalaryCalculationDialogProps) {
-  const [salaryData, setSalaryData] = useState<SalaryDetails>({
-    employeeId: employee?.id || 0,
-    date: new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" }),
-    totalBilling: 0,
-    commission: 0,
-    commissionRate: employee?.position === "Manicurista" ? 32 : 30,
-    advance: 0,
-    training: 0,
-    vacation: 0,
-    reception: 0,
-    sac: 0,
-    receipt: 0,
-    extras: [],
-    cash: 0,
-    totalSalary: 0,
-  });
+  const [salaryData, setSalaryData] = useState<SalaryDetails>(getDefaultSalaryData(employee));
   
   const [newExtra, setNewExtra] = useState({ amount: 0, concept: "" });
   const [showHistory, setShowHistory] = useState(true); // Iniciar mostrando el historial
@@ -155,6 +159,7 @@ export default function SalaryCalculationDialog({
 
   useEffect(() => {
     if (employee) {
+      // Only update employee-related fields, not calculation values
       setSalaryData(prev => ({
         ...prev,
         employeeId: employee.id,
@@ -478,11 +483,20 @@ export default function SalaryCalculationDialog({
   };
 
   const startCalculation = () => {
+    // Reset all fields to zero for a new calculation
+    setSalaryData({
+      ...getDefaultSalaryData(employee),
+      employeeId: employee?.id || 0,
+      commissionRate: employee?.position === "Manicurista" ? 32 : 30,
+      date: new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+    });
+    
     setPdfPreview(null);
     setSelectedSalary(null);
     setIsViewingDetails(false);
     setShowHistory(false);
     setIsCalculating(true);
+    setNewExtra({ amount: 0, concept: "" });
   };
 
   if (!employee) return null;

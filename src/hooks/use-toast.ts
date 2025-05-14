@@ -123,7 +123,12 @@ export function ToastProvider({ children }: ToastProviderProps) {
     }
   }, [toasts, addToast, updateToast, dismissToast, removeToast])
 
-  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
+  // Create provider element using React.createElement instead of JSX
+  return React.createElement(
+    ToastContext.Provider,
+    { value },
+    children
+  )
 }
 
 // The main useToast hook

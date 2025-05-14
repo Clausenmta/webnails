@@ -1,3 +1,4 @@
+
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { ExportOptions } from '@/types/auth';
@@ -227,8 +228,8 @@ export const exportReport = (data: any, options: ExportOptions) => {
     }
     
     // Si llegamos aquí, es un formato no reconocido
-    // Verificamos explícitamente el tipo de format y nos aseguramos de que sea un string válido
-    const formatString = String(format);
+    // Asegurándonos de que el formato es un string antes de usar toUpperCase
+    const formatString = typeof format === 'string' ? format : String(format || '');
     toast.success(`Reporte exportado como ${formatString.toUpperCase()} correctamente`);
     return true;
   } catch (error) {

@@ -228,6 +228,7 @@ export const exportReport = (data: any, options: ExportOptions) => {
     }
     
     // Si llegamos aquí, es un formato no reconocido
+    // Corregido: Asegurar que format es un string antes de llamar a toUpperCase
     if (typeof format === 'string') {
       toast.success(`Reporte exportado como ${format.toUpperCase()} correctamente`);
     } else {

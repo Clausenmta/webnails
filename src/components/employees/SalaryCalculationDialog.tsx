@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -172,9 +171,9 @@ export default function SalaryCalculationDialog({
     const totalSalary = commission + salaryData.reception + salaryData.sac + 
                         salaryData.training + salaryData.vacation + extrasTotal;
     
-    const cash = commission + salaryData.reception + salaryData.sac + 
-                 salaryData.training + salaryData.vacation + extrasTotal - 
-                 salaryData.receipt;
+    const cash = commission + salaryData.sac - 
+                 salaryData.advance - salaryData.receipt + 
+                 salaryData.training + salaryData.vacation + extrasTotal;
     
     setSalaryData(prev => ({
       ...prev,
@@ -201,7 +200,6 @@ export default function SalaryCalculationDialog({
       let newSalaryRecord: SalaryDetails;
       
       if (isEditing && selectedSalary?.id) {
-        // Update existing record
         newSalaryRecord = {
           ...salaryData,
           id: selectedSalary.id
@@ -215,7 +213,6 @@ export default function SalaryCalculationDialog({
         toast.success(`Sueldo de ${employee?.name} actualizado exitosamente`);
         mockSalaryHistory[employee?.id || 0] = updatedHistory;
       } else {
-        // Create new record
         newSalaryRecord = {
           ...salaryData,
           id: Date.now(),
@@ -334,7 +331,6 @@ export default function SalaryCalculationDialog({
     const pdfUrl = URL.createObjectURL(pdfBlob);
     setPdfPreview(pdfUrl);
     
-    // También guarda el PDF para descarga
     doc.save(`Recibo_Sueldo_${employee.name.replace(/\s+/g, '_')}_${selectedSalary.date.replace(/\s+/g, '_')}.pdf`);
     
     toast.success(`Recibo de sueldo exportado para ${employee?.name}`);
@@ -911,7 +907,7 @@ export default function SalaryCalculationDialog({
             </div>
 
             <div className="bg-muted rounded-md p-3 mt-2">
-              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + Recepción + SAC + Capacitación + Vacaciones + Extras - Recibo</p>
+              <p className="text-sm"><strong>Fórmula Efectivo:</strong> Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras</p>
             </div>
           </>
         )}

@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -20,7 +19,6 @@ import { Toaster } from './components/ui/toaster';
 import NotFound from './pages/NotFound';
 import Index from './pages/Index';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import { ToastProvider } from './hooks/use-toast';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -36,90 +34,88 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <Router>
-              <Toaster />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <DashboardPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/empleados" 
-                  element={
-                    <ProtectedRoute>
-                      <EmpleadosPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/gastos" 
-                  element={
-                    <ProtectedRoute>
-                      <GastosPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/resultados" 
-                  element={
-                    <ProtectedRoute>
-                      <ResultadosPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/ausencias" 
-                  element={
-                    <ProtectedRoute>
-                      <AusenciasPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/arreglos" 
-                  element={
-                    <ProtectedRoute>
-                      <ArreglosPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/tarjetas" 
-                  element={
-                    <ProtectedRoute>
-                      <GiftCardsPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/stock" 
-                  element={
-                    <ProtectedRoute>
-                      <StockPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/facturacion" 
-                  element={
-                    <ProtectedRoute>
-                      <FacturacionPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Router>
-          </AuthProvider>
-        </ToastProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/empleados" 
+                element={
+                  <ProtectedRoute>
+                    <EmpleadosPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/gastos" 
+                element={
+                  <ProtectedRoute>
+                    <GastosPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/resultados" 
+                element={
+                  <ProtectedRoute>
+                    <ResultadosPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/ausencias" 
+                element={
+                  <ProtectedRoute>
+                    <AusenciasPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/arreglos" 
+                element={
+                  <ProtectedRoute>
+                    <ArreglosPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tarjetas" 
+                element={
+                  <ProtectedRoute>
+                    <GiftCardsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/stock" 
+                element={
+                  <ProtectedRoute>
+                    <StockPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/facturacion" 
+                element={
+                  <ProtectedRoute>
+                    <FacturacionPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
@@ -60,7 +60,11 @@ export default function LoginPage() {
     console.log("Iniciando proceso de login...");
     
     if (!validateForm()) {
-      toast.error("Por favor corrija los errores en el formulario", "Error de validación");
+      toast({
+        title: "Error de validación",
+        description: "Por favor corrija los errores en el formulario",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -78,7 +82,11 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Ha ocurrido un error durante el inicio de sesión");
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error durante el inicio de sesión",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

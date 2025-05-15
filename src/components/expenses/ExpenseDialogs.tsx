@@ -97,7 +97,7 @@ export function ExpenseDialogs({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </Dialog>
+      </AlertDialog>
     </>
   );
 }

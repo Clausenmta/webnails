@@ -18,6 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { exportReport, generatePdfPreview } from "@/utils/reportExport";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type SalaryCalculationDialogProps = {
   open: boolean;
@@ -302,6 +304,60 @@ export default function SalaryCalculationDialog({
     }
   };
 
+  // Nueva función para exportar directamente a PDF usando html2canvas
+  const handleExportToPDF = async () => {
+    if (!employee || !selectedSalary) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+    
+    setIsGeneratingPdf(true);
+    
+    try {
+      const input = document.getElementById("pdf-content");
+      if (!input) {
+        toast.error("No se pudo encontrar el contenido para exportar");
+        return;
+      }
+
+      // Obtener mes y año del periodo
+      const dateParts = selectedSalary.date.split(" ");
+      const month = dateParts[0];
+      const year = dateParts[1];
+      
+      // Ocultar botones antes de capturar
+      const buttons = input.querySelectorAll("button");
+      buttons.forEach(btn => btn.style.display = "none");
+
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pageWidth;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 10, imgWidth, imgHeight);
+      pdf.save(`Sueldo_${employee.name.replace(/\s+/g, '_')}_${month}-${year}.pdf`);
+
+      // Restaurar botones
+      buttons.forEach(btn => btn.style.display = "");
+      
+      toast.success("PDF exportado correctamente");
+    } catch (error) {
+      console.error("Error en exportación directa a PDF:", error);
+      toast.error(`Error al exportar: ${error instanceof Error ? error.message : 'Error inesperado'}`);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   // Método actualizado para la vista previa del PDF
   const handlePreviewPdf = () => {
     if (!employee || !selectedSalary) {
@@ -545,7 +601,7 @@ export default function SalaryCalculationDialog({
                 </div>
               </div>
             ) : (
-              <>
+              <div id="pdf-content">
                 <h3 className="font-semibold mb-2">{selectedSalary.date}</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -650,7 +706,7 @@ export default function SalaryCalculationDialog({
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={handleExport}
+                    onClick={handleExportToPDF}
                     disabled={isGeneratingPdf}
                   >
                     {isGeneratingPdf ? (
@@ -677,7 +733,7 @@ export default function SalaryCalculationDialog({
                     Eliminar
                   </Button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}

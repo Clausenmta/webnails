@@ -9,7 +9,7 @@ interface ExpenseDetailProps {
 
 export function ExpenseDetail({ expense, onClose }: ExpenseDetailProps) {
   return (
-    <div className="py-4">
+    <div className="py-4" id="pdf-content">
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-1">Fecha</p>

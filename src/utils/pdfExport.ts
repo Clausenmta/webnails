@@ -57,6 +57,12 @@ export const exportElementToPDF = async (
     // Store elements to hide during capture
     const elementsToHide = Array.from(input.querySelectorAll("button, .pdf-hide"));
     
+    // Show elements that should only appear in PDF
+    const pdfOnlyElements = Array.from(input.querySelectorAll(".pdf-only"));
+    pdfOnlyElements.forEach(el => {
+      el.classList.remove("hidden");
+    });
+    
     // Hide elements before capture
     elementsToHide.forEach(el => {
       el.setAttribute("data-previous-display", getComputedStyle(el).display);
@@ -118,6 +124,11 @@ export const exportElementToPDF = async (
       const previousDisplay = el.getAttribute("data-previous-display") || "block";
       (el as HTMLElement).style.display = previousDisplay;
       el.removeAttribute("data-previous-display");
+    });
+    
+    // Hide PDF-only elements again
+    pdfOnlyElements.forEach(el => {
+      el.classList.add("hidden");
     });
 
     return true;

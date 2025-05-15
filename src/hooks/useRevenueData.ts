@@ -14,6 +14,13 @@ export function useRevenueData(selectedMonth: string, year: string) {
   const monthNumber = getMonthNumber(selectedMonth);
   const yearNumber = parseInt(year);
 
+  // Fetch monthly billing total
+  const { data: monthlyBilling = 0, isLoading: isLoadingBilling } = useQuery({
+    queryKey: ['monthlyBilling', monthNumber, yearNumber],
+    queryFn: () => revenueService.fetchTotalMonthlyBilling(monthNumber, yearNumber),
+    enabled: monthNumber >= 0 && !isNaN(yearNumber),
+  });
+
   // Fetch income data from expenses with category "Ingresos"
   const { data: incomeExpenses = [], isLoading: isLoadingIncomes } = useQuery({
     queryKey: ['income-expenses', monthNumber, yearNumber],
@@ -83,8 +90,8 @@ export function useRevenueData(selectedMonth: string, year: string) {
     }
   }, [incomeExpenses, monthNumber, yearNumber]);
 
-  // Calculate totals
-  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  // Calculate totals using the actual billing data
+  const totalServices = monthlyBilling || serviceData.reduce((sum, item) => sum + item.ingresos, 0);
   
   // Format pending payments for display
   const formattedPendingPayments = pendingPayments.map(payment => ({
@@ -100,8 +107,9 @@ export function useRevenueData(selectedMonth: string, year: string) {
   return {
     serviceData,
     totalServices,
+    monthlyBilling,
     pendingPayments: formattedPendingPayments,
-    isLoading: isLoadingIncomes || isLoadingPayments,
+    isLoading: isLoadingIncomes || isLoadingPayments || isLoadingBilling,
     incomeExpenses
   };
 }

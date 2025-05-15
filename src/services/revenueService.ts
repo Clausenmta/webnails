@@ -39,6 +39,37 @@ export const revenueService = {
     }
   },
   
+  async fetchTotalMonthlyBilling(month: number, year: number): Promise<number> {
+    try {
+      console.log(`Fetching total monthly billing for month ${month+1}/${year}`);
+      
+      // Format month to match the DD/MM/YYYY format used in expenses
+      const monthStr = (month + 1).toString().padStart(2, '0');
+      const monthPattern = `%/${monthStr}/${year}`;
+      
+      // Get all income entries from expenses table
+      const { data: incomeData, error: incomeError } = await supabase
+        .from('expenses')
+        .select('amount')
+        .eq('category', 'Ingresos')
+        .like('date', monthPattern);
+      
+      if (incomeError) {
+        console.error("Error fetching income data:", incomeError.message);
+        throw incomeError;
+      }
+      
+      // Calculate total from income entries
+      const incomeTotal = (incomeData || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+      console.log(`Calculated total monthly billing: $${incomeTotal.toLocaleString()}`);
+      
+      return incomeTotal;
+    } catch (error) {
+      console.error("Error in fetchTotalMonthlyBilling:", error);
+      return 0;
+    }
+  },
+  
   async fetchIncomeFromExpenses(month: number, year: number): Promise<IncomeExpense[]> {
     try {
       console.log(`Fetching income expenses for month ${month+1}/${year}`);

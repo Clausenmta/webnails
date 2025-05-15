@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -51,12 +52,37 @@ export default function DashboardPage() {
   const selectedMonth = format(currentDate, 'MMM', { locale: es }).substring(0, 3).charAt(0).toUpperCase() + format(currentDate, 'MMM', { locale: es }).substring(0, 3).substring(1);
   const selectedYear = format(currentDate, 'yyyy');
   
+  // Get numeric month and year for the revenue calculation
+  const numericMonth = currentDate.getMonth();
+  const numericYear = currentDate.getFullYear();
+  
   // Use our revenue data hook to get real revenue data
   const { 
     totalServices,
     pendingPayments,
     isLoading: isLoadingRevenue
   } = useRevenueData(selectedMonth, selectedYear);
+  
+  // Fetch real billing data from the database
+  const { data: monthlyBilling = 0, isLoading: isLoadingBilling } = useQuery({
+    queryKey: ['monthlyBilling', numericMonth, numericYear],
+    queryFn: () => revenueService.fetchTotalMonthlyBilling(numericMonth, numericYear)
+  });
+  
+  // Get previous month for comparison
+  const prevMonth = new Date(currentDate);
+  prevMonth.setMonth(prevMonth.getMonth() - 1);
+  
+  // Fetch previous month billing for comparison
+  const { data: prevMonthBilling = 0 } = useQuery({
+    queryKey: ['monthlyBilling', prevMonth.getMonth(), prevMonth.getFullYear()],
+    queryFn: () => revenueService.fetchTotalMonthlyBilling(prevMonth.getMonth(), prevMonth.getFullYear()),
+    enabled: !isLoadingBilling
+  });
+  
+  // Calculate percentage change
+  const billingPercentageChange = prevMonthBilling > 0 ? 
+    ((monthlyBilling - prevMonthBilling) / prevMonthBilling) * 100 : 0;
   
   // Use our hook to get arreglos revenue data
   const { 
@@ -201,12 +227,12 @@ export default function DashboardPage() {
   // Organizar alertas por categorías
   const generateAlertsByCategories = () => {
     const alertCategories = {
-      giftCards: {
-        title: "🎁 Gift Cards por Vencer",
-        alerts: [] as any[]
-      },
       stock: {
         title: "🔴 Productos Bajo Stock",
+        alerts: [] as any[]
+      },
+      giftCards: {
+        title: "🎁 Gift Cards por Vencer",
         alerts: [] as any[]
       },
       expenses: {
@@ -214,28 +240,6 @@ export default function DashboardPage() {
         alerts: [] as any[]
       }
     };
-    
-    // Gift Cards por vencer
-    if (sortedExpiringCards.length > 0) {
-      sortedExpiringCards.forEach(card => {
-        try {
-          const expiryDate = new Date(card.expiry_date);
-          const today = new Date();
-          const diffDays = differenceInDays(expiryDate, today);
-          
-          alertCategories.giftCards.alerts.push({
-            id: card.id,
-            icon: CalendarDays,
-            title: `Gift Card próxima a vencer: ${card.code}`,
-            description: `Vence el ${format(expiryDate, 'dd/MM/yyyy')} (en ${diffDays} días)`,
-            variant: diffDays <= 3 ? "error" : "warning",
-            link: `/gift-cards/${card.id}`
-          });
-        } catch (e) {
-          console.error("Error al procesar alerta de gift card:", e);
-        }
-      });
-    }
     
     // Productos sin stock o stock crítico
     // Primero los productos sin stock
@@ -266,6 +270,28 @@ export default function DashboardPage() {
           link: `/stock/${item.id}`
         });
       });
+    
+    // Gift Cards por vencer
+    if (sortedExpiringCards.length > 0) {
+      sortedExpiringCards.forEach(card => {
+        try {
+          const expiryDate = new Date(card.expiry_date);
+          const today = new Date();
+          const diffDays = differenceInDays(expiryDate, today);
+          
+          alertCategories.giftCards.alerts.push({
+            id: card.id,
+            icon: CalendarDays,
+            title: `Gift Card próxima a vencer: ${card.code}`,
+            description: `Vence el ${format(expiryDate, 'dd/MM/yyyy')} (en ${diffDays} días)`,
+            variant: diffDays <= 3 ? "error" : "warning",
+            link: `/gift-cards/${card.id}`
+          });
+        } catch (e) {
+          console.error("Error al procesar alerta de gift card:", e);
+        }
+      });
+    }
     
     // Gastos con vencimiento próximo
     if (isSuperAdmin && upcomingExpenses.length > 0) {
@@ -343,10 +369,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${isLoadingRevenue ? "..." : totalServices.toLocaleString()}
+                ${isLoadingBilling ? "..." : monthlyBilling.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">
-                {percentageChange > 0 ? '+' : ''}{percentageChange.toFixed(1)}% respecto al mes pasado
+                {billingPercentageChange > 0 ? '+' : ''}{billingPercentageChange.toFixed(1)}% respecto al mes pasado
               </p>
             </CardContent>
           </Card>
@@ -435,22 +461,23 @@ export default function DashboardPage() {
                     <h3 className="text-md font-semibold">{category.title}</h3>
                     <div className="space-y-2">
                       {category.alerts.map((alert, alertIndex) => (
-                        <Alert key={alertIndex} variant={alert.variant as "default" | "destructive" | "warning" | "error" | "info" | "success"}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-start gap-2">
-                              <alert.icon className="h-5 w-5 mt-0.5" />
-                              <div>
-                                <AlertTitle>{alert.title}</AlertTitle>
-                                <AlertDescription>{alert.description}</AlertDescription>
+                        <Link to={alert.link} key={alertIndex}>
+                          <Alert 
+                            variant={alert.variant as "default" | "destructive" | "warning" | "error" | "info" | "success"}
+                            className="hover:bg-muted/50 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-start gap-2">
+                                <alert.icon className="h-5 w-5 mt-0.5" />
+                                <div>
+                                  <AlertTitle>{alert.title}</AlertTitle>
+                                  <AlertDescription>{alert.description}</AlertDescription>
+                                </div>
                               </div>
+                              <ExternalLink className="h-4 w-4" />
                             </div>
-                            <Link to={alert.link}>
-                              <Button variant="ghost" size="sm" className="p-1">
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </Alert>
+                          </Alert>
+                        </Link>
                       ))}
                     </div>
                   </div>

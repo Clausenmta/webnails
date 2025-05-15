@@ -148,11 +148,54 @@ export default function SalaryCalculationDialog({
           <Separator />
           
           <div className="space-y-4">
+            <h3 className="font-medium text-lg">Detalles de facturación</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-muted-foreground">Facturación Total:</p>
+                <p className="text-2xl font-medium">${calculatedSalary.grossTotal.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Comisión (30%):</p>
+                <p className="text-2xl font-medium text-green-600">${(calculatedSalary.grossTotal * 0.30).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-4">
             <h3 className="font-medium text-lg">Componentes del sueldo</h3>
             
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+              <div>
+                <p className="text-muted-foreground">Adelanto:</p>
+                <p className="text-lg">${salaryComponents.advances.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Capacitación:</p>
+                <p className="text-lg">${salaryComponents.bonus.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Vacaciones:</p>
+                <p className="text-lg">${(calculatedSalary.netTotal * 0.081).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Recepción:</p>
+                <p className="text-lg">$0</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">SAC:</p>
+                <p className="text-lg">$0</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Recibo:</p>
+                <p className="text-lg">${(calculatedSalary.netTotal * 0.14).toLocaleString()}</p>
+              </div>
+            </div>
+            
+            <div className="hidden md:block">
+              <Card className="border-salon-200">
+                <CardContent className="pt-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="baseAmount">Sueldo Base</Label>
@@ -204,65 +247,32 @@ export default function SalaryCalculationDialog({
                       />
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
           
           <Separator />
           
           <div className="space-y-4">
-            <h3 className="font-medium text-lg">Resumen</h3>
+            <h3 className="font-medium text-lg">Totales</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="flex justify-between items-center">
+                <p className="text-muted-foreground">Efectivo:</p>
+                <p className="text-xl font-medium">${(calculatedSalary.netTotal * 0.85).toLocaleString()}</p>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center">
+                <p className="font-medium text-lg">TOTAL SUELDO:</p>
+                <p className="font-bold text-2xl">
+                  ${calculatedSalary.netTotal.toLocaleString()}
+                </p>
+              </div>
+            </div>
             
-            <Card className="border-salon-200">
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Ingresos Brutos:</span>
-                  <span className="font-medium">${calculatedSalary.grossTotal.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Total Deducciones:</span>
-                  <span className="font-medium text-red-500">-${(salaryComponents.deductions + salaryComponents.advances).toLocaleString()}</span>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">TOTAL NETO:</span>
-                  <span className="font-bold text-lg">
-                    ${calculatedSalary.netTotal.toLocaleString()}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Variación respecto al base:</span>
-                  <div className="flex items-center gap-1">
-                    {calculatedSalary.percentageChange > 0 ? (
-                      <ArrowUp className="h-4 w-4 text-emerald-500" />
-                    ) : calculatedSalary.percentageChange < 0 ? (
-                      <ArrowDown className="h-4 w-4 text-red-500" />
-                    ) : (
-                      <Percent className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    
-                    <span className={
-                      calculatedSalary.percentageChange > 0
-                        ? "text-emerald-500"
-                        : calculatedSalary.percentageChange < 0
-                        ? "text-red-500"
-                        : "text-muted-foreground"
-                    }>
-                      {Math.abs(calculatedSalary.percentageChange).toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground text-center pt-2">
-                  Sueldo correspondiente a {currentMonth} de {currentYear}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="text-xs text-muted-foreground text-center pt-4">
+              Sueldo correspondiente a {currentMonth} de {currentYear}
+            </div>
           </div>
         </div>
         

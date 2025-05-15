@@ -1,36 +1,21 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Expense, NewExpense } from "@/types/expenses";
-import { ExpenseForm } from "./ExpenseForm";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ExpenseDetail } from "./ExpenseDetail";
+import { ExpenseForm } from "./ExpenseForm";
+import { Expense, NewExpense } from "@/types/expenses";
+import { UseMutationResult } from "@tanstack/react-query";
 import { ExpenseCategory } from "@/services/categoryService";
+import { toast } from "sonner";
 
 interface ExpenseDialogsProps {
-  // Add expense dialog props
   isAddExpenseOpen: boolean;
   setIsAddExpenseOpen: (open: boolean) => void;
-  addExpenseMutation: {
-    mutate: (expense: NewExpense) => void;
-    isPending: boolean;
-  };
+  addExpenseMutation: UseMutationResult<Expense, Error, NewExpense>;
   availableCategories: ExpenseCategory[];
-  
-  // View expense dialog props
   isViewExpenseOpen: boolean;
   setIsViewExpenseOpen: (open: boolean) => void;
   currentExpense: Expense | null;
-  
-  // Delete expense dialog props
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
   expenseToDelete: Expense | null;
@@ -48,70 +33,63 @@ export function ExpenseDialogs({
   isDeleteDialogOpen,
   setIsDeleteDialogOpen,
   expenseToDelete,
-  confirmDeleteExpense,
+  confirmDeleteExpense
 }: ExpenseDialogsProps) {
+  const handleExpenseSubmit = (expense: NewExpense) => {
+    addExpenseMutation.mutate(expense, {
+      onSuccess: () => {
+        // Close modal and show success toast
+        setIsAddExpenseOpen(false);
+        toast.success("Gasto registrado correctamente ✅");
+      }
+    });
+  };
+
   return (
     <>
-      {/* Dialog para registrar gasto */}
       <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Nuevo Gasto</DialogTitle>
             <DialogDescription>
-              Completa los detalles del gasto para registrarlo
+              Complete el formulario para registrar un nuevo gasto
             </DialogDescription>
           </DialogHeader>
-          
-          <ExpenseForm 
-            onSubmit={addExpenseMutation.mutate} 
-            isSubmitting={addExpenseMutation.isPending} 
+          <ExpenseForm
+            onSubmit={handleExpenseSubmit}
+            isSubmitting={addExpenseMutation.isPending}
             onCancel={() => setIsAddExpenseOpen(false)}
             availableCategories={availableCategories}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para ver detalle de gasto */}
       <Dialog open={isViewExpenseOpen} onOpenChange={setIsViewExpenseOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Detalle del Gasto</DialogTitle>
             <DialogDescription>
-              {currentExpense?.concept}
+              Información completa sobre el gasto seleccionado
             </DialogDescription>
           </DialogHeader>
-          
           {currentExpense && (
-            <ExpenseDetail 
-              expense={currentExpense} 
-              onClose={() => setIsViewExpenseOpen(false)} 
-            />
+            <ExpenseDetail expense={currentExpense} />
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de confirmación para eliminar gasto */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+            <AlertDialogTitle>¿Confirmar eliminación del gasto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El gasto será eliminado permanentemente de la base de datos.
-              {expenseToDelete && (
-                <div className="mt-2 p-3 bg-muted rounded-md">
-                  <p><strong>Concepto:</strong> {expenseToDelete.concept}</p>
-                  <p><strong>Monto:</strong> ${expenseToDelete.amount.toLocaleString()}</p>
-                  <p><strong>Fecha:</strong> {expenseToDelete.date}</p>
-                </div>
-              )}
+              Esta acción no se puede deshacer. El gasto será eliminado permanentemente
+              de la base de datos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteExpense}
-              className="bg-red-500 hover:bg-red-600"
-            >
+            <AlertDialogAction onClick={confirmDeleteExpense}>
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -83,22 +83,25 @@ export function useRevenueData(selectedMonth: string, year: string) {
     }
   }, [incomeExpenses, monthNumber, yearNumber]);
 
+  // Calculate totals
+  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
+  
   // Format pending payments for display
   const formattedPendingPayments = pendingPayments.map(payment => ({
     id: payment.id,
     proveedor: payment.provider || 'Desconocido',
     monto: payment.amount,
     vencimiento: payment.due_date || '',
-    medioPago: payment.payment_method || 'Desconocido'
+    medioPago: payment.payment_method || 'Desconocido',
+    concept: payment.concept,
+    category: payment.category
   }));
-
-  // Calculate totals
-  const totalServices = serviceData.reduce((sum, item) => sum + item.ingresos, 0);
 
   return {
     serviceData,
     totalServices,
     pendingPayments: formattedPendingPayments,
-    isLoading: isLoadingIncomes || isLoadingPayments
+    isLoading: isLoadingIncomes || isLoadingPayments,
+    incomeExpenses
   };
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,9 +16,16 @@ interface ExpenseFormProps {
   isSubmitting: boolean;
   onCancel: () => void;
   availableCategories: ExpenseCategory[];
+  onSuccess?: () => void; // Add callback for successful submission
 }
 
-export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategories }: ExpenseFormProps) {
+export function ExpenseForm({ 
+  onSubmit, 
+  isSubmitting, 
+  onCancel, 
+  availableCategories,
+  onSuccess
+}: ExpenseFormProps) {
   const { user } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
 
@@ -87,6 +95,12 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
     }
     
     onSubmit(newExpense);
+    
+    // Call onSuccess callback if provided after successful submission
+    if (onSuccess) {
+      // This will be called by the parent component after successful submission
+      // The parent is responsible for closing the modal and showing the toast
+    }
   };
 
   return (
@@ -95,11 +109,13 @@ export function ExpenseForm({ onSubmit, isSubmitting, onCancel, availableCategor
         expense={newExpense}
         onUpdate={handleUpdate}
         availableCategories={ensuredCategories}
+        autoCloseCalendar={true} // Add prop to auto-close calendar on selection
       />
       
       <DetailedExpenseInfo
         expense={newExpense}
         onUpdate={handleUpdate}
+        autoCloseCalendar={true} // Add prop to auto-close calendar on selection
       />
       
       <AttachmentsSection

@@ -34,9 +34,11 @@ export default function SalaryCalculationDialog({
   const [salaryComponents, setSalaryComponents] = useState({
     baseAmount: employee.salary || 0,
     commission: 0,
-    bonus: 0,
+    bonus: 0, // Capacitación
     deductions: 0,
-    advances: 0,
+    advances: 0, // Adelanto
+    reception: 0, // Recepción
+    sac: 0,
   });
   
   const [extras, setExtras] = useState<ExtraItem[]>([]);
@@ -61,17 +63,26 @@ export default function SalaryCalculationDialog({
 
   // Calculate salary totals whenever components change
   useEffect(() => {
-    const { commission, bonus, deductions, advances } = salaryComponents;
+    const { commission, bonus, advances, sac, reception } = salaryComponents;
     
     // Sum all extras
     const extrasTotal = extras.reduce((sum, item) => sum + item.amount, 0);
     
-    // Calculate according to formula
-    const grossTotal = commission + bonus + extrasTotal;
-    const vacationAmount = grossTotal * 0.081;
-    const receiptAmount = grossTotal * 0.14;
-    const netTotal = grossTotal - deductions - advances;
-    const cashAmount = netTotal * 0.85;
+    // Calculate vacation amount (8.1% of commission)
+    const vacationAmount = commission * 0.081;
+    
+    // Calculate receipt amount (14% of commission)
+    const receiptAmount = commission * 0.14;
+    
+    // Calculate according to UPDATED formula:
+    // Efectivo: Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepcion
+    const cashAmount = commission + sac - advances - receiptAmount + bonus + vacationAmount + extrasTotal + reception;
+    
+    // Set net total equal to cash amount per the image
+    const netTotal = cashAmount;
+    
+    // Calculate gross total
+    const grossTotal = commission;
     
     // Calculate percentage difference from base salary
     const baseAmount = salaryComponents.baseAmount || 0;
@@ -147,7 +158,7 @@ export default function SalaryCalculationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Cálculo de Sueldo</DialogTitle>
           <DialogDescription>
@@ -193,8 +204,8 @@ export default function SalaryCalculationDialog({
               <Input
                 id="sac"
                 type="number"
-                value={0}
-                readOnly
+                value={salaryComponents.sac}
+                onChange={(e) => handleInputChange("sac", e.target.value)}
                 className="bg-slate-50"
               />
             </div>
@@ -215,7 +226,7 @@ export default function SalaryCalculationDialog({
               <Input
                 id="receipt"
                 type="number"
-                value={calculatedSalary.receiptAmount}
+                value={calculatedSalary.receiptAmount.toFixed(2)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -237,7 +248,7 @@ export default function SalaryCalculationDialog({
               <Input
                 id="cashAmount"
                 type="number"
-                value={calculatedSalary.cashAmount}
+                value={calculatedSalary.cashAmount.toFixed(2)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -248,7 +259,7 @@ export default function SalaryCalculationDialog({
               <Input
                 id="vacations"
                 type="number"
-                value={calculatedSalary.vacationAmount}
+                value={calculatedSalary.vacationAmount.toFixed(2)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -259,9 +270,20 @@ export default function SalaryCalculationDialog({
               <Input
                 id="totalSalary"
                 type="number"
-                value={calculatedSalary.netTotal}
+                value={calculatedSalary.netTotal.toFixed(2)}
                 readOnly
                 className="bg-slate-50 font-bold"
+              />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="reception">Recepción</Label>
+              <Input
+                id="reception"
+                type="number"
+                value={salaryComponents.reception}
+                onChange={(e) => handleInputChange("reception", e.target.value)}
+                className="bg-slate-50"
               />
             </div>
           </div>
@@ -289,18 +311,19 @@ export default function SalaryCalculationDialog({
               ))}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-              <div className="md:col-span-7">
+            <div className="grid grid-cols-12 gap-4 mt-4">
+              <div className="col-span-7">
                 <Label htmlFor="extraConcept">Concepto</Label>
-                <Input
+                <Textarea
                   id="extraConcept"
                   value={newExtraConcept}
                   onChange={(e) => setNewExtraConcept(e.target.value)}
                   placeholder="Descripción del extra"
+                  className="resize-none h-24"
                 />
               </div>
               
-              <div className="md:col-span-3">
+              <div className="col-span-3">
                 <Label htmlFor="extraAmount">Monto</Label>
                 <Input
                   id="extraAmount"
@@ -310,10 +333,10 @@ export default function SalaryCalculationDialog({
                 />
               </div>
               
-              <div className="md:col-span-2 flex items-end">
+              <div className="col-span-2 flex items-end">
                 <Button
                   onClick={handleAddExtra}
-                  className="w-full"
+                  className="w-full h-10"
                   disabled={!newExtraConcept || newExtraAmount <= 0}
                 >
                   <Plus className="h-4 w-4" />

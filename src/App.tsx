@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from '@/hooks/use-toast';
+import { Toaster } from './components/ui/toaster';
 import './App.css';
 
 // Import pages
@@ -20,7 +22,6 @@ import NotFound from './pages/NotFound';
 import Index from './pages/Index';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
-import { Toaster } from './components/ui/toaster';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -37,32 +38,34 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<LoginPage />} />
-              
-              {/* Rutas protegidas con la barra lateral */}
-              <Route element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }>
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/empleados" element={<EmpleadosPage />} />
-                <Route path="/gastos" element={<GastosPage />} />
-                <Route path="/resultados" element={<ResultadosPage />} />
-                <Route path="/ausencias" element={<AusenciasPage />} />
-                <Route path="/arreglos" element={<ArreglosPage />} />
-                <Route path="/gift-cards" element={<GiftCardsPage />} />
-                <Route path="/stock" element={<StockPage />} />
-                <Route path="/facturacion" element={<FacturacionPage />} />
-              </Route>
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-          </Router>
+          <ToastProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<LoginPage />} />
+                
+                {/* Rutas protegidas con la barra lateral */}
+                <Route element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/empleados" element={<EmpleadosPage />} />
+                  <Route path="/gastos" element={<GastosPage />} />
+                  <Route path="/resultados" element={<ResultadosPage />} />
+                  <Route path="/ausencias" element={<AusenciasPage />} />
+                  <Route path="/arreglos" element={<ArreglosPage />} />
+                  <Route path="/gift-cards" element={<GiftCardsPage />} />
+                  <Route path="/stock" element={<StockPage />} />
+                  <Route path="/facturacion" element={<FacturacionPage />} />
+                </Route>
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+            </Router>
+          </ToastProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -73,7 +73,10 @@ export function ExpenseDialogs({
             </DialogDescription>
           </DialogHeader>
           {currentExpense && (
-            <ExpenseDetail expense={currentExpense} />
+            <ExpenseDetail 
+              expense={currentExpense} 
+              onClose={() => setIsViewExpenseOpen(false)} 
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -94,7 +97,7 @@ export function ExpenseDialogs({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </Dialog>
     </>
   );
 }

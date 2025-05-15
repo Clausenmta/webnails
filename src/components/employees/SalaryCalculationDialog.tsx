@@ -4,19 +4,26 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowDown, ArrowUp, FileDown, Percent, CreditCard, Calendar } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { FileDown, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Employee } from "@/types/employees";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { exportSalaryDetailToPDF } from "@/utils/pdfExport";
+import { Card } from "@/components/ui/card";
 
 interface SalaryCalculationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employee: Employee;
+}
+
+interface ExtraItem {
+  id: string;
+  concept: string;
+  amount: number;
 }
 
 export default function SalaryCalculationDialog({
@@ -30,8 +37,11 @@ export default function SalaryCalculationDialog({
     bonus: 0,
     deductions: 0,
     advances: 0,
-    extras: 0 // Added extras field
   });
+  
+  const [extras, setExtras] = useState<ExtraItem[]>([]);
+  const [newExtraConcept, setNewExtraConcept] = useState("");
+  const [newExtraAmount, setNewExtraAmount] = useState<number>(0);
   
   const [calculatedSalary, setCalculatedSalary] = useState({
     grossTotal: 0,
@@ -51,16 +61,20 @@ export default function SalaryCalculationDialog({
 
   // Calculate salary totals whenever components change
   useEffect(() => {
-    const { baseAmount, commission, bonus, deductions, advances, extras } = salaryComponents;
+    const { commission, bonus, deductions, advances } = salaryComponents;
+    
+    // Sum all extras
+    const extrasTotal = extras.reduce((sum, item) => sum + item.amount, 0);
     
     // Calculate according to formula
-    const grossTotal = baseAmount + commission + bonus + extras;
+    const grossTotal = commission + bonus + extrasTotal;
     const vacationAmount = grossTotal * 0.081;
     const receiptAmount = grossTotal * 0.14;
     const netTotal = grossTotal - deductions - advances;
     const cashAmount = netTotal * 0.85;
     
     // Calculate percentage difference from base salary
+    const baseAmount = salaryComponents.baseAmount || 0;
     const percentageChange = baseAmount !== 0 
       ? ((netTotal - baseAmount) / baseAmount) * 100 
       : 0;
@@ -73,7 +87,7 @@ export default function SalaryCalculationDialog({
       receiptAmount,
       vacationAmount
     });
-  }, [salaryComponents]);
+  }, [salaryComponents, extras]);
   
   // Set initial values based on employee data
   useEffect(() => {
@@ -81,9 +95,38 @@ export default function SalaryCalculationDialog({
       setSalaryComponents(prev => ({
         ...prev,
         baseAmount: employee.salary || 0,
+        // Establecemos la comisión como el 30% del salario base como ejemplo
+        commission: employee.salary ? employee.salary * 0.3 : 0,
       }));
     }
   }, [employee]);
+  
+  const handleInputChange = (field: string, value: string) => {
+    const numericValue = parseFloat(value) || 0;
+    setSalaryComponents(prev => ({
+      ...prev,
+      [field]: numericValue
+    }));
+  };
+  
+  const handleAddExtra = () => {
+    if (newExtraConcept.trim() && newExtraAmount > 0) {
+      setExtras([
+        ...extras,
+        {
+          id: Date.now().toString(),
+          concept: newExtraConcept,
+          amount: newExtraAmount
+        }
+      ]);
+      setNewExtraConcept("");
+      setNewExtraAmount(0);
+    }
+  };
+  
+  const handleRemoveExtra = (id: string) => {
+    setExtras(extras.filter(item => item.id !== id));
+  };
   
   const handleExportToPDF = async () => {
     setExportLoading(true);
@@ -100,17 +143,11 @@ export default function SalaryCalculationDialog({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    const numericValue = parseFloat(value) || 0;
-    setSalaryComponents(prev => ({
-      ...prev,
-      [field]: numericValue
-    }));
-  };
+  const totalExtras = extras.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Cálculo de Sueldo</DialogTitle>
           <DialogDescription>
@@ -138,165 +175,165 @@ export default function SalaryCalculationDialog({
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Fecha de ingreso:</span>
-              </div>
-              <p>{employee.joinDate || "No disponible"}</p>
+          {/* Grid layout para los componentes de sueldo, como en la imagen */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="commission">Porcentaje de Comisión (30%)</Label>
+              <Input
+                id="commission"
+                type="number"
+                value={salaryComponents.commission}
+                onChange={(e) => handleInputChange("commission", e.target.value)}
+                className="bg-slate-50"
+              />
             </div>
             
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Salario base:</span>
-              </div>
-              <p>${employee.salary?.toLocaleString() || "No definido"}</p>
+            <div className="space-y-2">
+              <Label htmlFor="sac">SAC</Label>
+              <Input
+                id="sac"
+                type="number"
+                value={0}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="advances">Adelanto</Label>
+              <Input
+                id="advances"
+                type="number"
+                value={salaryComponents.advances}
+                onChange={(e) => handleInputChange("advances", e.target.value)}
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="receipt">Recibo</Label>
+              <Input
+                id="receipt"
+                type="number"
+                value={calculatedSalary.receiptAmount}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bonus">Capacitación</Label>
+              <Input
+                id="bonus"
+                type="number"
+                value={salaryComponents.bonus}
+                onChange={(e) => handleInputChange("bonus", e.target.value)}
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
+              <Input
+                id="cashAmount"
+                type="number"
+                value={calculatedSalary.cashAmount}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vacations">Vacaciones</Label>
+              <Input
+                id="vacations"
+                type="number"
+                value={calculatedSalary.vacationAmount}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="totalSalary">TOTAL SUELDO</Label>
+              <Input
+                id="totalSalary"
+                type="number"
+                value={calculatedSalary.netTotal}
+                readOnly
+                className="bg-slate-50 font-bold"
+              />
             </div>
           </div>
           
-          <Card className="border-salon-200">
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="baseAmount">Sueldo Base</Label>
-                  <Input
-                    id="baseAmount"
-                    type="number"
-                    value={salaryComponents.baseAmount}
-                    onChange={(e) => handleInputChange("baseAmount", e.target.value)}
-                  />
+          {/* Sección de extras, similar a la de la imagen */}
+          <div className="mt-8">
+            <h3 className="font-medium text-lg mb-4">Extras</h3>
+            
+            <div className="space-y-4">
+              {extras.map(extra => (
+                <div key={extra.id} className="flex items-center gap-2 p-3 bg-slate-50 rounded-md">
+                  <div className="flex-1">
+                    <p>{extra.concept}</p>
+                    <p className="text-muted-foreground">${extra.amount.toLocaleString()}</p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleRemoveExtra(extra.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    Eliminar
+                  </Button>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="commission">Comisiones</Label>
-                  <Input
-                    id="commission"
-                    type="number"
-                    value={salaryComponents.commission}
-                    onChange={(e) => handleInputChange("commission", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="bonus">Capacitación</Label>
-                  <Input
-                    id="bonus"
-                    type="number"
-                    value={salaryComponents.bonus}
-                    onChange={(e) => handleInputChange("bonus", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="extras">Extras</Label>
-                  <Input
-                    id="extras"
-                    type="number"
-                    value={salaryComponents.extras}
-                    onChange={(e) => handleInputChange("extras", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="deductions">Deducciones</Label>
-                  <Input
-                    id="deductions"
-                    type="number"
-                    value={salaryComponents.deductions}
-                    onChange={(e) => handleInputChange("deductions", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="advances">Adelantos</Label>
-                  <Input
-                    id="advances"
-                    type="number"
-                    value={salaryComponents.advances}
-                    onChange={(e) => handleInputChange("advances", e.target.value)}
-                  />
-                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+              <div className="md:col-span-7">
+                <Label htmlFor="extraConcept">Concepto</Label>
+                <Input
+                  id="extraConcept"
+                  value={newExtraConcept}
+                  onChange={(e) => setNewExtraConcept(e.target.value)}
+                  placeholder="Descripción del extra"
+                />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-muted-foreground">Facturación Total:</p>
-                    <p className="text-2xl font-medium">${calculatedSalary.grossTotal.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Comisión (30%):</p>
-                    <p className="text-xl font-medium text-green-600">${(calculatedSalary.grossTotal * 0.30).toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <Separator />
-                
-                <h3 className="font-medium text-lg">Componentes del sueldo</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
-                  <div>
-                    <p className="text-muted-foreground">Sueldo Base:</p>
-                    <p className="text-lg">${salaryComponents.baseAmount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Capacitación:</p>
-                    <p className="text-lg">${salaryComponents.bonus.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Vacaciones:</p>
-                    <p className="text-lg">${calculatedSalary.vacationAmount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Adelantos:</p>
-                    <p className="text-lg text-red-500">-${salaryComponents.advances.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Extras:</p>
-                    <p className="text-lg">${salaryComponents.extras.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Recibo:</p>
-                    <p className="text-lg">${calculatedSalary.receiptAmount.toLocaleString()}</p>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-muted-foreground">Efectivo:</p>
-                    <p className="text-xl font-medium">${calculatedSalary.cashAmount.toLocaleString()}</p>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <p className="font-medium text-lg">TOTAL SUELDO:</p>
-                    <p className="font-bold text-2xl">
-                      ${calculatedSalary.netTotal.toLocaleString()}
-                    </p>
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground text-center pt-2">
-                    Fórmula: (Base + Comisiones + Capacitación + Extras) - Deducciones - Adelantos
-                  </p>
-                </div>
+              
+              <div className="md:col-span-3">
+                <Label htmlFor="extraAmount">Monto</Label>
+                <Input
+                  id="extraAmount"
+                  type="number"
+                  value={newExtraAmount}
+                  onChange={(e) => setNewExtraAmount(parseFloat(e.target.value) || 0)}
+                />
               </div>
-            </CardContent>
-          </Card>
-          
-          <div className="text-xs text-muted-foreground text-center pt-4">
-            Sueldo correspondiente a {currentMonth} de {currentYear}
+              
+              <div className="md:col-span-2 flex items-end">
+                <Button
+                  onClick={handleAddExtra}
+                  className="w-full"
+                  disabled={!newExtraConcept || newExtraAmount <= 0}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
+          
+          {/* Fórmula como en la imagen */}
+          <Card className="p-4 bg-slate-50 mt-6">
+            <p className="font-medium">Fórmula Efectivo:</p>
+            <p className="text-muted-foreground">
+              Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción
+            </p>
+          </Card>
         </div>
         
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 mt-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cerrar
+            Cancelar
           </Button>
           <Button 
             variant="default" 
@@ -306,6 +343,11 @@ export default function SalaryCalculationDialog({
           >
             <FileDown className="mr-2 h-4 w-4" />
             Exportar PDF
+          </Button>
+          <Button
+            className="bg-indigo-500 hover:bg-indigo-600 text-white"
+          >
+            Guardar Cálculo
           </Button>
         </DialogFooter>
       </DialogContent>

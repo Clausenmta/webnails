@@ -74,7 +74,8 @@ export const exportElementToPDF = async (
       scale: mergedOptions.scale,
       logging: false,
       useCORS: true,
-      allowTaint: true
+      allowTaint: true,
+      backgroundColor: "#ffffff" // Asegurarse de que el fondo sea blanco
     });
     
     // Get image data

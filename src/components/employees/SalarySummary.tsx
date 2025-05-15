@@ -14,6 +14,16 @@ export function SalarySummary({
   employeesByPosition, 
   activeEmployees 
 }: SalarySummaryProps) {
+  // Recalcular los conteos por posición para asegurar precisión
+  const recalculatedEmployeesByPosition: Record<string, number> = {};
+  
+  employees
+    .filter(employee => employee.status === "active")
+    .forEach(employee => {
+      recalculatedEmployeesByPosition[employee.position] = 
+        (recalculatedEmployeesByPosition[employee.position] || 0) + 1;
+    });
+  
   // Calculate averages and totals by position from actual employee data
   const positionSalaries: Record<string, { total: number, count: number }> = {};
   
@@ -39,6 +49,9 @@ export function SalarySummary({
     return count > 0 ? total / count : 0;
   };
 
+  // Calculamos el total de empleados activos para verificación
+  const actualActiveEmployees = employees.filter(emp => emp.status === "active").length;
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -48,7 +61,7 @@ export function SalarySummary({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -59,55 +72,27 @@ export function SalarySummary({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Estilista row */}
-              <TableRow>
-                <TableCell>Estilista</TableCell>
-                <TableCell className="text-center">{employeesByPosition["Estilista"] || 0}</TableCell>
-                <TableCell className="text-right">
-                  ${calculateAverage(
-                    positionSalaries["Estilista"]?.total || 0,
-                    positionSalaries["Estilista"]?.count || 0
-                  ).toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  ${(positionSalaries["Estilista"]?.total || 0).toLocaleString()}
-                </TableCell>
-              </TableRow>
-              
-              {/* Manicurista row */}
-              <TableRow>
-                <TableCell>Manicurista</TableCell>
-                <TableCell className="text-center">{employeesByPosition["Manicurista"] || 0}</TableCell>
-                <TableCell className="text-right">
-                  ${calculateAverage(
-                    positionSalaries["Manicurista"]?.total || 0,
-                    positionSalaries["Manicurista"]?.count || 0
-                  ).toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  ${(positionSalaries["Manicurista"]?.total || 0).toLocaleString()}
-                </TableCell>
-              </TableRow>
-              
-              {/* Recepcionista row */}
-              <TableRow>
-                <TableCell>Recepcionista</TableCell>
-                <TableCell className="text-center">{employeesByPosition["Recepcionista"] || 0}</TableCell>
-                <TableCell className="text-right">
-                  ${calculateAverage(
-                    positionSalaries["Recepcionista"]?.total || 0,
-                    positionSalaries["Recepcionista"]?.count || 0
-                  ).toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  ${(positionSalaries["Recepcionista"]?.total || 0).toLocaleString()}
-                </TableCell>
-              </TableRow>
+              {/* Generar filas dinámicamente para cada posición */}
+              {Object.keys(recalculatedEmployeesByPosition).map(position => (
+                <TableRow key={position}>
+                  <TableCell>{position}</TableCell>
+                  <TableCell className="text-center">{recalculatedEmployeesByPosition[position]}</TableCell>
+                  <TableCell className="text-right">
+                    ${calculateAverage(
+                      positionSalaries[position]?.total || 0,
+                      positionSalaries[position]?.count || 0
+                    ).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ${(positionSalaries[position]?.total || 0).toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
               
               {/* Total row */}
               <TableRow className="font-bold">
                 <TableCell>TOTAL</TableCell>
-                <TableCell className="text-center">{activeEmployees}</TableCell>
+                <TableCell className="text-center">{actualActiveEmployees}</TableCell>
                 <TableCell className="text-right">-</TableCell>
                 <TableCell className="text-right">${totalMonthlySalary.toLocaleString()}</TableCell>
               </TableRow>

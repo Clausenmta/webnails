@@ -14,6 +14,24 @@ interface EmployeeStatsProps {
 }
 
 export function EmployeeStats({ employees, positionSummary }: EmployeeStatsProps) {
+  // Asegurar que todos los valores de positionSummary estén actualizados
+  const activeEmployees = employees.filter(e => e.status === "active");
+  
+  // Recalcular los promedios para asegurarnos de que son correctos
+  Object.keys(positionSummary).forEach(position => {
+    const positionEmployees = activeEmployees.filter(e => e.position === position);
+    positionSummary[position].count = positionEmployees.length;
+    
+    // Recalcular la facturación total
+    const totalBilling = positionEmployees.reduce((sum, emp) => sum + (emp.currentMonthBilling || 0), 0);
+    positionSummary[position].totalBilling = totalBilling;
+    
+    // Recalcular el promedio
+    positionSummary[position].avgBilling = positionEmployees.length > 0 
+      ? totalBilling / positionEmployees.length 
+      : 0;
+  });
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-6">
       <Card>
@@ -25,7 +43,7 @@ export function EmployeeStats({ employees, positionSummary }: EmployeeStatsProps
         <CardContent>
           <div className="text-2xl font-bold">{employees.length}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {employees.filter(e => e.status === "active").length} activos,{" "}
+            {activeEmployees.length} activos,{" "}
             {employees.filter(e => e.status === "inactive").length} inactivos
           </p>
         </CardContent>

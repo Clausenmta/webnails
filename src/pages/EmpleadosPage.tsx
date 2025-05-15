@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,8 +47,8 @@ export default function EmpleadosPage() {
         salary: emp.salary,
         phone: emp.phone,
         address: emp.address,
-        currentMonthBilling: 0, // Adding the missing property with a default value
-        billingAverage: 0, // Also adding this as it's used in positionSummary
+        currentMonthBilling: emp.performance_rating || 0, // Usando performance_rating como currentMonthBilling
+        billingAverage: emp.performance_rating || 0, // También usando performance_rating
         documents: []
       }));
     }
@@ -110,16 +109,20 @@ export default function EmpleadosPage() {
       employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const employeesByPosition = employees.reduce((acc, employee) => {
-    if (employee.status === "active") {
+  // Recalcular los datos de employeesByPosition para asegurar precisión
+  const employeesByPosition = employees
+    .filter(emp => emp.status === "active")
+    .reduce((acc, employee) => {
       acc[employee.position] = (acc[employee.position] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
+      return acc;
+    }, {} as Record<string, number>);
 
   const activeEmployees = employees.filter(emp => emp.status === "active").length;
 
+  // Recalcular el positionSummary basado en datos reales
   const positionSummary = employees.reduce((acc, employee) => {
+    if (employee.status !== "active") return acc;
+    
     const position = employee.position;
     
     if (!acc[position]) {
@@ -136,6 +139,7 @@ export default function EmpleadosPage() {
     return acc;
   }, {} as Record<string, { count: number, totalBilling: number, avgBilling: number }>);
 
+  // Calcular promedios después de que todos los valores se hayan sumado
   Object.keys(positionSummary).forEach(position => {
     const { count, totalBilling } = positionSummary[position];
     positionSummary[position].avgBilling = count > 0 ? totalBilling / count : 0;

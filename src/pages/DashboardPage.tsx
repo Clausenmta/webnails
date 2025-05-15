@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -459,27 +458,29 @@ export default function DashboardPage() {
                 {alertCategories.map((category, categoryIndex) => (
                   <div key={categoryIndex} className="space-y-3">
                     <h3 className="text-md font-semibold">{category.title}</h3>
-                    <div className="space-y-2">
-                      {category.alerts.map((alert, alertIndex) => (
-                        <Link to={alert.link} key={alertIndex}>
-                          <Alert 
-                            variant={alert.variant as "default" | "destructive" | "warning" | "error" | "info" | "success"}
-                            className="hover:bg-muted/50 transition-colors cursor-pointer"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-start gap-2">
-                                <alert.icon className="h-5 w-5 mt-0.5" />
-                                <div>
-                                  <AlertTitle>{alert.title}</AlertTitle>
-                                  <AlertDescription>{alert.description}</AlertDescription>
+                    <ScrollArea className="w-full" orientation="horizontal">
+                      <div className="flex space-x-2 pb-3 px-1">
+                        {category.alerts.map((alert, alertIndex) => (
+                          <Link to={alert.link} key={alertIndex} className="min-w-[280px] md:min-w-[320px] max-w-[320px]">
+                            <Alert 
+                              variant={alert.variant as "default" | "destructive" | "warning" | "error" | "info" | "success"}
+                              className="hover:bg-muted/50 transition-colors cursor-pointer h-full"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-start gap-2">
+                                  <alert.icon className="h-5 w-5 mt-0.5 shrink-0" />
+                                  <div className="overflow-hidden">
+                                    <AlertTitle className="truncate">{alert.title}</AlertTitle>
+                                    <AlertDescription className="truncate">{alert.description}</AlertDescription>
+                                  </div>
                                 </div>
+                                <ExternalLink className="h-4 w-4 shrink-0" />
                               </div>
-                              <ExternalLink className="h-4 w-4" />
-                            </div>
-                          </Alert>
-                        </Link>
-                      ))}
-                    </div>
+                            </Alert>
+                          </Link>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
                 ))}
               </div>

@@ -28,37 +28,37 @@ const ProductTable: React.FC<ProductTableProps> = ({
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="py-3 px-4 text-left">Código</th>
-              <th className="py-3 px-4 text-left">Producto</th>
-              <th className="py-3 px-4 text-left">Categoría</th>
-              <th className="py-3 px-4 text-center">Stock</th>
-              <th className="py-3 px-4 text-center">Mínimo</th>
-              <th className="py-3 px-4 text-left">Ubicación</th>
-              <th className="py-3 px-4 text-left">Marca</th>
-              {isSuperAdmin && <th className="py-3 px-4 text-right">Precio</th>}
-              <th className="py-3 px-4 text-right">Acciones</th>
+              <th className="py-3 px-4 text-left whitespace-nowrap">Código</th>
+              <th className="py-3 px-4 text-left whitespace-nowrap">Producto</th>
+              <th className="py-3 px-4 text-left whitespace-nowrap">Categoría</th>
+              <th className="py-3 px-4 text-center whitespace-nowrap">Stock</th>
+              <th className="py-3 px-4 text-center whitespace-nowrap">Mínimo</th>
+              <th className="py-3 px-4 text-left whitespace-nowrap">Ubicación</th>
+              <th className="py-3 px-4 text-left whitespace-nowrap">Marca</th>
+              {isSuperAdmin && <th className="py-3 px-4 text-right whitespace-nowrap">Precio</th>}
+              <th className="py-3 px-4 text-right whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filteredStockItems.map(product => (
               <tr key={product.id} className="border-b">
-                <td className="py-3 px-4">{product.id}</td>
-                <td className="py-3 px-4">{product.product_name}</td>
-                <td className="py-3 px-4">{product.category}</td>
-                <td className={`py-3 px-4 text-center ${product.quantity < (product.min_stock_level || 3) ? "text-red-500 font-medium" : ""}`}>
+                <td className="py-3 px-4 whitespace-nowrap">{product.id}</td>
+                <td className="py-3 px-4 max-w-[150px] truncate">{product.product_name}</td>
+                <td className="py-3 px-4 whitespace-nowrap">{product.category}</td>
+                <td className={`py-3 px-4 text-center whitespace-nowrap ${product.quantity < (product.min_stock_level || 3) ? "text-red-500 font-medium" : ""}`}>
                   {product.quantity}
                 </td>
-                <td className="py-3 px-4 text-center">{product.min_stock_level || 3}</td>
-                <td className="py-3 px-4">{product.location}</td>
-                <td className="py-3 px-4">{product.brand || 'N/A'}</td>
+                <td className="py-3 px-4 text-center whitespace-nowrap">{product.min_stock_level || 3}</td>
+                <td className="py-3 px-4 whitespace-nowrap">{product.location}</td>
+                <td className="py-3 px-4 whitespace-nowrap">{product.brand || 'N/A'}</td>
                 {isSuperAdmin && (
-                  <td className="py-3 px-4 text-right">${product.unit_price.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-right whitespace-nowrap">${product.unit_price.toLocaleString()}</td>
                 )}
-                <td className="py-3 px-4 text-right">
+                <td className="py-3 px-4 text-right whitespace-nowrap">
                   <div className="flex justify-end gap-2">
                     <Button 
                       variant="ghost" 
@@ -81,7 +81,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
             ))}
             {filteredStockItems.length === 0 && (
               <tr>
-                <td colSpan={isSuperAdmin ? 8 : 7} className="py-6 text-center text-muted-foreground">
+                <td colSpan={isSuperAdmin ? 9 : 8} className="py-6 text-center text-muted-foreground">
                   No hay productos en el inventario con esos filtros
                 </td>
               </tr>

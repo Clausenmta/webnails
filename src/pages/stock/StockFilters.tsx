@@ -26,7 +26,7 @@ const StockFilters: React.FC<StockFiltersProps> = ({
   stockLocations,
 }) => (
   <div className="flex flex-col gap-2 md:flex-row md:items-end md:gap-4 my-2">
-    <div className="relative w-full md:w-1/3">
+    <div className="relative w-full">
       <Input
         type="text"
         placeholder="Buscar producto, marca o proveedor..."

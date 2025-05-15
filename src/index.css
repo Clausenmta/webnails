@@ -125,8 +125,9 @@
     @apply text-sm text-muted-foreground mt-1;
   }
   
+  /* Tabla responsive con scroll horizontal */
   .data-table {
-    @apply w-full border-collapse rounded-lg overflow-hidden;
+    @apply w-full border-collapse rounded-lg overflow-hidden overflow-x-auto min-w-0;
   }
   
   .data-table th {
@@ -152,8 +153,41 @@
   .badge-active {
     @apply bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium;
   }
+  
+  /* Nuevas clases para mejorar responsive */
+  .responsive-card {
+    @apply min-w-0 max-w-full;
+  }
+  
+  .responsive-table-container {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .responsive-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+  
+  .responsive-flex {
+    @apply flex flex-wrap gap-2;
+  }
 }
 
 #root {
   @apply min-h-screen w-full;
+}
+
+/* Media queries para ajustes específicos en móvil */
+@media (max-width: 767px) {
+  .page-title {
+    @apply text-xl;
+  }
+  
+  .stats-card, .dashboard-card, .salon-card {
+    @apply p-3;
+  }
+  
+  /* Permitir que todos los contenedores de tablas hagan scroll horizontal */
+  .overflow-table {
+    @apply overflow-x-auto -mx-3 px-3;
+  }
 }

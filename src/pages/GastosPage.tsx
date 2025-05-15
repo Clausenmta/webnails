@@ -31,7 +31,7 @@ export default function GastosPage() {
   } = useExpenseManagement();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full min-w-0">
       <ExpenseHeader 
         isSuperAdmin={isSuperAdmin}
         onAddExpense={() => setIsAddExpenseOpen(true)}

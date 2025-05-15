@@ -12,7 +12,7 @@ export function ExpenseHeader({ isSuperAdmin, onAddExpense, onExportReport }: Ex
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Gastos</h2>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Gastos</h2>
         <p className="text-muted-foreground">
           {isSuperAdmin 
             ? "Gestión completa de gastos del salón" 
@@ -21,7 +21,7 @@ export function ExpenseHeader({ isSuperAdmin, onAddExpense, onExportReport }: Ex
       </div>
       <div className="flex flex-wrap gap-2">
         <Button 
-          className="bg-salon-400 hover:bg-salon-500"
+          className="bg-salon-400 hover:bg-salon-500 w-full md:w-auto"
           onClick={onAddExpense}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -30,6 +30,7 @@ export function ExpenseHeader({ isSuperAdmin, onAddExpense, onExportReport }: Ex
         {isSuperAdmin && (
           <Button 
             variant="outline"
+            className="w-full md:w-auto"
             onClick={onExportReport}
           >
             <FileSpreadsheet className="mr-2 h-4 w-4" />

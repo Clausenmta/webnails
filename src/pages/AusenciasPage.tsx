@@ -40,7 +40,7 @@ export default function AusenciasPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full min-w-0">
       <AbsenceHeader onAddAbsence={handleAddAbsence} />
 
       <AbsenceFilters 
@@ -50,9 +50,9 @@ export default function AusenciasPage() {
       />
 
       <Tabs defaultValue="calendar">
-        <TabsList>
-          <TabsTrigger value="calendar">Calendario</TabsTrigger>
-          <TabsTrigger value="list">Listado</TabsTrigger>
+        <TabsList className="overflow-x-auto flex w-full">
+          <TabsTrigger value="calendar" className="whitespace-nowrap">Calendario</TabsTrigger>
+          <TabsTrigger value="list" className="whitespace-nowrap">Listado</TabsTrigger>
         </TabsList>
         
         <TabsContent value="calendar" className="space-y-4">

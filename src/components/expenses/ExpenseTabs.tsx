@@ -36,46 +36,48 @@ export function ExpenseTabs({
 }: ExpenseTabsProps) {
   if (isSuperAdmin) {
     return (
-      <Tabs defaultValue="list">
-        <TabsList className="mb-4">
-          <TabsTrigger value="list">Listado de Gastos</TabsTrigger>
-          <TabsTrigger value="categories">Gastos por Categoría</TabsTrigger>
-          <TabsTrigger value="upcoming">Próximos Vencimientos</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <Tabs defaultValue="list">
+          <TabsList className="mb-4 flex w-full overflow-x-auto">
+            <TabsTrigger value="list" className="whitespace-nowrap">Listado de Gastos</TabsTrigger>
+            <TabsTrigger value="categories" className="whitespace-nowrap">Gastos por Categoría</TabsTrigger>
+            <TabsTrigger value="upcoming" className="whitespace-nowrap">Próximos Vencimientos</TabsTrigger>
+          </TabsList>
 
-        <ExpensesFilters
-          filters={filters}
-          setFilters={setFilters}
-          uniqueProviders={uniqueProviders}
-          uniqueUsers={uniqueUsers}
-          availableCategories={availableCategories}
-        />
-
-        <TabsContent value="list">
-          <ExpenseList
-            expenses={filteredExpenses}
-            onViewExpense={onViewExpense}
-            onDeleteExpense={onDeleteExpense}
+          <ExpensesFilters
+            filters={filters}
+            setFilters={setFilters}
+            uniqueProviders={uniqueProviders}
+            uniqueUsers={uniqueUsers}
+            availableCategories={availableCategories}
           />
-        </TabsContent>
 
-        <TabsContent value="categories">
-          <ExpenseCategories
-            filteredExpenses={filteredExpenses}
-            prevMonthExpenses={filteredExpensesPrevMonth}
-          />
-        </TabsContent>
+          <TabsContent value="list">
+            <ExpenseList
+              expenses={filteredExpenses}
+              onViewExpense={onViewExpense}
+              onDeleteExpense={onDeleteExpense}
+            />
+          </TabsContent>
 
-        <TabsContent value="upcoming">
-          <UpcomingExpenses expenses={expenses} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="categories">
+            <ExpenseCategories
+              filteredExpenses={filteredExpenses}
+              prevMonthExpenses={filteredExpensesPrevMonth}
+            />
+          </TabsContent>
+
+          <TabsContent value="upcoming">
+            <UpcomingExpenses expenses={expenses} />
+          </TabsContent>
+        </Tabs>
+      </div>
     );
   }
 
   // Para usuarios NO super admin, solo el listado y filtros
   return (
-    <>
+    <div className="space-y-4">
       <ExpensesFilters
         filters={filters}
         setFilters={setFilters}
@@ -88,6 +90,6 @@ export function ExpenseTabs({
         onViewExpense={onViewExpense}
         onDeleteExpense={onDeleteExpense}
       />
-    </>
+    </div>
   );
 }

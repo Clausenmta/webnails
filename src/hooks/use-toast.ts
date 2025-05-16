@@ -34,6 +34,13 @@ export interface ToastContextType {
   updateToast: (id: string, toast: Partial<Toast>) => void
   dismissToast: (id: string) => void
   removeToast: (id: string) => void
+  toast: {
+    (props: Omit<Toast, "id">): string
+    success: (message: string, title?: string) => string
+    error: (message: string, title?: string) => string
+    warning: (message: string, title?: string) => string
+    info: (message: string, title?: string) => string
+  }
 }
 
 export const ToastContext = React.createContext<ToastContextType | null>(null)
@@ -52,24 +59,21 @@ export const useToast = () => {
   return context
 }
 
-// Interface for the toast function
-export interface ToastFunction {
-  (props: Omit<Toast, "id">): string
-  success(message: string, title?: string): string
-  error(message: string, title?: string): string
-  warning(message: string, title?: string): string
-  info(message: string, title?: string): string
-}
-
-// Create a toast function with correct type casting
+// Create function to be used outside of components
 const toastFunction = ((props: Omit<Toast, "id">): string => {
   throw new Error(
     "Toast function called outside of component. Use useToast() hook instead."
   )
   return ""
-}) as unknown as ToastFunction
+}) as {
+  (props: Omit<Toast, "id">): string
+  success: (message: string, title?: string) => string
+  error: (message: string, title?: string) => string
+  warning: (message: string, title?: string) => string
+  info: (message: string, title?: string) => string
+}
 
-// Add the methods to the function
+// Add methods to the toast function
 toastFunction.success = (message: string, title?: string): string => {
   console.error("Toast function called outside of component. Use useToast() hook instead.")
   return ""
@@ -90,5 +94,4 @@ toastFunction.info = (message: string, title?: string): string => {
   return ""
 }
 
-// Export the toast function
 export const toast = toastFunction

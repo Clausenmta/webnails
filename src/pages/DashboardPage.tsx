@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -15,7 +16,9 @@ import {
   CalendarDays,
   ShoppingBag,
   House,
-  ExternalLink
+  ExternalLink,
+  Receipt,
+  FileText
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -187,7 +190,9 @@ export default function DashboardPage() {
         ),
         new Date()
       ),
-      category: expense.category
+      category: expense.category,
+      paymentMethod: expense.payment_method,
+      provider: expense.provider
     }))
     .sort((a, b) => a.days - b.days);
 
@@ -299,11 +304,20 @@ export default function DashboardPage() {
                       payment.title.toLowerCase().includes('alquiler') || 
                       payment.title.toLowerCase().includes('renta');
         
+        const isService = payment.category === 'Servicios';
+        const isPending = !payment.paymentMethod;
+        
+        // Elegir el icono según la categoría o tipo de pago
+        let icon = DollarSign;
+        if (isRent) icon = House;
+        else if (isService) icon = FileText;
+        else icon = Receipt;
+        
         alertCategories.expenses.alerts.push({
           id: payment.id,
-          icon: isRent ? House : DollarSign,
-          title: `${isRent ? 'Pago de Alquiler' : payment.title} Pendiente`,
-          description: `Vence el ${payment.dueDate} (en ${payment.days} días)`,
+          icon,
+          title: `${payment.title}`,
+          description: `Vence el ${payment.dueDate} (en ${payment.days} días) - $${payment.amount.toLocaleString()}`,
           variant: payment.days <= 3 ? "error" : "warning",
           link: `/gastos/${payment.id}`
         });
@@ -449,7 +463,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoadingGiftCards || isLoadingStock || isLoadingArreglos || isLoadingPayments ? (
+            {isLoadingGiftCards || isLoadingStock || isLoadingArreglos || isLoadingPayments || isLoadingExpenses ? (
               <div className="text-center py-8 text-muted-foreground">
                 Cargando alertas...
               </div>

@@ -53,7 +53,7 @@ export const useToast = () => {
 }
 
 // Function to create toast without having to call useToast
-type ToastFunction = {
+interface ToastFunction {
   (props: Omit<Toast, "id">): string;
   success: (message: string, title?: string) => string;
   error: (message: string, title?: string) => string;
@@ -63,24 +63,25 @@ type ToastFunction = {
 
 // Create a toast function for direct access without hooks
 export const toast = {
-  (props: Omit<Toast, "id">) {
+  (props: Omit<Toast, "id">): string {
     throw new Error(
       "Toast function called outside of component. Use useToast() hook instead."
     )
+    return ""
   },
-  success(message: string, title?: string) {
+  success(message: string, title?: string): string {
     console.error("Toast function called outside of component. Use useToast() hook instead.")
     return ""
   },
-  error(message: string, title?: string) {
+  error(message: string, title?: string): string {
     console.error("Toast function called outside of component. Use useToast() hook instead.")
     return ""
   },
-  warning(message: string, title?: string) {
+  warning(message: string, title?: string): string {
     console.error("Toast function called outside of component. Use useToast() hook instead.")
     return ""
   },
-  info(message: string, title?: string) {
+  info(message: string, title?: string): string {
     console.error("Toast function called outside of component. Use useToast() hook instead.")
     return ""
   }

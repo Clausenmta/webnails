@@ -52,37 +52,43 @@ export const useToast = () => {
   return context
 }
 
-// Function to create toast without having to call useToast
-interface ToastFunction {
-  (props: Omit<Toast, "id">): string;
-  success: (message: string, title?: string) => string;
-  error: (message: string, title?: string) => string;
-  warning: (message: string, title?: string) => string;
-  info: (message: string, title?: string) => string;
+// Interface for the toast function
+export interface ToastFunction {
+  (props: Omit<Toast, "id">): string
+  success(message: string, title?: string): string
+  error(message: string, title?: string): string
+  warning(message: string, title?: string): string
+  info(message: string, title?: string): string
 }
 
-// Create a toast function for direct access without hooks
-export const toast = {
-  (props: Omit<Toast, "id">): string {
-    throw new Error(
-      "Toast function called outside of component. Use useToast() hook instead."
-    )
-    return ""
-  },
-  success(message: string, title?: string): string {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  error(message: string, title?: string): string {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  warning(message: string, title?: string): string {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  info(message: string, title?: string): string {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  }
-} as ToastFunction
+// Create a toast function with correct type casting
+const toastFunction = ((props: Omit<Toast, "id">): string => {
+  throw new Error(
+    "Toast function called outside of component. Use useToast() hook instead."
+  )
+  return ""
+}) as unknown as ToastFunction
+
+// Add the methods to the function
+toastFunction.success = (message: string, title?: string): string => {
+  console.error("Toast function called outside of component. Use useToast() hook instead.")
+  return ""
+}
+
+toastFunction.error = (message: string, title?: string): string => {
+  console.error("Toast function called outside of component. Use useToast() hook instead.")
+  return ""
+}
+
+toastFunction.warning = (message: string, title?: string): string => {
+  console.error("Toast function called outside of component. Use useToast() hook instead.")
+  return ""
+}
+
+toastFunction.info = (message: string, title?: string): string => {
+  console.error("Toast function called outside of component. Use useToast() hook instead.")
+  return ""
+}
+
+// Export the toast function
+export const toast = toastFunction

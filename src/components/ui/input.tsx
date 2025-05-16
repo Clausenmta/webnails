@@ -1,9 +1,22 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  // Add any specific props here if needed
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
+    // Special handling for number inputs to properly format them
+    const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (type === 'number' && props.onChange) {
+        // Ensure we're using the original onChange handler
+        props.onChange(e);
+      }
+    };
+
     return (
       <input
         type={type}
@@ -12,6 +25,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        onChange={type === 'number' ? handleNumberInput : props.onChange}
         {...props}
       />
     )

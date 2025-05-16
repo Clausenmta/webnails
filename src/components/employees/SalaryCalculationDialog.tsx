@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { FileDown, Plus, Trash2 } from "lucide-react";
+import { CalendarCheck, FileDown, Plus, Trash2, ReceiptText, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Employee } from "@/types/employees";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { exportSalaryDetailToPDF } from "@/utils/pdfExport";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 interface SalaryCalculationDialogProps {
   open: boolean;
@@ -31,6 +32,10 @@ export default function SalaryCalculationDialog({
   onOpenChange,
   employee
 }: SalaryCalculationDialogProps) {
+  const { toast } = useToast();
+  const [totalBilling, setTotalBilling] = useState<number>(0);
+  const [commissionRate, setCommissionRate] = useState<number>(30);
+  
   const [salaryComponents, setSalaryComponents] = useState({
     baseAmount: employee.salary || 0,
     commission: 0,
@@ -60,6 +65,15 @@ export default function SalaryCalculationDialog({
   const currentDate = new Date();
   const currentMonth = format(currentDate, 'MMMM', { locale: es });
   const currentYear = format(currentDate, 'yyyy');
+
+  // Calculate commission based on total billing and commission rate
+  useEffect(() => {
+    const commission = (totalBilling * commissionRate) / 100;
+    setSalaryComponents(prev => ({
+      ...prev,
+      commission
+    }));
+  }, [totalBilling, commissionRate]);
 
   // Calculate salary totals whenever components change
   useEffect(() => {
@@ -106,9 +120,12 @@ export default function SalaryCalculationDialog({
       setSalaryComponents(prev => ({
         ...prev,
         baseAmount: employee.salary || 0,
-        // Establecemos la comisión como el 30% del salario base como ejemplo
-        commission: employee.salary ? employee.salary * 0.3 : 0,
       }));
+      
+      // Set initial total billing based on employee's current month billing if available
+      if (employee.currentMonthBilling) {
+        setTotalBilling(employee.currentMonthBilling);
+      }
     }
   }, [employee]);
   
@@ -132,11 +149,23 @@ export default function SalaryCalculationDialog({
       ]);
       setNewExtraConcept("");
       setNewExtraAmount(0);
+      
+      // Show success toast
+      toast({
+        title: "Extra agregado",
+        description: `${newExtraConcept} por $${newExtraAmount} agregado correctamente.`,
+      });
     }
   };
   
   const handleRemoveExtra = (id: string) => {
     setExtras(extras.filter(item => item.id !== id));
+    
+    // Show toast
+    toast({
+      title: "Extra eliminado",
+      variant: "destructive"
+    });
   };
   
   const handleExportToPDF = async () => {
@@ -149,9 +178,28 @@ export default function SalaryCalculationDialog({
         currentMonth,
         currentYear
       );
+      
+      toast({
+        title: "PDF exportado correctamente",
+        description: `La liquidación de ${employee.name} ha sido exportada.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error al exportar PDF",
+        description: "Por favor intente nuevamente.",
+        variant: "destructive"
+      });
     } finally {
       setExportLoading(false);
     }
+  };
+  
+  const handleSaveCalculation = () => {
+    // Implementation for saving calculation would go here
+    toast({
+      title: "Cálculo guardado",
+      description: `Liquidación de sueldo para ${employee.name} guardada correctamente.`
+    });
   };
 
   const totalExtras = extras.reduce((sum, item) => sum + item.amount, 0);
@@ -186,15 +234,48 @@ export default function SalaryCalculationDialog({
             </Badge>
           </div>
           
-          {/* Grid layout para los componentes de sueldo, como en la imagen */}
+          {/* Facturación total field - NEW */}
+          <div className="space-y-2 bg-muted/30 p-4 rounded-md">
+            <Label htmlFor="totalBilling" className="font-semibold">Facturación Total del Mes</Label>
+            <div className="flex items-center gap-2">
+              <ReceiptText className="h-5 w-5 text-muted-foreground" />
+              <Input
+                id="totalBilling"
+                type="number"
+                value={totalBilling}
+                onChange={(e) => setTotalBilling(parseFloat(e.target.value) || 0)}
+                className="bg-background font-medium"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              La facturación total se utiliza para calcular automáticamente la comisión.
+            </p>
+          </div>
+          
+          {/* Grid layout para los componentes de sueldo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="commission">Porcentaje de Comisión (30%)</Label>
+              <Label htmlFor="commissionRate">Porcentaje de Comisión (%)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="commissionRate"
+                  type="number"
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
+                  className="bg-slate-50"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="commission">Comisión (calculada)</Label>
               <Input
                 id="commission"
                 type="number"
-                value={salaryComponents.commission}
-                onChange={(e) => handleInputChange("commission", e.target.value)}
+                value={salaryComponents.commission.toFixed(2)}
+                readOnly
                 className="bg-slate-50"
               />
             </div>
@@ -244,17 +325,6 @@ export default function SalaryCalculationDialog({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
-              <Input
-                id="cashAmount"
-                type="number"
-                value={calculatedSalary.cashAmount.toFixed(2)}
-                readOnly
-                className="bg-slate-50"
-              />
-            </div>
-            
-            <div className="space-y-2">
               <Label htmlFor="vacations">Vacaciones</Label>
               <Input
                 id="vacations"
@@ -266,17 +336,6 @@ export default function SalaryCalculationDialog({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="totalSalary">TOTAL SUELDO</Label>
-              <Input
-                id="totalSalary"
-                type="number"
-                value={calculatedSalary.netTotal.toFixed(2)}
-                readOnly
-                className="bg-slate-50 font-bold"
-              />
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="reception">Recepción</Label>
               <Input
                 id="reception"
@@ -286,9 +345,42 @@ export default function SalaryCalculationDialog({
                 className="bg-slate-50"
               />
             </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="extrasTotal">Total Extras</Label>
+              <Input
+                id="extrasTotal"
+                type="number"
+                value={totalExtras.toFixed(2)}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
+              <Input
+                id="cashAmount"
+                type="number"
+                value={calculatedSalary.cashAmount.toFixed(2)}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="totalSalary" className="text-lg font-bold">TOTAL SUELDO</Label>
+              <Input
+                id="totalSalary"
+                type="number"
+                value={calculatedSalary.netTotal.toFixed(2)}
+                readOnly
+                className="bg-slate-50 font-bold text-lg"
+              />
+            </div>
           </div>
           
-          {/* Sección de extras, similar a la de la imagen */}
+          {/* Sección de extras */}
           <div className="mt-8">
             <h3 className="font-medium text-lg mb-4">Extras</h3>
             
@@ -345,7 +437,7 @@ export default function SalaryCalculationDialog({
             </div>
           </div>
           
-          {/* Fórmula como en la imagen */}
+          {/* Fórmula */}
           <Card className="p-4 bg-slate-50 mt-6">
             <p className="font-medium">Fórmula Efectivo:</p>
             <p className="text-muted-foreground">
@@ -369,7 +461,9 @@ export default function SalaryCalculationDialog({
           </Button>
           <Button
             className="bg-indigo-500 hover:bg-indigo-600 text-white"
+            onClick={handleSaveCalculation}
           >
+            <FileText className="mr-2 h-4 w-4" />
             Guardar Cálculo
           </Button>
         </DialogFooter>

@@ -5,12 +5,18 @@ import { type ToastActionElement, type ToastProps } from "@/components/ui/toast"
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
-  id: string
+export type Toast = {
+  id?: string
   title?: string
   description?: string
-  action?: ToastActionElement
+  action?: React.ReactNode
+  variant?: "default" | "destructive"
+  className?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
+
+type ToasterToast = Required<Pick<Toast, "id">> & Toast
 
 let count = 0
 
@@ -18,18 +24,8 @@ function generateId() {
   return `${count++}`
 }
 
-// Create the toast context type
-export type Toast = {
-  id: string
-  title?: string
-  description?: string
-  action?: React.ReactNode
-  variant?: "default" | "destructive"
-  className?: string
-}
-
 export interface ToastContextType {
-  toasts: Toast[]
+  toasts: ToasterToast[]
   addToast: (toast: Omit<Toast, "id">) => string
   updateToast: (id: string, toast: Partial<Toast>) => void
   dismissToast: (id: string) => void

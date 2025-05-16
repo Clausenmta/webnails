@@ -1,17 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { ToastContext, type Toast, type ToastContextType } from "./use-toast"
+import { type Toast } from "./use-toast"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = Toast & {
-  id: string
-  title?: string
-  description?: string
-  action?: React.ReactNode
-}
+type ToasterToast = Required<Pick<Toast, "id">> & Toast
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -131,12 +126,10 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
-
-function toast(props: Toast) {
+function toast(props: Omit<Toast, "id">) {
   const id = generateId()
 
-  const update = (props: Toast) =>
+  const update = (props: Omit<Toast, "id">) =>
     dispatch({
       type: actionTypes.UPDATE_TOAST,
       id,
@@ -182,6 +175,8 @@ toast.info = (message: string, title?: string) => {
   return toast({ title, description: message, className }).id
 }
 
+import { ToastContext, type ToastContextType } from "./use-toast"
+
 export function ToastProvider({
   children,
 }: {
@@ -217,7 +212,7 @@ export function ToastProvider({
         dispatch({ type: actionTypes.REMOVE_TOAST, id })
       },
       toast: Object.assign(
-        (props: Toast) => toast(props).id,
+        (props: Omit<Toast, "id">) => toast(props).id,
         {
           success: toast.success,
           error: toast.error,

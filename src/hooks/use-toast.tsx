@@ -1,42 +1,7 @@
 
 import * as React from "react"
-import { type ToastActionElement, type ToastProps } from "@/components/ui/toast"
-
-const TOAST_LIMIT = 5
-const TOAST_REMOVE_DELAY = 1000000
-
-type ToasterToast = ToastProps & {
-  id: string
-  title?: string
-  description?: string
-  action?: ToastActionElement
-}
-
-let count = 0
-
-function generateId() {
-  return `${count++}`
-}
-
-// Create the toast context type
-export type Toast = {
-  id: string
-  title?: string
-  description?: string
-  action?: React.ReactNode
-  variant?: "default" | "destructive"
-  className?: string
-}
-
-export interface ToastContextType {
-  toasts: Toast[]
-  addToast: (toast: Omit<Toast, "id">) => string
-  updateToast: (id: string, toast: Partial<Toast>) => void
-  dismissToast: (id: string) => void
-  removeToast: (id: string) => void
-}
-
-export const ToastContext = React.createContext<ToastContextType | null>(null)
+import { ToastContext, type ToastContextType, type Toast } from "./use-toast" 
+import { ToastProvider as RadixToastProvider } from "@radix-ui/react-toast"
 
 interface ToastProviderProps {
   children: React.ReactNode
@@ -47,11 +12,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   const addToast = React.useCallback(
     (toast: Omit<Toast, "id">) => {
-      const id = generateId()
+      const id = Math.random().toString(36).substring(2, 9)
       
       setToasts((prevToasts) => {
         // Check if we already have the maximum number of toasts
-        if (prevToasts.length >= TOAST_LIMIT) {
+        if (prevToasts.length >= 5) {
           const nextToasts = [...prevToasts]
           nextToasts.shift() // Remove the oldest toast
           return [...nextToasts, { id, ...toast }]
@@ -108,12 +73,12 @@ export function ToastProvider({ children }: ToastProviderProps) {
     (id: string) => {
       setTimeout(() => {
         dismissToast(id)
-      }, TOAST_REMOVE_DELAY)
+      }, 5000)
     },
     [dismissToast]
   )
 
-  const value = React.useMemo(() => {
+  const value = React.useMemo<ToastContextType>(() => {
     return {
       toasts,
       addToast,
@@ -125,52 +90,9 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   return (
     <ToastContext.Provider value={value}>
-      {children}
+      <RadixToastProvider>
+        {children}
+      </RadixToastProvider>
     </ToastContext.Provider>
   )
 }
-
-// The main useToast hook
-export const useToast = () => {
-  const context = React.useContext(ToastContext)
-
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider")
-  }
-
-  return context
-}
-
-// Function to create toast without having to call useToast
-type ToastFunction = {
-  (props: Omit<Toast, "id">): string;
-  success: (message: string, title?: string) => string;
-  error: (message: string, title?: string) => string;
-  warning: (message: string, title?: string) => string;
-  info: (message: string, title?: string) => string;
-}
-
-// Create a toast function for direct access without hooks
-export const toast = {
-  (props: Omit<Toast, "id">) {
-    throw new Error(
-      "Toast function called outside of component. Use useToast() hook instead."
-    )
-  },
-  success(message: string, title?: string) {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  error(message: string, title?: string) {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  warning(message: string, title?: string) {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  },
-  info(message: string, title?: string) {
-    console.error("Toast function called outside of component. Use useToast() hook instead.")
-    return ""
-  }
-} as ToastFunction

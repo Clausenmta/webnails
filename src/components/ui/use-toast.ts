@@ -3,7 +3,7 @@
 import { 
   useToast, 
   toast, 
-  ToastProvider, 
+  ToastProvider,
   type Toast, 
   type ToastContextType 
 } from "@/hooks/use-toast";

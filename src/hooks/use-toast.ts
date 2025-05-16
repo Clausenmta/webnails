@@ -1,6 +1,6 @@
 
-import { type ToastActionElement, type ToastProps } from "@/components/ui/toast"
 import * as React from "react"
+import { type ToastActionElement, type ToastProps } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
@@ -38,98 +38,8 @@ export interface ToastContextType {
 
 export const ToastContext = React.createContext<ToastContextType | null>(null)
 
-interface ToastProviderProps {
-  children: React.ReactNode
-}
-
-export function ToastProvider({ children }: ToastProviderProps) {
-  const [toasts, setToasts] = React.useState<Toast[]>([])
-
-  const addToast = React.useCallback(
-    (toast: Omit<Toast, "id">) => {
-      const id = generateId()
-      
-      setToasts((prevToasts) => {
-        // Check if we already have the maximum number of toasts
-        if (prevToasts.length >= TOAST_LIMIT) {
-          const nextToasts = [...prevToasts]
-          nextToasts.shift() // Remove the oldest toast
-          return [...nextToasts, { id, ...toast }]
-        }
-
-        return [...prevToasts, { id, ...toast }]
-      })
-      
-      return id
-    },
-    [setToasts]
-  )
-
-  const updateToast = React.useCallback(
-    (id: string, toast: Partial<Toast>) => {
-      setToasts((prevToasts) => {
-        const toastIndex = prevToasts.findIndex((t) => t.id === id)
-
-        if (toastIndex === -1) {
-          return prevToasts
-        }
-
-        const updatedToasts = [...prevToasts]
-        updatedToasts[toastIndex] = {
-          ...updatedToasts[toastIndex],
-          ...toast,
-        }
-
-        return updatedToasts
-      })
-    },
-    [setToasts]
-  )
-
-  const dismissToast = React.useCallback(
-    (id: string) => {
-      setToasts((prevToasts) => {
-        const toastIndex = prevToasts.findIndex((t) => t.id === id)
-
-        if (toastIndex === -1) {
-          return prevToasts
-        }
-
-        const updatedToasts = [...prevToasts]
-        updatedToasts.splice(toastIndex, 1)
-
-        return updatedToasts
-      })
-    },
-    [setToasts]
-  )
-
-  const removeToast = React.useCallback(
-    (id: string) => {
-      setTimeout(() => {
-        dismissToast(id)
-      }, TOAST_REMOVE_DELAY)
-    },
-    [dismissToast]
-  )
-
-  const value = React.useMemo(() => {
-    return {
-      toasts,
-      addToast,
-      updateToast,
-      dismissToast,
-      removeToast,
-    }
-  }, [toasts, addToast, updateToast, dismissToast, removeToast])
-
-  // Create provider element using React.createElement instead of JSX
-  return React.createElement(
-    ToastContext.Provider,
-    { value },
-    children
-  )
-}
+// Export the hook implementation
+export { ToastProvider } from "./use-toast.tsx"
 
 // The main useToast hook
 export const useToast = () => {
@@ -152,64 +62,26 @@ type ToastFunction = {
 }
 
 // Create a toast function for direct access without hooks
-function createToastFunction(): ToastFunction {
-  const toastFn = ((props: Omit<Toast, "id">) => {
-    // Get the context for internal use
-    const context = React.useContext(ToastContext)
-    if (!context) {
-      console.error("Toast function used outside of provider")
-      return ""
-    }
-    return context.addToast(props)
-  }) as ToastFunction
-
-  // Add success method
-  toastFn.success = (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (!context) return ""
-    return context.addToast({
-      title: title || "Success",
-      description: message,
-      variant: "default",
-      className: "bg-green-100 border-green-300 text-green-800"
-    })
+export const toast = {
+  (props: Omit<Toast, "id">) {
+    throw new Error(
+      "Toast function called outside of component. Use useToast() hook instead."
+    )
+  },
+  success(message: string, title?: string) {
+    console.error("Toast function called outside of component. Use useToast() hook instead.")
+    return ""
+  },
+  error(message: string, title?: string) {
+    console.error("Toast function called outside of component. Use useToast() hook instead.")
+    return ""
+  },
+  warning(message: string, title?: string) {
+    console.error("Toast function called outside of component. Use useToast() hook instead.")
+    return ""
+  },
+  info(message: string, title?: string) {
+    console.error("Toast function called outside of component. Use useToast() hook instead.")
+    return ""
   }
-
-  // Add error method
-  toastFn.error = (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (!context) return ""
-    return context.addToast({
-      title: title || "Error",
-      description: message,
-      variant: "destructive"
-    })
-  }
-
-  // Add warning method
-  toastFn.warning = (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (!context) return ""
-    return context.addToast({
-      title: title || "Warning",
-      description: message,
-      className: "bg-yellow-100 border-yellow-300 text-yellow-800"
-    })
-  }
-
-  // Add info method
-  toastFn.info = (message: string, title?: string) => {
-    const context = React.useContext(ToastContext)
-    if (!context) return ""
-    return context.addToast({
-      title: title || "Info",
-      description: message,
-      className: "bg-blue-100 border-blue-300 text-blue-800"
-    })
-  }
-
-  return toastFn
-}
-
-// Export the toast function
-export const toast = createToastFunction()
+} as ToastFunction

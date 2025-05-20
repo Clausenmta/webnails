@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -33,6 +32,12 @@ export default function SalaryCalculationDialog({
   employee
 }: SalaryCalculationDialogProps) {
   const { toast } = useToast();
+  interface ExtraItem {
+    id: string;
+    concept: string;
+    amount: number;
+  }
+
   const [totalBilling, setTotalBilling] = useState<number>(0);
   const [commissionRate, setCommissionRate] = useState<number>(30);
   

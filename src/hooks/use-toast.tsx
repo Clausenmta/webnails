@@ -1,12 +1,16 @@
+
 "use client"
 
 import * as React from "react"
-import { type Toast } from "./use-toast"
+import { 
+  ToastContext, 
+  type ToastContextType, 
+  type Toast, 
+  type ToasterToast 
+} from "./use-toast"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
-
-type ToasterToast = Required<Pick<Toast, "id">> & Toast
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -174,8 +178,6 @@ toast.info = (message: string, title?: string) => {
   const className = "bg-blue-500 border border-blue-600 text-white" 
   return toast({ title, description: message, className }).id
 }
-
-import { ToastContext, type ToastContextType } from "./use-toast"
 
 export function ToastProvider({
   children,

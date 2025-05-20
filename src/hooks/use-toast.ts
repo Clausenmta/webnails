@@ -1,8 +1,8 @@
 
 import * as React from "react"
 
-const TOAST_LIMIT = 5
-const TOAST_REMOVE_DELAY = 1000000
+export const TOAST_LIMIT = 5
+export const TOAST_REMOVE_DELAY = 1000000
 
 export type Toast = {
   id?: string
@@ -15,13 +15,7 @@ export type Toast = {
   onOpenChange?: (open: boolean) => void
 }
 
-type ToasterToast = Required<Pick<Toast, "id">> & Toast
-
-let count = 0
-
-function generateId() {
-  return `${count++}`
-}
+export type ToasterToast = Required<Pick<Toast, "id">> & Toast
 
 export interface ToastContextType {
   toasts: ToasterToast[]
@@ -40,9 +34,6 @@ export interface ToastContextType {
 
 export const ToastContext = React.createContext<ToastContextType | null>(null)
 
-// Export the hook implementation
-export { ToastProvider } from "./use-toast.tsx"
-
 // The main useToast hook
 export const useToast = () => {
   const context = React.useContext(ToastContext)
@@ -56,7 +47,7 @@ export const useToast = () => {
 
 // Create function to be used outside of components
 const toastFunction = ((props: Omit<Toast, "id">): string => {
-  throw new Error(
+  console.error(
     "Toast function called outside of component. Use useToast() hook instead."
   )
   return ""
@@ -90,3 +81,6 @@ toastFunction.info = (message: string, title?: string): string => {
 }
 
 export const toast = toastFunction
+
+// Export the provider implementation
+export { ToastProvider } from "./use-toast.tsx"

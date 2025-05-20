@@ -44,8 +44,8 @@ export default function SalaryCalculationDialog({
     advances: 0, // Adelanto
     sac: 0,
     reception: 0, // Recepción
-    receipt: 0, // Recibo - Changed to editable field
-    vacation: 0, // Vacaciones - Changed to editable field
+    receipt: 0, // Recibo - editable field
+    vacation: 0, // Vacaciones - editable field
   });
   
   const [extras, setExtras] = useState<ExtraItem[]>([]);
@@ -203,7 +203,7 @@ export default function SalaryCalculationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[95vh]">
+      <DialogContent className="max-w-3xl overflow-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl">Cálculo de Sueldo</DialogTitle>
           <DialogDescription>
@@ -250,22 +250,20 @@ export default function SalaryCalculationDialog({
             </p>
           </div>
           
-          {/* Grid layout para los componentes de sueldo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Grid layout para los componentes de sueldo - usando grid de 2 columnas */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="commissionRate">Porcentaje de Comisión (%)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="commissionRate"
-                  type="number"
-                  value={commissionRate === 0 ? "" : commissionRate}
-                  onChange={(e) => setCommissionRate(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                  className="bg-slate-50"
-                  min="0"
-                  max="100"
-                  placeholder="0"
-                />
-              </div>
+              <Input
+                id="commissionRate"
+                type="number"
+                value={commissionRate === 0 ? "" : commissionRate}
+                onChange={(e) => setCommissionRate(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                className="bg-slate-50"
+                min="0"
+                max="100"
+                placeholder="0"
+              />
             </div>
             
             <div className="space-y-2">
@@ -350,46 +348,46 @@ export default function SalaryCalculationDialog({
                 placeholder="0"
               />
             </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="extrasTotal">Total Extras</Label>
-              <Input
-                id="extrasTotal"
-                type="text"
-                value={formatNumber(totalExtras)}
-                readOnly
-                className="bg-slate-50"
-              />
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
-              <Input
-                id="cashAmount"
-                type="text"
-                value={formatNumber(calculatedSalary.cashAmount)}
-                readOnly
-                className="bg-slate-50"
-              />
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="totalSalary" className="text-lg font-bold">TOTAL SUELDO</Label>
-              <Input
-                id="totalSalary"
-                type="text"
-                value={formatNumber(calculatedSalary.netTotal)}
-                readOnly
-                className="bg-slate-50 font-bold text-lg"
-              />
-            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="extrasTotal">Total Extras</Label>
+            <Input
+              id="extrasTotal"
+              type="text"
+              value={formatNumber(totalExtras)}
+              readOnly
+              className="bg-slate-50"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
+            <Input
+              id="cashAmount"
+              type="text"
+              value={formatNumber(calculatedSalary.cashAmount)}
+              readOnly
+              className="bg-slate-50"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="totalSalary" className="text-lg font-bold">TOTAL SUELDO</Label>
+            <Input
+              id="totalSalary"
+              type="text"
+              value={formatNumber(calculatedSalary.netTotal)}
+              readOnly
+              className="bg-slate-50 font-bold text-lg"
+            />
           </div>
           
           {/* Sección de extras */}
           <div>
             <h3 className="font-medium text-lg mb-3">Extras</h3>
             
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-48 overflow-auto">
               {extras.map(extra => (
                 <div key={extra.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-md">
                   <div className="flex-1">
@@ -408,7 +406,7 @@ export default function SalaryCalculationDialog({
               ))}
             </div>
             
-            <div className="grid grid-cols-12 gap-4 mt-3">
+            <div className="grid grid-cols-12 gap-2 mt-3">
               <div className="col-span-7">
                 <Label htmlFor="extraConcept">Concepto</Label>
                 <Textarea
@@ -416,7 +414,7 @@ export default function SalaryCalculationDialog({
                   value={newExtraConcept}
                   onChange={(e) => setNewExtraConcept(e.target.value)}
                   placeholder="Descripción del extra"
-                  className="resize-none h-20"
+                  className="resize-none h-12"
                 />
               </div>
               
@@ -452,7 +450,7 @@ export default function SalaryCalculationDialog({
           </Card>
         </div>
         
-        <DialogFooter className="gap-2 sm:gap-0 mt-4">
+        <DialogFooter className="gap-2 sm:gap-0 mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -32,11 +33,6 @@ export default function SalaryCalculationDialog({
   employee
 }: SalaryCalculationDialogProps) {
   const { toast } = useToast();
-  interface ExtraItem {
-    id: string;
-    concept: string;
-    amount: number;
-  }
 
   const [totalBilling, setTotalBilling] = useState<number>(0);
   const [commissionRate, setCommissionRate] = useState<number>(30);
@@ -48,6 +44,8 @@ export default function SalaryCalculationDialog({
     advances: 0, // Adelanto
     sac: 0,
     reception: 0, // Recepción
+    receipt: 0, // Recibo - Changed to editable field
+    vacation: 0, // Vacaciones - Changed to editable field
   });
   
   const [extras, setExtras] = useState<ExtraItem[]>([]);
@@ -58,9 +56,7 @@ export default function SalaryCalculationDialog({
     grossTotal: 0,
     netTotal: 0,
     percentageChange: 0,
-    cashAmount: 0,
-    receiptAmount: 0,
-    vacationAmount: 0
+    cashAmount: 0
   });
   
   const [exportLoading, setExportLoading] = useState(false);
@@ -81,20 +77,14 @@ export default function SalaryCalculationDialog({
 
   // Calculate salary totals whenever components change
   useEffect(() => {
-    const { commission, bonus, advances, sac, reception } = salaryComponents;
+    const { commission, bonus, advances, sac, reception, receipt, vacation } = salaryComponents;
     
     // Sum all extras
     const extrasTotal = extras.reduce((sum, item) => sum + item.amount, 0);
     
-    // Calculate vacation amount (8.1% of commission)
-    const vacationAmount = commission * 0.081;
-    
-    // Calculate receipt amount (14% of commission)
-    const receiptAmount = commission * 0.14;
-    
     // Calculate according to the formula:
     // Efectivo: Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepcion
-    const cashAmount = commission + sac - advances - receiptAmount + bonus + vacationAmount + extrasTotal + reception;
+    const cashAmount = commission + sac - advances - receipt + bonus + vacation + extrasTotal + reception;
     
     // Set net total equal to cash amount per the image
     const netTotal = cashAmount;
@@ -112,9 +102,7 @@ export default function SalaryCalculationDialog({
       grossTotal,
       netTotal,
       percentageChange,
-      cashAmount,
-      receiptAmount,
-      vacationAmount
+      cashAmount
     });
   }, [salaryComponents, extras]);
   
@@ -215,7 +203,7 @@ export default function SalaryCalculationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[95vh]">
         <DialogHeader>
           <DialogTitle className="text-xl">Cálculo de Sueldo</DialogTitle>
           <DialogDescription>
@@ -223,7 +211,7 @@ export default function SalaryCalculationDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <div id="pdf-content" className="space-y-6 pt-4">
+        <div id="pdf-content" className="space-y-4 pt-3">
           {/* Additional header for PDF */}
           <div className="pdf-only hidden">
             <h2 className="text-2xl font-bold text-center">Liquidación de Sueldo</h2>
@@ -244,7 +232,7 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Facturación total field */}
-          <div className="space-y-2 bg-muted/30 p-4 rounded-md">
+          <div className="space-y-2 bg-muted/30 p-3 rounded-md">
             <Label htmlFor="totalBilling" className="font-semibold">Facturación Total del Mes</Label>
             <div className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
@@ -263,7 +251,7 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Grid layout para los componentes de sueldo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="commissionRate">Porcentaje de Comisión (%)</Label>
               <div className="flex items-center gap-2">
@@ -319,10 +307,11 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="receipt">Recibo</Label>
               <Input
                 id="receipt"
-                type="text"
-                value={formatNumber(calculatedSalary.receiptAmount)}
-                readOnly
+                type="number"
+                value={salaryComponents.receipt === 0 ? "" : salaryComponents.receipt}
+                onChange={(e) => handleInputChange("receipt", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -339,13 +328,14 @@ export default function SalaryCalculationDialog({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="vacations">Vacaciones</Label>
+              <Label htmlFor="vacation">Vacaciones</Label>
               <Input
-                id="vacations"
-                type="text"
-                value={formatNumber(calculatedSalary.vacationAmount)}
-                readOnly
+                id="vacation"
+                type="number"
+                value={salaryComponents.vacation === 0 ? "" : salaryComponents.vacation}
+                onChange={(e) => handleInputChange("vacation", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -396,12 +386,12 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Sección de extras */}
-          <div className="mt-8">
-            <h3 className="font-medium text-lg mb-4">Extras</h3>
+          <div>
+            <h3 className="font-medium text-lg mb-3">Extras</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {extras.map(extra => (
-                <div key={extra.id} className="flex items-center gap-2 p-3 bg-slate-50 rounded-md">
+                <div key={extra.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-md">
                   <div className="flex-1">
                     <p>{extra.concept}</p>
                     <p className="text-muted-foreground">${extra.amount.toLocaleString()}</p>
@@ -418,7 +408,7 @@ export default function SalaryCalculationDialog({
               ))}
             </div>
             
-            <div className="grid grid-cols-12 gap-4 mt-4">
+            <div className="grid grid-cols-12 gap-4 mt-3">
               <div className="col-span-7">
                 <Label htmlFor="extraConcept">Concepto</Label>
                 <Textarea
@@ -426,7 +416,7 @@ export default function SalaryCalculationDialog({
                   value={newExtraConcept}
                   onChange={(e) => setNewExtraConcept(e.target.value)}
                   placeholder="Descripción del extra"
-                  className="resize-none h-24"
+                  className="resize-none h-20"
                 />
               </div>
               
@@ -454,7 +444,7 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Fórmula */}
-          <Card className="p-4 bg-slate-50 mt-6">
+          <Card className="p-3 bg-slate-50">
             <p className="font-medium">Fórmula Efectivo:</p>
             <p className="text-muted-foreground">
               Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción
@@ -462,7 +452,7 @@ export default function SalaryCalculationDialog({
           </Card>
         </div>
         
-        <DialogFooter className="gap-2 sm:gap-0 mt-6">
+        <DialogFooter className="gap-2 sm:gap-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

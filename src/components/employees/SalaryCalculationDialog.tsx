@@ -203,15 +203,15 @@ export default function SalaryCalculationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl overflow-auto max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-auto p-4 md:p-6">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-xl">Cálculo de Sueldo</DialogTitle>
           <DialogDescription>
             {employee.name} - {employee.position}
           </DialogDescription>
         </DialogHeader>
         
-        <div id="pdf-content" className="space-y-4 pt-3">
+        <div id="pdf-content" className="space-y-3 pt-2">
           {/* Additional header for PDF */}
           <div className="pdf-only hidden">
             <h2 className="text-2xl font-bold text-center">Liquidación de Sueldo</h2>
@@ -220,7 +220,7 @@ export default function SalaryCalculationDialog({
             </p>
           </div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-2">
             <div>
               <h3 className="text-lg font-semibold">{employee.name}</h3>
               <p className="text-sm text-muted-foreground">{employee.position}</p>
@@ -232,7 +232,7 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Facturación total field */}
-          <div className="space-y-2 bg-muted/30 p-3 rounded-md">
+          <div className="space-y-1 bg-muted/30 p-3 rounded-md mb-3">
             <Label htmlFor="totalBilling" className="font-semibold">Facturación Total del Mes</Label>
             <div className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
@@ -250,9 +250,9 @@ export default function SalaryCalculationDialog({
             </p>
           </div>
           
-          {/* Grid layout para los componentes de sueldo - usando grid de 2 columnas */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          {/* Grid layout optimized for space */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
               <Label htmlFor="commissionRate">Porcentaje de Comisión (%)</Label>
               <Input
                 id="commissionRate"
@@ -266,7 +266,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="commission">Comisión (calculada)</Label>
               <Input
                 id="commission"
@@ -277,7 +277,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="sac">SAC</Label>
               <Input
                 id="sac"
@@ -289,7 +289,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="advances">Adelanto</Label>
               <Input
                 id="advances"
@@ -301,7 +301,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="receipt">Recibo</Label>
               <Input
                 id="receipt"
@@ -313,7 +313,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="bonus">Capacitación</Label>
               <Input
                 id="bonus"
@@ -325,7 +325,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="vacation">Vacaciones</Label>
               <Input
                 id="vacation"
@@ -337,7 +337,7 @@ export default function SalaryCalculationDialog({
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="reception">Recepción</Label>
               <Input
                 id="reception"
@@ -350,29 +350,31 @@ export default function SalaryCalculationDialog({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="extrasTotal">Total Extras</Label>
-            <Input
-              id="extrasTotal"
-              type="text"
-              value={formatNumber(totalExtras)}
-              readOnly
-              className="bg-slate-50"
-            />
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="space-y-1">
+              <Label htmlFor="extrasTotal">Total Extras</Label>
+              <Input
+                id="extrasTotal"
+                type="text"
+                value={formatNumber(totalExtras)}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
+              <Input
+                id="cashAmount"
+                type="text"
+                value={formatNumber(calculatedSalary.cashAmount)}
+                readOnly
+                className="bg-slate-50"
+              />
+            </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
-            <Input
-              id="cashAmount"
-              type="text"
-              value={formatNumber(calculatedSalary.cashAmount)}
-              readOnly
-              className="bg-slate-50"
-            />
-          </div>
-          
-          <div className="space-y-2">
+          <div className="space-y-1 mt-2">
             <Label htmlFor="totalSalary" className="text-lg font-bold">TOTAL SUELDO</Label>
             <Input
               id="totalSalary"
@@ -383,11 +385,11 @@ export default function SalaryCalculationDialog({
             />
           </div>
           
-          {/* Sección de extras */}
-          <div>
-            <h3 className="font-medium text-lg mb-3">Extras</h3>
+          {/* Extras section compact */}
+          <div className="mt-2">
+            <h3 className="font-medium text-lg mb-2">Extras</h3>
             
-            <div className="space-y-3 max-h-48 overflow-auto">
+            <div className="space-y-2 max-h-40 overflow-auto">
               {extras.map(extra => (
                 <div key={extra.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-md">
                   <div className="flex-1">
@@ -400,26 +402,24 @@ export default function SalaryCalculationDialog({
                     onClick={() => handleRemoveExtra(extra.id)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                   >
-                    Eliminar
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
             </div>
             
-            <div className="grid grid-cols-12 gap-2 mt-3">
+            <div className="grid grid-cols-12 gap-2 mt-2">
               <div className="col-span-7">
-                <Label htmlFor="extraConcept">Concepto</Label>
                 <Textarea
                   id="extraConcept"
                   value={newExtraConcept}
                   onChange={(e) => setNewExtraConcept(e.target.value)}
                   placeholder="Descripción del extra"
-                  className="resize-none h-12"
+                  className="resize-none h-10 py-2"
                 />
               </div>
               
               <div className="col-span-3">
-                <Label htmlFor="extraAmount">Monto</Label>
                 <Input
                   id="extraAmount"
                   type="number"
@@ -429,7 +429,7 @@ export default function SalaryCalculationDialog({
                 />
               </div>
               
-              <div className="col-span-2 flex items-end">
+              <div className="col-span-2 flex items-center">
                 <Button
                   onClick={handleAddExtra}
                   className="w-full h-10"
@@ -442,7 +442,7 @@ export default function SalaryCalculationDialog({
           </div>
           
           {/* Fórmula */}
-          <Card className="p-3 bg-slate-50">
+          <Card className="p-3 bg-slate-50 mt-2">
             <p className="font-medium">Fórmula Efectivo:</p>
             <p className="text-muted-foreground">
               Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepción
@@ -450,7 +450,7 @@ export default function SalaryCalculationDialog({
           </Card>
         </div>
         
-        <DialogFooter className="gap-2 sm:gap-0 mt-2">
+        <DialogFooter className="gap-2 sm:gap-0 mt-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

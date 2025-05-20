@@ -40,10 +40,9 @@ export default function SalaryCalculationDialog({
     baseAmount: employee.salary || 0,
     commission: 0,
     bonus: 0, // Capacitación
-    deductions: 0,
     advances: 0, // Adelanto
-    reception: 0, // Recepción
     sac: 0,
+    reception: 0, // Recepción
   });
   
   const [extras, setExtras] = useState<ExtraItem[]>([]);
@@ -88,7 +87,7 @@ export default function SalaryCalculationDialog({
     // Calculate receipt amount (14% of commission)
     const receiptAmount = commission * 0.14;
     
-    // Calculate according to UPDATED formula:
+    // Calculate according to the formula:
     // Efectivo: Comisión + SAC - Adelanto - Recibo + Capacitación + Vacaciones + Extras + Recepcion
     const cashAmount = commission + sac - advances - receiptAmount + bonus + vacationAmount + extrasTotal + reception;
     
@@ -130,7 +129,7 @@ export default function SalaryCalculationDialog({
   }, [employee]);
   
   const handleInputChange = (field: string, value: string) => {
-    const numericValue = parseFloat(value) || 0;
+    const numericValue = value === "" ? 0 : parseFloat(value);
     setSalaryComponents(prev => ({
       ...prev,
       [field]: numericValue
@@ -203,6 +202,11 @@ export default function SalaryCalculationDialog({
   };
 
   const totalExtras = extras.reduce((sum, item) => sum + item.amount, 0);
+  
+  // Format number for display with thousand separators
+  const formatNumber = (value: number) => {
+    return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,7 +238,7 @@ export default function SalaryCalculationDialog({
             </Badge>
           </div>
           
-          {/* Facturación total field - NEW */}
+          {/* Facturación total field */}
           <div className="space-y-2 bg-muted/30 p-4 rounded-md">
             <Label htmlFor="totalBilling" className="font-semibold">Facturación Total del Mes</Label>
             <div className="flex items-center gap-2">
@@ -242,9 +246,10 @@ export default function SalaryCalculationDialog({
               <Input
                 id="totalBilling"
                 type="number"
-                value={totalBilling}
-                onChange={(e) => setTotalBilling(parseFloat(e.target.value) || 0)}
+                value={totalBilling === 0 ? "" : totalBilling}
+                onChange={(e) => setTotalBilling(e.target.value === "" ? 0 : parseFloat(e.target.value))}
                 className="bg-background font-medium"
+                placeholder="0"
               />
             </div>
             <p className="text-xs text-muted-foreground">
@@ -260,11 +265,12 @@ export default function SalaryCalculationDialog({
                 <Input
                   id="commissionRate"
                   type="number"
-                  value={commissionRate}
-                  onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
+                  value={commissionRate === 0 ? "" : commissionRate}
+                  onChange={(e) => setCommissionRate(e.target.value === "" ? 0 : parseFloat(e.target.value))}
                   className="bg-slate-50"
                   min="0"
                   max="100"
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -273,8 +279,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="commission">Comisión (calculada)</Label>
               <Input
                 id="commission"
-                type="number"
-                value={salaryComponents.commission.toFixed(2)}
+                type="text"
+                value={formatNumber(salaryComponents.commission)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -285,9 +291,10 @@ export default function SalaryCalculationDialog({
               <Input
                 id="sac"
                 type="number"
-                value={salaryComponents.sac}
+                value={salaryComponents.sac === 0 ? "" : salaryComponents.sac}
                 onChange={(e) => handleInputChange("sac", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -296,9 +303,10 @@ export default function SalaryCalculationDialog({
               <Input
                 id="advances"
                 type="number"
-                value={salaryComponents.advances}
+                value={salaryComponents.advances === 0 ? "" : salaryComponents.advances}
                 onChange={(e) => handleInputChange("advances", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -306,8 +314,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="receipt">Recibo</Label>
               <Input
                 id="receipt"
-                type="number"
-                value={calculatedSalary.receiptAmount.toFixed(2)}
+                type="text"
+                value={formatNumber(calculatedSalary.receiptAmount)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -318,9 +326,10 @@ export default function SalaryCalculationDialog({
               <Input
                 id="bonus"
                 type="number"
-                value={salaryComponents.bonus}
+                value={salaryComponents.bonus === 0 ? "" : salaryComponents.bonus}
                 onChange={(e) => handleInputChange("bonus", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -328,8 +337,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="vacations">Vacaciones</Label>
               <Input
                 id="vacations"
-                type="number"
-                value={calculatedSalary.vacationAmount.toFixed(2)}
+                type="text"
+                value={formatNumber(calculatedSalary.vacationAmount)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -340,9 +349,10 @@ export default function SalaryCalculationDialog({
               <Input
                 id="reception"
                 type="number"
-                value={salaryComponents.reception}
+                value={salaryComponents.reception === 0 ? "" : salaryComponents.reception}
                 onChange={(e) => handleInputChange("reception", e.target.value)}
                 className="bg-slate-50"
+                placeholder="0"
               />
             </div>
             
@@ -350,8 +360,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="extrasTotal">Total Extras</Label>
               <Input
                 id="extrasTotal"
-                type="number"
-                value={totalExtras.toFixed(2)}
+                type="text"
+                value={formatNumber(totalExtras)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -361,8 +371,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="cashAmount">Efectivo (calculado)</Label>
               <Input
                 id="cashAmount"
-                type="number"
-                value={calculatedSalary.cashAmount.toFixed(2)}
+                type="text"
+                value={formatNumber(calculatedSalary.cashAmount)}
                 readOnly
                 className="bg-slate-50"
               />
@@ -372,8 +382,8 @@ export default function SalaryCalculationDialog({
               <Label htmlFor="totalSalary" className="text-lg font-bold">TOTAL SUELDO</Label>
               <Input
                 id="totalSalary"
-                type="number"
-                value={calculatedSalary.netTotal.toFixed(2)}
+                type="text"
+                value={formatNumber(calculatedSalary.netTotal)}
                 readOnly
                 className="bg-slate-50 font-bold text-lg"
               />
@@ -420,8 +430,9 @@ export default function SalaryCalculationDialog({
                 <Input
                   id="extraAmount"
                   type="number"
-                  value={newExtraAmount}
-                  onChange={(e) => setNewExtraAmount(parseFloat(e.target.value) || 0)}
+                  value={newExtraAmount === 0 ? "" : newExtraAmount}
+                  onChange={(e) => setNewExtraAmount(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                  placeholder="0"
                 />
               </div>
               

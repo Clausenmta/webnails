@@ -15,6 +15,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import ExcelImportDialog from "@/components/common/ExcelImportDialog";
 import { UserRole } from "@/types/auth";
 
+/**
+ * ArreglosPage component
+ * 
+ * This component serves as the main interface for managing "arreglos" (repairs or services).
+ * It displays a list of arreglos, allows users to search, filter, sort, add, edit, delete,
+ * import, and export arreglos. It uses tabs to categorize arreglos by status.
+ * 
+ * State management and business logic are primarily handled by the `useArreglosManagement` hook.
+ */
 export default function ArreglosPage() {
   const {
     filteredArreglos,
@@ -43,8 +52,12 @@ export default function ArreglosPage() {
   } = useArreglosManagement();
 
   const { isAuthorized } = useAuth();
+  // Authorization check: Determine if the current user has permission to add new arreglos.
+  // Users with 'superadmin' or 'employee' roles are allowed.
   const canAdd = isAuthorized('superadmin') || isAuthorized('employee');
 
+  // Calculate total counts for each arreglo status category.
+  // This is used for display in the tab badges.
   const arreglosTotals = {
     pendientes: filteredArreglos.filter(arreglo => arreglo.status === 'pendiente').length,
     enProceso: filteredArreglos.filter(arreglo => arreglo.status === 'en_proceso').length,
@@ -53,20 +66,33 @@ export default function ArreglosPage() {
     total: filteredArreglos.length
   };
 
-  const handleSortChange = (key: any) => {
+  /**
+   * Handles changes in sorting configuration.
+   * Toggles between ascending and descending order if the same key is clicked again.
+   * @param key - The key of the column to sort by (e.g., 'client_name', 'status').
+   */
+  const handleSortChange = (key: any) => { // TODO: Define a more specific type for key if possible
     setSortConfig({
       key,
       direction: sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
     });
   };
 
+  /**
+   * Handles the click event for exporting arreglos.
+   * It calls the `handleExportReport` function from the hook with the currently filtered arreglos.
+   */
   const handleExportClick = () => {
     handleExportReport(filteredArreglos);
   };
 
-  // Nuevo handler para eliminar
-  const handleDeleteClick = (arreglo: any) => {
-    // Confirmación rápida, puedes mejorar este UX con un modal si deseas
+  /**
+   * Handles the click event for deleting an arreglo.
+   * It shows a confirmation dialog and then calls the delete mutation if confirmed.
+   * @param arreglo - The arreglo object to be deleted.
+   */
+  const handleDeleteClick = (arreglo: any) => { // TODO: Define a more specific type for arreglo
+    // A simple confirmation dialog. For better UX, a custom modal component could be used.
     if (window.confirm("¿Seguro que quieres eliminar este arreglo?")) {
       deleteArregloMutation.mutate(arreglo.id);
     }
@@ -116,9 +142,11 @@ export default function ArreglosPage() {
             <Import className="h-4 w-4" />
             <span className="hidden sm:inline">Importar</span>
           </Button>
+          {/* Conditionally render the "Nuevo Arreglo" button based on user authorization */}
           {canAdd && (
             <Button
               onClick={() => {
+                // Reset currentArreglo to null for a new entry
                 setCurrentArreglo(null);
                 setIsAddDialogOpen(true);
               }}
@@ -131,7 +159,9 @@ export default function ArreglosPage() {
         </div>
       </div>
 
+      {/* Tabs for filtering arreglos by status. 'vistaActiva' controls the currently selected tab. */}
       <Tabs defaultValue="todos" value={vistaActiva} onValueChange={setVistaActiva}>
+        {/* TabsList provides the clickable tab headers. */}
         <TabsList className="grid grid-cols-5 w-full md:w-auto">
           <TabsTrigger value="todos">
             Todos
@@ -170,29 +200,35 @@ export default function ArreglosPage() {
             <CardHeader>
               <CardTitle>Todos los Arreglos</CardTitle>
               <CardDescription>
-                Lista completa de todos los arreglos
+                Lista completa de todos los arreglos. This view uses ArreglosTable directly.
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* ArreglosTable displays the main data grid for all arreglos. */}
               <ArreglosTable
-                arreglos={filteredArreglos}
+                arreglos={filteredArreglos} // Data is pre-filtered and sorted by the hook
                 onViewClick={(arreglo) => {
-                  setCurrentArreglo(arreglo);
-                  setIsEditDialogOpen(true);
+                  setCurrentArreglo(arreglo); // Set the arreglo to be edited
+                  setIsEditDialogOpen(true);    // Open the edit dialog
                 }}
-                // <-- AGREGAMOS el handler de eliminar
-                onDeleteClick={handleDeleteClick}
+                onDeleteClick={handleDeleteClick} // Pass the delete handler
                 sortConfig={sortConfig}
                 onSortChange={handleSortChange}
               />
             </CardContent>
           </Card>
         </TabsContent>
+        {/* 
+          The following TabsContent sections (pendientes, proceso, completados, cancelados) 
+          use the ArregloViewControls component. This component is a wrapper around ArreglosTable 
+          and is used here to display specific views of the data based on status.
+          The actual filtering by status for these tabs is handled within the useArreglosManagement hook.
+        */}
         <TabsContent value="pendientes">
           <ArregloViewControls
             title="Arreglos Pendientes"
             description="Arreglos que aún no han sido iniciados"
-            arreglos={filteredArreglos}
+            arreglos={filteredArreglos} // Data is already filtered by the hook based on 'vistaActiva'
             onViewClick={(arreglo) => {
               setCurrentArreglo(arreglo);
               setIsEditDialogOpen(true);
@@ -246,34 +282,38 @@ export default function ArreglosPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Dialog for adding a new arreglo. Rendered conditionally based on isAddDialogOpen state. */}
       {isAddDialogOpen && (
         <ArregloDialog
           open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          arreglo={null}
+          onOpenChange={setIsAddDialogOpen} // Function to close the dialog
+          arreglo={null} // Pass null for a new arreglo
         />
       )}
 
+      {/* Dialog for editing an existing arreglo. Rendered conditionally. */}
       {isEditDialogOpen && currentArreglo && (
         <ArregloDialog
           open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          arreglo={currentArreglo}
+          onOpenChange={setIsEditDialogOpen} // Function to close the dialog
+          arreglo={currentArreglo} // Pass the currently selected arreglo for editing
         />
       )}
 
+      {/* Dialog for filtering arreglos. Rendered conditionally. */}
       <FilterDialog
         open={isFilterDialogOpen}
         onOpenChange={setIsFilterDialogOpen}
       />
 
+      {/* Dialog for importing arreglos from an Excel file. Rendered conditionally. */}
       <ExcelImportDialog
         isOpen={isImportDialogOpen}
-        onClose={() => setIsImportDialogOpen(false)}
-        onImport={handleImportArreglos}
-        templateData={templateData}
-        templateFilename="Arreglos_Plantilla.xlsx"
-        validationFunction={validateArregloImport}
+        onClose={() => setIsImportDialogOpen(false)} // Function to close the dialog
+        onImport={handleImportArreglos} // Function from the hook to process imported data
+        templateData={templateData} // Template data for the Excel file (headers)
+        templateFilename="Arreglos_Plantilla.xlsx" // Suggested filename for the template
+        validationFunction={validateArregloImport} // Function from the hook to validate imported rows
       />
     </div>
   );

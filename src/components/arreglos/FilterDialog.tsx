@@ -27,7 +27,9 @@ export default function FilterDialog({ open, onOpenChange }: FilterDialogProps) 
     fechaDesdeDate,
     setFechaDesdeDate,
     fechaHastaDate,
-    setFechaHastaDate
+    setFechaHastaDate,
+    mesSeleccionadoDate,
+    setMesSeleccionadoDate
   } = useArreglosManagement();
 
   // Get unique values for filter lists
@@ -114,6 +116,18 @@ export default function FilterDialog({ open, onOpenChange }: FilterDialogProps) 
     }
   }, [fechaHastaDate, setFiltros]);
 
+  // Handle month selection
+  useEffect(() => {
+    if (mesSeleccionadoDate) {
+      const month = String(mesSeleccionadoDate.getMonth() + 1).padStart(2, '0');
+      const year = mesSeleccionadoDate.getFullYear();
+      setFiltros(prev => ({
+        ...prev,
+        mesSeleccionado: `${month}/${year}`
+      }));
+    }
+  }, [mesSeleccionadoDate, setFiltros]);
+
   // Handle price input changes
   const handlePrecioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -131,6 +145,33 @@ export default function FilterDialog({ open, onOpenChange }: FilterDialogProps) 
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Filtro por Mes */}
+          <div>
+            <h3 className="text-lg font-medium mb-2">Filtrar por Mes</h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {mesSeleccionadoDate ? format(mesSeleccionadoDate, 'MMMM yyyy') : 'Seleccionar mes/año'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={mesSeleccionadoDate}
+                  onSelect={setMesSeleccionadoDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <Separator />
+
           {/* Estados */}
           <div>
             <h3 className="text-lg font-medium mb-2">Estado</h3>
@@ -213,6 +254,7 @@ export default function FilterDialog({ open, onOpenChange }: FilterDialogProps) 
                       selected={fechaDesdeDate}
                       onSelect={setFechaDesdeDate}
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -235,6 +277,7 @@ export default function FilterDialog({ open, onOpenChange }: FilterDialogProps) 
                       selected={fechaHastaDate}
                       onSelect={setFechaHastaDate}
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>

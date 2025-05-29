@@ -14,6 +14,13 @@ export function useArreglosManagement() {
   
   const [mismaManicura, setMismaManicura] = useState(false);
 
+  // Helper function to check if date is in selected month/year
+  const isDateInSelectedMonth = (dateString: string, selectedMonth: string) => {
+    const [day, month, year] = dateString.split('/');
+    const dateFormatted = `${month}/${year}`;
+    return dateFormatted === selectedMonth;
+  };
+
   // Apply filters to arreglos
   const filteredArreglos = data.arreglos.filter(arreglo => {
     const matchesSearch = 
@@ -60,6 +67,13 @@ export function useArreglosManagement() {
     
     if (filters.filtrosAplicados.precioMaximo && arreglo.price > parseInt(filters.filtrosAplicados.precioMaximo)) {
       return false;
+    }
+
+    // Nuevo filtro por mes seleccionado
+    if (filters.filtrosAplicados.mesSeleccionado) {
+      if (!isDateInSelectedMonth(arreglo.date, filters.filtrosAplicados.mesSeleccionado)) {
+        return false;
+      }
     }
 
     if (filters.vistaActiva === "pendientes" && arreglo.status !== "pendiente") return false;

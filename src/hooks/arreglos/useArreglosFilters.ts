@@ -22,7 +22,8 @@ export function useArreglosFilters() {
     fechaHasta: null as string | null,
     descuenta: "",
     precioMinimo: "",
-    precioMaximo: ""
+    precioMaximo: "",
+    mesSeleccionado: null as string | null // Nuevo filtro para mes/año
   });
 
   const [filtrosAplicados, setFiltrosAplicados] = useState({...filtros});
@@ -33,6 +34,7 @@ export function useArreglosFilters() {
   const [fechaArregloDate, setFechaArregloDate] = useState<Date | undefined>(undefined);
   const [fechaDesdeDate, setFechaDesdeDate] = useState<Date | undefined>(undefined);
   const [fechaHastaDate, setFechaHastaDate] = useState<Date | undefined>(undefined);
+  const [mesSeleccionadoDate, setMesSeleccionadoDate] = useState<Date | undefined>(undefined);
 
   const handleApplyFilters = () => {
     setFiltrosAplicados({...filtros});
@@ -47,6 +49,7 @@ export function useArreglosFilters() {
     if (filtros.fechaHasta) count++;
     if (filtros.precioMinimo) count++;
     if (filtros.precioMaximo) count++;
+    if (filtros.mesSeleccionado) count++;
     setCantidadFiltrosAplicados(count);
   };
 
@@ -59,12 +62,14 @@ export function useArreglosFilters() {
       fechaHasta: null,
       descuenta: "",
       precioMinimo: "",
-      precioMaximo: ""
+      precioMaximo: "",
+      mesSeleccionado: null
     };
     
     setFiltros(emptyFilters);
     setFechaDesdeDate(undefined);
     setFechaHastaDate(undefined);
+    setMesSeleccionadoDate(undefined);
     setFiltrosAplicados(emptyFilters);
     setCantidadFiltrosAplicados(0);
   };
@@ -88,6 +93,8 @@ export function useArreglosFilters() {
     setFechaDesdeDate,
     fechaHastaDate,
     setFechaHastaDate,
+    mesSeleccionadoDate,
+    setMesSeleccionadoDate,
     handleApplyFilters,
     handleResetFilters,
     isFilterDialogOpen,

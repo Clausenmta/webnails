@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -27,6 +28,9 @@ export function useGiftCardManagement() {
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [dialogsEnabled, setDialogsEnabled] = useState(true);
   
+  // Nuevo estado para filtro por mes
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(undefined);
+  
   // Estado para importación
   const [importProgress, setImportProgress] = useState(0);
   const [importStatus, setImportStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
@@ -47,6 +51,40 @@ export function useGiftCardManagement() {
         toast.error(`Error al cargar tarjetas de regalo: ${error.message}`);
       }
     }
+  });
+
+  // Helper function to check if date is in selected month/year
+  const isDateInSelectedMonth = (dateString: string, selectedMonth: Date) => {
+    const [year, month, day] = dateString.split('-');
+    const cardDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return cardDate.getMonth() === selectedMonth.getMonth() && 
+           cardDate.getFullYear() === selectedMonth.getFullYear();
+  };
+
+  // Apply filters to gift cards
+  const filteredGiftCards = giftCards.filter(card => {
+    // Search filter
+    const matchesSearch = 
+      card.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (card.customer_name && card.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (card.service && card.service.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (card.notes && card.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    if (!matchesSearch) return false;
+    
+    // Status filter
+    if (statusFilter !== "all" && card.status !== statusFilter) {
+      return false;
+    }
+    
+    // Month filter
+    if (selectedMonth) {
+      if (!isDateInSelectedMonth(card.purchase_date, selectedMonth)) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   // Mutaciones
@@ -169,7 +207,7 @@ export function useGiftCardManagement() {
   };
 
   const handleExportToExcel = () => {
-    const formattedGiftCards = giftCards.map(card => ({
+    const formattedGiftCards = filteredGiftCards.map(card => ({
       Código: card.code,
       Monto: card.amount,
       Cliente: card.customer_name || '',
@@ -279,7 +317,7 @@ export function useGiftCardManagement() {
   };
 
   return {
-    giftCards,
+    giftCards: filteredGiftCards,
     isLoading,
     
     isAddDialogOpen,
@@ -303,6 +341,8 @@ export function useGiftCardManagement() {
     setStatusFilter,
     branchFilter,
     setBranchFilter,
+    selectedMonth,
+    setSelectedMonth,
     
     addGiftCardMutation,
     updateGiftCardMutation,

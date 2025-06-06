@@ -1,118 +1,90 @@
-
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Filter } from "lucide-react";
-import { EmployeeStatusToggle } from "./EmployeeStatusToggle";
+import { Calculator, FileText, User, Trash2 } from "lucide-react";
 import { Employee } from "@/types/employees";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
 
 interface EmployeeListProps {
   employees: Employee[];
   onViewProfile: (employee: Employee) => void;
   onCalculateSalary: (employee: Employee) => void;
   onDeleteEmployee: (employeeId: number) => void;
+  onViewSalaryHistory?: (employee: Employee) => void;
 }
 
-export function EmployeeList({ 
+export const EmployeeList = ({ 
   employees, 
   onViewProfile, 
   onCalculateSalary, 
-  onDeleteEmployee 
-}: EmployeeListProps) {
-  const [positionFilter, setPositionFilter] = useState<string>("all");
-  
-  // Get unique positions from employees data
-  const uniquePositions = Array.from(new Set(employees.map(emp => emp.position)));
-  
-  // Filter employees by selected position
-  const filteredEmployees = positionFilter === "all" 
-    ? employees 
-    : employees.filter(emp => emp.position === positionFilter);
+  onDeleteEmployee,
+  onViewSalaryHistory
+}: EmployeeListProps) => {
+  const filteredEmployees = employees;
 
   return (
-    <>
-      <div className="flex justify-end mb-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={positionFilter} onValueChange={setPositionFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtrar por posición" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las posiciones</SelectItem>
-              {uniquePositions.map(position => (
-                <SelectItem key={position} value={position}>{position}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredEmployees.map((employee) => (
+          <Card key={employee.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="text-lg font-semibold">{employee.name}</div>
+              <div className="text-sm text-gray-500">{employee.position}</div>
+              <div className="text-sm text-gray-500">
+                {employee.status === "active" ? "Activo" : "Inactivo"}
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewProfile(employee)}
+                  className="flex-1"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Ver Perfil
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCalculateSalary(employee)}
+                  className="flex-1"
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Calcular
+                </Button>
+
+                {onViewSalaryHistory && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewSalaryHistory(employee)}
+                    className="flex-1"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Historial
+                  </Button>
+                )}
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDeleteEmployee(employee.id)}
+                  className="flex-1"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Posición</TableHead>
-              <TableHead>Contacto</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEmployees.map((employee) => (
-              <TableRow key={employee.id}>
-                <TableCell>{employee.name}</TableCell>
-                <TableCell>{employee.position}</TableCell>
-                <TableCell>{employee.contact}</TableCell>
-                <TableCell className="text-center">
-                  <EmployeeStatusToggle
-                    employeeId={employee.id}
-                    currentStatus={employee.status}
-                    onStatusChange={() => {}}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewProfile(employee)}
-                    >
-                      Ver Perfil
-                    </Button>
-                    {employee.status === "active" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onCalculateSalary(employee)}
-                      >
-                        Calcular Sueldo
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteEmployee(employee.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredEmployees.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No hay empleados con la posición seleccionada
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+      {filteredEmployees.length === 0 && (
+        <div className="text-center text-gray-500">
+          No se encontraron empleados.
+        </div>
+      )}
+    </div>
   );
-}
+};

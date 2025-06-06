@@ -374,6 +374,71 @@ export type Database = {
         }
         Relationships: []
       }
+      sueldos: {
+        Row: {
+          adelanto: number | null
+          anio: number
+          asegurado: number | null
+          comision: number | null
+          created_at: string
+          created_by: string
+          empleado_id: number
+          facturacion: number | null
+          id: string
+          mes: number
+          otros: number | null
+          recepcion: number | null
+          recibo: number | null
+          total_completo: number | null
+          total_efectivo: number | null
+          vacaciones: number | null
+        }
+        Insert: {
+          adelanto?: number | null
+          anio: number
+          asegurado?: number | null
+          comision?: number | null
+          created_at?: string
+          created_by?: string
+          empleado_id: number
+          facturacion?: number | null
+          id?: string
+          mes: number
+          otros?: number | null
+          recepcion?: number | null
+          recibo?: number | null
+          total_completo?: number | null
+          total_efectivo?: number | null
+          vacaciones?: number | null
+        }
+        Update: {
+          adelanto?: number | null
+          anio?: number
+          asegurado?: number | null
+          comision?: number | null
+          created_at?: string
+          created_by?: string
+          empleado_id?: number
+          facturacion?: number | null
+          id?: string
+          mes?: number
+          otros?: number | null
+          recepcion?: number | null
+          recibo?: number | null
+          total_completo?: number | null
+          total_efectivo?: number | null
+          vacaciones?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sueldos_empleado_id_fkey"
+            columns: ["empleado_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tipo_ausencia_opciones: {
         Row: {
           id: number

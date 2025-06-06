@@ -15,6 +15,8 @@ import { SalarySummary } from "@/components/employees/SalarySummary";
 import EmployeeProfileDialog from "@/components/employees/EmployeeProfileDialog";
 import SalaryCalculationDialog from "@/components/employees/SalaryCalculationDialog";
 import AbsenceCalendar from "@/components/employees/AbsenceCalendar";
+import { EmployeeSalaryHistoryDialog } from "@/components/employees/EmployeeSalaryHistoryDialog";
+import { GlobalSalaryCalculation } from "@/components/employees/GlobalSalaryCalculation";
 
 export default function EmpleadosPage() {
   const { isAuthorized } = useAuth();
@@ -24,6 +26,8 @@ export default function EmpleadosPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSalaryOpen, setIsSalaryOpen] = useState(false);
+  const [isSalaryHistoryOpen, setIsSalaryHistoryOpen] = useState(false);
+  const [selectedEmployeeForHistory, setSelectedEmployeeForHistory] = useState<Employee | null>(null);
   
   const [newEmployeeData, setNewEmployeeData] = useState<Partial<Employee>>({
     name: "",
@@ -101,6 +105,11 @@ export default function EmpleadosPage() {
       console.error("Error al eliminar empleado:", error);
       toast.error("Error al eliminar el empleado");
     }
+  };
+
+  const handleViewSalaryHistory = (employee: Employee) => {
+    setSelectedEmployeeForHistory(employee);
+    setIsSalaryHistoryOpen(true);
   };
 
   const filteredEmployees = employees.filter(
@@ -193,6 +202,7 @@ export default function EmpleadosPage() {
       <Tabs defaultValue="employees">
         <TabsList>
           <TabsTrigger value="employees">Listado de Empleados</TabsTrigger>
+          <TabsTrigger value="global-calculation">Cálculo Global</TabsTrigger>
           <TabsTrigger value="summary">Resumen</TabsTrigger>
           <TabsTrigger value="absences">Ausencias</TabsTrigger>
         </TabsList>
@@ -217,9 +227,14 @@ export default function EmpleadosPage() {
                   setIsSalaryOpen(true);
                 }}
                 onDeleteEmployee={handleDeleteEmployee}
+                onViewSalaryHistory={handleViewSalaryHistory}
               />
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="global-calculation">
+          <GlobalSalaryCalculation employees={employees} />
         </TabsContent>
         
         <TabsContent value="summary">
@@ -253,6 +268,14 @@ export default function EmpleadosPage() {
           open={isSalaryOpen}
           onOpenChange={setIsSalaryOpen}
           employee={selectedEmployee}
+        />
+      )}
+      
+      {selectedEmployeeForHistory && (
+        <EmployeeSalaryHistoryDialog
+          open={isSalaryHistoryOpen}
+          onOpenChange={setIsSalaryHistoryOpen}
+          employee={selectedEmployeeForHistory}
         />
       )}
     </div>

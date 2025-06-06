@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -102,6 +101,28 @@ export type Database = {
         }
         Insert: Omit<Database['public']['Tables']['employees']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['employees']['Insert']>
+      }
+      sueldos: {
+        Row: {
+          id: string
+          empleado_id: number
+          mes: number
+          anio: number
+          facturacion: number
+          comision: number
+          adelanto: number
+          vacaciones: number
+          recepcion: number
+          otros: number
+          recibo: number
+          total_efectivo: number
+          total_completo: number
+          asegurado: number
+          created_at: string
+          created_by: string
+        }
+        Insert: Omit<Database['public']['Tables']['sueldos']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['sueldos']['Insert']>
       }
     }
   }

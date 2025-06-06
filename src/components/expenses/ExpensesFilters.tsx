@@ -3,10 +3,13 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { paymentMethods } from "@/types/expenses";
-import { CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ExpenseCategory } from "@/services/categoryService";
 
 interface ExpensesFiltersProps {
@@ -33,9 +36,27 @@ export function ExpensesFilters({
   uniqueUsers,
   availableCategories
 }: ExpensesFiltersProps) {
-  // Select month/year
-  const selectMonth = (date: Date) => {
-    setFilters({ ...filters, date });
+  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const currentYear = new Date().getFullYear();
+  const availableYears = [
+    (currentYear - 2).toString(),
+    (currentYear - 1).toString(),
+    currentYear.toString(),
+    (currentYear + 1).toString()
+  ];
+
+  const selectedMonth = monthNames[filters.date.getMonth()];
+  const selectedYear = filters.date.getFullYear().toString();
+
+  const handleMonthChange = (month: string) => {
+    const monthIndex = monthNames.indexOf(month);
+    const newDate = new Date(filters.date.getFullYear(), monthIndex, 1);
+    setFilters({ ...filters, date: newDate });
+  };
+
+  const handleYearChange = (year: string) => {
+    const newDate = new Date(parseInt(year), filters.date.getMonth(), 1);
+    setFilters({ ...filters, date: newDate });
   };
 
   const handleChange = (field: keyof ExpensesFiltersState, value: string) => {
@@ -43,30 +64,35 @@ export function ExpensesFilters({
   };
 
   return (
-    <div className="mb-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {/* Fecha (mes/año) */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="justify-start">
-            <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-            {filters.date ? format(filters.date, "MMMM yyyy") : "Mes/Año"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2" align="start">
-          <Calendar
-            mode="single"
-            selected={filters.date}
-            onSelect={date => date && selectMonth(new Date(date.getFullYear(), date.getMonth(), 1))}
-            fromYear={2020}
-            toYear={2100}
-            initialFocus
-            className="p-3 pointer-events-auto"
-            // Show just months
-            captionLayout="dropdown-buttons"
-            showOutsideDays={false}
-          />
-        </PopoverContent>
-      </Popover>
+    <div className="mb-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
+      {/* Mes */}
+      <Select value={selectedMonth} onValueChange={handleMonthChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Mes" />
+        </SelectTrigger>
+        <SelectContent>
+          {monthNames.map((month) => (
+            <SelectItem key={month} value={month}>
+              {month}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Año */}
+      <Select value={selectedYear} onValueChange={handleYearChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Año" />
+        </SelectTrigger>
+        <SelectContent>
+          {availableYears.map((year) => (
+            <SelectItem key={year} value={year}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       {/* Concepto */}
       <Input
         placeholder="Concepto"

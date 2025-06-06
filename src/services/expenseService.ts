@@ -174,5 +174,9 @@ export const expenseService = {
       toast.error(`Error al actualizar gasto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       throw error;
     }
+  },
+
+  async markExpenseAsPaid(id: number): Promise<Expense> {
+    return this.updateExpense(id, { status: "paid" });
   }
 };

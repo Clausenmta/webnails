@@ -1,14 +1,16 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Clock, Check } from "lucide-react";
 import { Expense } from "@/types/expenses";
 import { addDays, isAfter, isBefore } from "date-fns";
 
 interface UpcomingExpensesProps {
   expenses: Expense[];
+  onMarkAsPaid?: (expenseId: number) => void;
 }
 
-export function UpcomingExpenses({ expenses }: UpcomingExpensesProps) {
+export function UpcomingExpenses({ expenses, onMarkAsPaid }: UpcomingExpensesProps) {
   // Gastos próximos a vencer - incluir gastos sin estado definido o con estado pending
   const upcomingExpenses = expenses
     .filter(expense => {
@@ -24,6 +26,12 @@ export function UpcomingExpenses({ expenses }: UpcomingExpensesProps) {
       const dateB = b.due_date ? b.due_date.split('/').reverse().join('-') : '';
       return dateA.localeCompare(dateB);
     });
+
+  const handleMarkAsPaid = (expenseId: number) => {
+    if (onMarkAsPaid) {
+      onMarkAsPaid(expenseId);
+    }
+  };
 
   return (
     <Card>
@@ -43,6 +51,7 @@ export function UpcomingExpenses({ expenses }: UpcomingExpensesProps) {
                 <th className="py-3 px-4 text-right">Monto</th>
                 <th className="py-3 px-4 text-center">Vencimiento</th>
                 <th className="py-3 px-4 text-center">Estado</th>
+                <th className="py-3 px-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -83,12 +92,25 @@ export function UpcomingExpenses({ expenses }: UpcomingExpensesProps) {
                         {expense.status === 'paid' ? 'Pagado' : 'Pendiente'}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-center">
+                      {onMarkAsPaid && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMarkAsPaid(expense.id)}
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Marcar Pagado
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {upcomingExpenses.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     No hay gastos próximos a vencer
                   </td>
                 </tr>

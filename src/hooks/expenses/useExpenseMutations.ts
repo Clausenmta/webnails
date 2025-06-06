@@ -38,8 +38,21 @@ export function useExpenseMutations() {
     }
   });
 
+  const markAsPaidMutation = useMutation({
+    mutationFn: (id: number) => expenseService.markExpenseAsPaid(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      toast.success("Gasto marcado como pagado");
+    },
+    onError: (error: any) => {
+      console.error("Error al marcar el gasto como pagado:", error);
+      toast.error(`Error al marcar como pagado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  });
+
   return {
     addExpenseMutation,
-    deleteExpenseMutation
+    deleteExpenseMutation,
+    markAsPaidMutation
   };
 }

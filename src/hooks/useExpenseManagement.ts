@@ -82,7 +82,7 @@ export function useExpenseManagement() {
     filteredExpensesPrevMonth
   } = useExpenseFilters(filteredExpensesForUser);
 
-  const { addExpenseMutation, deleteExpenseMutation } = useExpenseMutations();
+  const { addExpenseMutation, deleteExpenseMutation, markAsPaidMutation } = useExpenseMutations();
 
   const handleViewExpense = (expense: Expense) => {
     setCurrentExpense(expense);
@@ -104,6 +104,10 @@ export function useExpenseManagement() {
       setIsDeleteDialogOpen(false);
       setExpenseToDelete(null);
     }
+  };
+
+  const handleMarkAsPaid = (expenseId: number) => {
+    markAsPaidMutation.mutate(expenseId);
   };
 
   const handleExportReport = () => {
@@ -147,11 +151,12 @@ export function useExpenseManagement() {
     expenseToDelete,
     
     addExpenseMutation,
+    markAsPaidMutation,
     
     handleViewExpense,
     handleDeleteExpense,
     confirmDeleteExpense,
+    handleMarkAsPaid,
     handleExportReport
   };
 }
-

@@ -27,6 +27,7 @@ export default function GastosPage() {
     handleViewExpense,
     handleDeleteExpense,
     confirmDeleteExpense,
+    handleMarkAsPaid,
     handleExportReport
   } = useExpenseManagement();
 
@@ -50,6 +51,7 @@ export default function GastosPage() {
         availableCategories={availableCategories}
         onViewExpense={handleViewExpense}
         onDeleteExpense={handleDeleteExpense}
+        onMarkAsPaid={handleMarkAsPaid}
       />
 
       <ExpenseDialogs 

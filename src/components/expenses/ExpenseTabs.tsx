@@ -19,6 +19,7 @@ interface ExpenseTabsProps {
   availableCategories: ExpenseCategory[];
   onViewExpense: (expense: Expense) => void;
   onDeleteExpense: (expense: Expense) => void;
+  onMarkAsPaid?: (expenseId: number) => void;
 }
 
 export function ExpenseTabs({
@@ -33,6 +34,7 @@ export function ExpenseTabs({
   availableCategories,
   onViewExpense,
   onDeleteExpense,
+  onMarkAsPaid,
 }: ExpenseTabsProps) {
   if (isSuperAdmin) {
     return (
@@ -68,7 +70,10 @@ export function ExpenseTabs({
           </TabsContent>
 
           <TabsContent value="upcoming">
-            <UpcomingExpenses expenses={expenses} />
+            <UpcomingExpenses 
+              expenses={expenses} 
+              onMarkAsPaid={onMarkAsPaid}
+            />
           </TabsContent>
         </Tabs>
       </div>

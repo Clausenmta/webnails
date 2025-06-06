@@ -9,9 +9,15 @@ interface UpcomingExpensesProps {
 }
 
 export function UpcomingExpenses({ expenses }: UpcomingExpensesProps) {
-  // Gastos próximos a vencer
+  // Gastos próximos a vencer - incluir gastos sin estado definido o con estado pending
   const upcomingExpenses = expenses
-    .filter(expense => expense.due_date && expense.status === "pending")
+    .filter(expense => {
+      // Debe tener fecha de vencimiento
+      if (!expense.due_date) return false;
+      
+      // Incluir si no tiene estado definido (undefined) o si el estado es "pending"
+      return !expense.status || expense.status === "pending";
+    })
     .sort((a, b) => {
       // Convertir fechas de vencimiento para comparación
       const dateA = a.due_date ? a.due_date.split('/').reverse().join('-') : '';

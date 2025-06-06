@@ -45,7 +45,7 @@ export const GlobalSalaryCalculation = ({ employees }: GlobalSalaryCalculationPr
   };
 
   const handleFieldChange = (empleado_id: number, field: keyof SalaryCalculationRow, value: string) => {
-    const numericValue = parseFloat(value) || 0;
+    const numericValue = value === '' ? 0 : parseFloat(value) || 0;
     
     setEditedRows(prev => ({
       ...prev,
@@ -174,18 +174,18 @@ export const GlobalSalaryCalculation = ({ employees }: GlobalSalaryCalculationPr
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-48">Empleado</TableHead>
-                <TableHead className="w-32">Facturación</TableHead>
-                <TableHead className="w-32 bg-violet-50">Comisión</TableHead>
-                <TableHead className="w-32">Adelanto</TableHead>
-                <TableHead className="w-32">Vacaciones</TableHead>
-                <TableHead className="w-32">Recepción</TableHead>
-                <TableHead className="w-32">Otros</TableHead>
-                <TableHead className="w-32">Recibo</TableHead>
-                <TableHead className="w-32 bg-violet-50">Total Efectivo</TableHead>
-                <TableHead className="w-32 bg-violet-50">Total Completo</TableHead>
-                <TableHead className="w-32 bg-violet-50">Asegurado</TableHead>
-                <TableHead className="w-24">Acciones</TableHead>
+                <TableHead className="min-w-[200px] sticky left-0 bg-background">Empleado</TableHead>
+                <TableHead className="min-w-[120px]">Facturación</TableHead>
+                <TableHead className="min-w-[120px] bg-violet-50">Comisión</TableHead>
+                <TableHead className="min-w-[100px]">Adelanto</TableHead>
+                <TableHead className="min-w-[100px]">Vacaciones</TableHead>
+                <TableHead className="min-w-[100px]">Recepción</TableHead>
+                <TableHead className="min-w-[100px]">Otros</TableHead>
+                <TableHead className="min-w-[100px]">Recibo</TableHead>
+                <TableHead className="min-w-[120px] bg-violet-50">Total Efectivo</TableHead>
+                <TableHead className="min-w-[120px] bg-violet-50">Total Completo</TableHead>
+                <TableHead className="min-w-[120px] bg-violet-50">Asegurado</TableHead>
+                <TableHead className="min-w-[100px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -195,84 +195,90 @@ export const GlobalSalaryCalculation = ({ employees }: GlobalSalaryCalculationPr
                 
                 return (
                   <TableRow key={row.empleado_id} className={hasChanges ? "bg-yellow-50" : ""}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium sticky left-0 bg-background min-w-[200px]">
                       <div>
-                        <div>{row.empleado_name}</div>
-                        <div className="text-sm text-gray-500">{row.empleado_position}</div>
+                        <div className="font-medium text-sm">{row.empleado_name}</div>
+                        <div className="text-xs text-gray-500">{row.empleado_position}</div>
                       </div>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[120px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'facturacion')}
+                        value={getEffectiveValue(row, 'facturacion') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'facturacion', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell className="bg-violet-50">
-                      <span className="font-medium">{formatCurrency(calculated.comision)}</span>
+                    <TableCell className="bg-violet-50 min-w-[120px]">
+                      <span className="font-medium text-sm block text-right">{formatCurrency(calculated.comision)}</span>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'adelanto')}
+                        value={getEffectiveValue(row, 'adelanto') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'adelanto', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'vacaciones')}
+                        value={getEffectiveValue(row, 'vacaciones') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'vacaciones', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'recepcion')}
+                        value={getEffectiveValue(row, 'recepcion') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'recepcion', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'otros')}
+                        value={getEffectiveValue(row, 'otros') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'otros', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Input
                         type="number"
-                        value={getEffectiveValue(row, 'recibo')}
+                        value={getEffectiveValue(row, 'recibo') || ''}
                         onChange={(e) => handleFieldChange(row.empleado_id, 'recibo', e.target.value)}
-                        className="w-full"
+                        className="w-full text-right"
+                        placeholder="0"
                       />
                     </TableCell>
                     
-                    <TableCell className="bg-violet-50">
-                      <span className="font-medium">{formatCurrency(calculated.total_efectivo)}</span>
+                    <TableCell className="bg-violet-50 min-w-[120px]">
+                      <span className="font-medium text-sm block text-right">{formatCurrency(calculated.total_efectivo)}</span>
                     </TableCell>
                     
-                    <TableCell className="bg-violet-50">
-                      <span className="font-medium">{formatCurrency(calculated.total_completo)}</span>
+                    <TableCell className="bg-violet-50 min-w-[120px]">
+                      <span className="font-medium text-sm block text-right">{formatCurrency(calculated.total_completo)}</span>
                     </TableCell>
                     
-                    <TableCell className="bg-violet-50">
-                      <span className="font-medium">{formatCurrency(calculated.asegurado)}</span>
+                    <TableCell className="bg-violet-50 min-w-[120px]">
+                      <span className="font-medium text-sm block text-right">{formatCurrency(calculated.asegurado)}</span>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="min-w-[100px]">
                       <Button
                         size="sm"
                         onClick={() => handleSaveSalary(row)}
@@ -287,18 +293,18 @@ export const GlobalSalaryCalculation = ({ employees }: GlobalSalaryCalculationPr
               })}
               
               {/* Fila de totales */}
-              <TableRow className="bg-gray-100 font-bold">
-                <TableCell>TOTALES</TableCell>
-                <TableCell>{formatCurrency(totals.facturacion)}</TableCell>
-                <TableCell className="bg-violet-100">{formatCurrency(totals.comision)}</TableCell>
-                <TableCell>{formatCurrency(totals.adelanto)}</TableCell>
-                <TableCell>{formatCurrency(totals.vacaciones)}</TableCell>
-                <TableCell>{formatCurrency(totals.recepcion)}</TableCell>
-                <TableCell>{formatCurrency(totals.otros)}</TableCell>
-                <TableCell>{formatCurrency(totals.recibo)}</TableCell>
-                <TableCell className="bg-violet-100">{formatCurrency(totals.total_efectivo)}</TableCell>
-                <TableCell className="bg-violet-100">{formatCurrency(totals.total_completo)}</TableCell>
-                <TableCell className="bg-violet-100">{formatCurrency(totals.asegurado)}</TableCell>
+              <TableRow className="bg-gray-100 font-bold border-t-2">
+                <TableCell className="sticky left-0 bg-gray-100">TOTALES</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.facturacion)}</TableCell>
+                <TableCell className="bg-violet-100 text-right text-sm">{formatCurrency(totals.comision)}</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.adelanto)}</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.vacaciones)}</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.recepcion)}</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.otros)}</TableCell>
+                <TableCell className="text-right text-sm">{formatCurrency(totals.recibo)}</TableCell>
+                <TableCell className="bg-violet-100 text-right text-sm">{formatCurrency(totals.total_efectivo)}</TableCell>
+                <TableCell className="bg-violet-100 text-right text-sm">{formatCurrency(totals.total_completo)}</TableCell>
+                <TableCell className="bg-violet-100 text-right text-sm">{formatCurrency(totals.asegurado)}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             </TableBody>

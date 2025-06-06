@@ -8,11 +8,28 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
-    // Special handling for number inputs to properly format them
-    const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (type === 'number' && props.onChange) {
-        // Ensure we're using the original onChange handler
-        props.onChange(e);
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (type === 'number' && e.target.value === '0') {
+        e.target.select();
+      }
+      if (props.onFocus) {
+        props.onFocus(e);
+      }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (type === 'number') {
+        // Allow empty string or valid numbers
+        const value = e.target.value;
+        if (value === '' || !isNaN(Number(value))) {
+          if (props.onChange) {
+            props.onChange(e);
+          }
+        }
+      } else {
+        if (props.onChange) {
+          props.onChange(e);
+        }
       }
     };
 
@@ -24,7 +41,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
-        onChange={type === 'number' ? handleNumberInput : props.onChange}
+        onFocus={handleFocus}
+        onChange={handleChange}
         {...props}
       />
     )

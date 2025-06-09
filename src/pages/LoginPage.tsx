@@ -79,6 +79,11 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       } else {
         console.log("Login fallido");
+        toast({
+          title: "Error",
+          description: "Credenciales incorrectas",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Login error:", error);

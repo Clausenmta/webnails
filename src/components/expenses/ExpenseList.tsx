@@ -60,7 +60,7 @@ export function ExpenseList({ expenses, onViewExpense, onDeleteExpense }: Expens
                         <Eye className="h-4 w-4 mr-1" />
                         <span className="hidden sm:inline">Ver</span>
                       </Button>
-                      {(isSuperAdmin || (!isSuperAdmin && user?.username === expense.created_by)) && (
+                      {(isSuperAdmin || (!isSuperAdmin && user?.email === expense.created_by)) && (
                         <Button 
                           variant="ghost" 
                           size="sm"

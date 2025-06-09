@@ -16,22 +16,22 @@ import { ExpenseCategory } from "@/services/categoryService";
  * Filtra los gastos según el rol y las categorías permitidas para el usuario.
  * @param expenses Lista total de gastos
  * @param isSuperAdmin ¿El usuario es superadmin?
- * @param username Nombre de usuario del usuario actual
+ * @param userEmail Email del usuario actual
  * @param allowedCategories Lista de nombres de las categorías permitidas para usuarios normales
  * @returns Lista de gastos filtrados según las reglas de visibilidad
  */
 function filterExpensesByRole(
   expenses: Expense[],
   isSuperAdmin: boolean,
-  username: string | undefined,
+  userEmail: string | undefined,
   allowedCategories: string[] | null
 ) {
   if (isSuperAdmin) return expenses;
-  if (!username || !allowedCategories) return [];
+  if (!userEmail || !allowedCategories) return [];
   // Solo mostrar los gastos creados por el usuario y de categorías habilitadas
   return expenses.filter(
     expense =>
-      expense.created_by === username &&
+      expense.created_by === userEmail &&
       allowedCategories.includes(expense.category)
   );
 }
@@ -68,7 +68,7 @@ export function useExpenseManagement() {
   const filteredExpensesForUser = filterExpensesByRole(
     expenses,
     isSuperAdmin,
-    user?.username,
+    user?.email,
     allowedCategoryNames
   );
 
@@ -90,7 +90,7 @@ export function useExpenseManagement() {
   };
 
   const handleDeleteExpense = (expense: Expense) => {
-    if (isSuperAdmin || expense.created_by === user?.username) {
+    if (isSuperAdmin || expense.created_by === user?.email) {
       setExpenseToDelete(expense);
       setIsDeleteDialogOpen(true);
     } else {

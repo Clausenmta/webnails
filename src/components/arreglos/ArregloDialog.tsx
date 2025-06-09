@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -103,7 +102,7 @@ export default function ArregloDialog({ open, onOpenChange, arreglo }: ArregloDi
       
       // Only set created_by to current user when creating a new arreglo
       if (!arreglo) {
-        arregloData.created_by = user?.username || 'unknown';
+        arregloData.created_by = user?.email || 'unknown';
       }
 
       if (arreglo) {

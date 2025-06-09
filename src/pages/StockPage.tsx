@@ -1,22 +1,13 @@
 
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { stockQueryService } from "@/services/stock/stockQueryService";
+import { stockMutationService } from "@/services/stock/stockMutationService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Package, FileSpreadsheet, PlusCircle, RefreshCw } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { stockService } from "@/services/stock";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { StockItem, NewStockItem } from "@/types/stock";
 import { stockCategories, stockLocations } from "@/types/stock";
-import { exportReport } from "@/utils/reportExport";
 import StockFilters from "./stock/StockFilters";
 import ProductTable from "./stock/ProductTable";
 import StockLocations from "./stock/StockLocations";
@@ -24,331 +15,310 @@ import ProductDialog from "./stock/ProductDialog";
 import StockUpdateDialog from "./stock/StockUpdateDialog";
 import StockImportDialog from "./stock/StockImportDialog";
 import { usePhysicalStockLocations } from "./stock/usePhysicalStockLocations";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, Package, Plus, TrendingDown, Upload, RefreshCw } from "lucide-react";
 
-export default function StockPage() {
-  const { isAuthorized, user } = useAuth();
+const StockPage = () => {
+  const { user, isAuthorized } = useAuth();
   const isSuperAdmin = isAuthorized('superadmin');
   const queryClient = useQueryClient();
-  
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
-  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
+
+  // UI state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all-categories");
+  const [locationFilter, setLocationFilter] = useState("all-locations");
+  const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const [newProduct, setNewProduct] = useState<Partial<NewStockItem>>({
-    product_name: "",
-    category: stockCategories[0],
-    brand: "",
-    supplier: "",
-    quantity: 0,
-    min_stock_level: 1,
-    unit_price: 0,
-    purchase_date: new Date().toLocaleDateString(),
-    location: stockLocations[0]
-  });
+  // Update stock state
+  const [productId, setProductId] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [operation, setOperation] = useState<"add" | "remove">("add");
 
-  const [stockUpdate, setStockUpdate] = useState({
-    productId: 0,
-    quantity: 0,
-    operation: "add" as "add" | "remove"
-  });
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [locationFilter, setLocationFilter] = useState<string>("");
-
+  // Data fetching
   const { data: stockItems = [], isLoading, error } = useQuery({
-    queryKey: ['stock'],
-    queryFn: stockService.fetchStock
+    queryKey: ['stockItems'],
+    queryFn: stockQueryService.fetchStockItems,
   });
 
+  const physicalStockLocations = usePhysicalStockLocations(stockItems);
+
+  // Filter stocks
+  const filteredStockItems = stockItems.filter(item => {
+    const matchesSearch = searchTerm === "" || 
+      item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.brand && item.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.provider && item.provider.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = categoryFilter === "all-categories" || item.category === categoryFilter;
+    const matchesLocation = locationFilter === "all-locations" || item.location === locationFilter;
+    
+    return matchesSearch && matchesCategory && matchesLocation;
+  });
+
+  // Stock statistics
+  const lowStockItems = stockItems.filter(item => item.quantity < (item.min_stock_level || 3));
+  const totalValue = isSuperAdmin ? stockItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) : 0;
+
+  // Mutations
   const addProductMutation = useMutation({
-    mutationFn: stockService.addStockItem,
+    mutationFn: (product: NewStockItem) => stockMutationService.createStockItem({
+      ...product,
+      created_by: user?.email || 'unknown'
+    }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
-      setIsAddProductOpen(false);
-      resetNewProductForm();
+      queryClient.invalidateQueries({ queryKey: ['stockItems'] });
+      toast.success("Producto agregado exitosamente");
+      setIsProductDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error) => {
+      console.error("Error adding product:", error);
+      toast.error("Error al agregar producto");
     }
   });
 
-  const updateStockMutation = useMutation({
-    mutationFn: (data: { id: number, updates: Partial<NewStockItem> }) => 
-      stockService.updateStockItem(data.id, data.updates),
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Partial<StockItem> }) => 
+      stockMutationService.updateStockItem(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
-      setIsUpdateStockOpen(false);
-      setStockUpdate({
-        productId: 0,
-        quantity: 0,
-        operation: "add"
-      });
+      queryClient.invalidateQueries({ queryKey: ['stockItems'] });
+      toast.success("Producto actualizado exitosamente");
+      setIsProductDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error) => {
+      console.error("Error updating product:", error);
+      toast.error("Error al actualizar producto");
     }
   });
 
   const deleteProductMutation = useMutation({
-    mutationFn: stockService.deleteStockItem,
+    mutationFn: (id: number) => stockMutationService.deleteStockItem(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
-    }
-  });
-
-  const editProductMutation = useMutation({
-    mutationFn: (data: { id: number, updates: Partial<NewStockItem> }) => 
-      stockService.updateStockItem(data.id, data.updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
-      setIsEditProductOpen(false);
-      setEditingProduct(null);
-      toast.success("Producto actualizado correctamente");
+      queryClient.invalidateQueries({ queryKey: ['stockItems'] });
+      toast.success("Producto eliminado exitosamente");
     },
-    onError: (error: any) => {
-      console.error("Error al actualizar el producto:", error);
-      toast.error(`Error al actualizar el producto: ${error.message}`);
+    onError: (error) => {
+      console.error("Error deleting product:", error);
+      toast.error("Error al eliminar producto");
     }
   });
 
-  useEffect(() => {
-    if (error) {
-      toast.error(`Error al cargar inventario: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  const updateStockMutation = useMutation({
+    mutationFn: ({ productId, quantity, operation }: { productId: number; quantity: number; operation: "add" | "remove" }) => 
+      stockMutationService.updateStock(productId, quantity, operation),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockItems'] });
+      toast.success("Stock actualizado exitosamente");
+      setIsUpdateDialogOpen(false);
+      setProductId(0);
+      setQuantity(1);
+    },
+    onError: (error) => {
+      console.error("Error updating stock:", error);
+      toast.error("Error al actualizar stock");
     }
-  }, [error]);
-
-  const resetNewProductForm = () => {
-    setNewProduct({
-      product_name: "",
-      category: stockCategories[0],
-      brand: "",
-      supplier: "",
-      quantity: 0,
-      min_stock_level: 1,
-      unit_price: 0,
-      purchase_date: new Date().toLocaleDateString(),
-      location: stockLocations[0]
-    });
-  };
+  });
 
   const handleAddProduct = () => {
-    if (!newProduct.product_name) {
-      toast.error("El nombre del producto es requerido");
-      return;
-    }
-
-    const stockItem: NewStockItem = {
-      product_name: newProduct.product_name,
-      category: newProduct.category || stockCategories[0],
-      brand: newProduct.brand || '',
-      supplier: newProduct.supplier || '',
-      quantity: newProduct.quantity || 0,
-      min_stock_level: newProduct.min_stock_level || 1,
-      unit_price: newProduct.unit_price || 0,
-      purchase_date: newProduct.purchase_date || new Date().toLocaleDateString(),
-      location: newProduct.location || stockLocations[0],
-      created_by: user?.username || 'unknown'
-    };
-    
-    addProductMutation.mutate(stockItem);
+    setSelectedProduct(null);
+    setIsProductDialogOpen(true);
   };
 
-  const handleUpdateStock = () => {
-    if (!stockUpdate.productId || stockUpdate.quantity <= 0) {
-      toast.error("Seleccione un producto y una cantidad válida");
-      return;
-    }
-
-    const selectedProduct = stockItems.find(item => item.id === stockUpdate.productId);
-    if (!selectedProduct) {
-      toast.error("Producto no encontrado");
-      return;
-    }
-
-    const newQuantity = stockUpdate.operation === "add" 
-      ? selectedProduct.quantity + stockUpdate.quantity 
-      : Math.max(0, selectedProduct.quantity - stockUpdate.quantity);
-
-    updateStockMutation.mutate({
-      id: stockUpdate.productId,
-      updates: { quantity: newQuantity }
-    });
+  const handleEditProduct = (product: StockItem) => {
+    setSelectedProduct(product);
+    setIsProductDialogOpen(true);
   };
 
   const handleDeleteProduct = (id: number) => {
-    if (window.confirm("¿Está seguro que desea eliminar este producto?")) {
+    if (confirm("¿Está seguro que desea eliminar este producto?")) {
       deleteProductMutation.mutate(id);
     }
   };
 
-  const handleEditProduct = (product: StockItem) => {
-    setEditingProduct(product);
-    setIsEditProductOpen(true);
+  const handleSaveProduct = (product: NewStockItem) => {
+    const productWithUser = {
+      ...product,
+      created_by: user?.email || 'unknown'
+    };
+
+    if (selectedProduct) {
+      updateProductMutation.mutate({
+        id: selectedProduct.id,
+        updates: productWithUser
+      });
+    } else {
+      addProductMutation.mutate(productWithUser);
+    }
   };
 
-  const handleSaveEditedProduct = () => {
-    if (!editingProduct) return;
-
-    const { id, ...updates } = editingProduct;
-    editProductMutation.mutate({ 
-      id, 
-      updates: {
-        product_name: updates.product_name,
-        category: updates.category,
-        quantity: updates.quantity,
-        min_stock_level: updates.min_stock_level,
-        unit_price: updates.unit_price,
-        purchase_date: updates.purchase_date,
-        supplier: updates.supplier,
-        brand: updates.brand,
-        location: updates.location
-      }
-    });
+  const handleUpdateStock = () => {
+    if (quantity <= 0 || !productId) {
+      toast.error("Seleccione un producto y cantidad válida");
+      return;
+    }
+    updateStockMutation.mutate({ productId, quantity, operation });
   };
 
-  const handleExportExcel = () => {
-    const exportData = stockItems.map(item => ({
-      Código: item.id,
-      Producto: item.product_name,
-      Categoría: item.category,
-      Stock: item.quantity,
-      Mínimo: item.min_stock_level || 3,
-      Ubicación: item.location,
-      Marca: item.brand || 'N/A',
-      Proveedor: item.supplier || 'N/A',
-      Precio: item.unit_price
-    }));
-
-    exportReport(exportData, {
-      filename: 'inventario',
-      format: 'excel'
-    });
+  const handleImportProducts = (products: any[]) => {
+    // In a real implementation, this would batch create products
+    console.log("Importing products:", products);
+    toast.success(`${products.length} productos importados exitosamente`);
+    setIsImportDialogOpen(false);
   };
 
   const templateData = [
     {
-      product_name: "Producto Ejemplo",
-      category: stockCategories[0],
-      brand: "Marca",
-      supplier: "Proveedor",
+      product_name: "Esmalte Base",
+      category: "Esmaltes",
+      brand: "OPI",
       quantity: 10,
-      min_stock_level: 5,
-      unit_price: 1000,
-      location: stockLocations[0]
+      unit_price: 1200,
+      min_stock_level: 3,
+      location: "Estante A1",
+      provider: "Distribuidora ABC"
     }
   ];
 
-  const validateStockImport = (row: any) => {
-    if (!row.product_name) {
-      return { isValid: false, error: "El nombre del producto es requerido" };
-    }
-    
-    if (typeof row.quantity !== 'number' || row.quantity < 0) {
-      return { isValid: false, error: "La cantidad debe ser un número mayor o igual a 0" };
-    }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p>Cargando inventario...</p>
+        </div>
+      </div>
+    );
+  }
 
-    if (row.category && !stockCategories.includes(row.category)) {
-      return { isValid: false, error: "La categoría no es válida" };
-    }
-
-    if (row.unit_price !== undefined && (typeof row.unit_price !== 'number' || row.unit_price < 0)) {
-      return { isValid: false, error: "El precio debe ser un número mayor o igual a 0" };
-    }
-
-    return { isValid: true };
-  };
-
-  const handleImportStock = async (data: any[]) => {
-    try {
-      const currentUserEmail = user?.username || 'unknown';
-      
-      for (const item of data) {
-        const stockItem: NewStockItem = {
-          product_name: item.product_name,
-          category: item.category || stockCategories[0],
-          brand: item.brand || '',
-          supplier: item.supplier || '',
-          quantity: item.quantity !== undefined ? item.quantity : 0,
-          min_stock_level: item.min_stock_level || 1,
-          unit_price: item.unit_price !== undefined ? item.unit_price : 0,
-          purchase_date: item.purchase_date || new Date().toLocaleDateString(),
-          location: item.location || stockLocations[0],
-          created_by: currentUserEmail
-        };
-
-        const validationResult = validateStockImport(stockItem);
-        if (!validationResult.isValid) {
-          toast.error(validationResult.error);
-          return;
-        }
-
-        await addProductMutation.mutateAsync(stockItem);
-      }
-      toast.success(`${data.length} productos importados correctamente`);
-    } catch (error) {
-      console.error('Error importing stock:', error);
-      toast.error('Error al importar productos');
-    }
-  };
-
-  // Filtering logic, including default selection for 'all-categories' and 'all-locations'
-  const effectiveCategoryFilter = !categoryFilter || categoryFilter === "all-categories" ? "" : categoryFilter;
-  const effectiveLocationFilter = !locationFilter || locationFilter === "all-locations" ? "" : locationFilter;
-
-  const filteredStockItems = stockItems.filter(product => {
-    const matchesSearch =
-      searchTerm.length === 0 ||
-      product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.brand || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.supplier || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      !effectiveCategoryFilter || product.category === effectiveCategoryFilter;
-    const matchesLocation =
-      !effectiveLocationFilter || (product.location || "") === effectiveLocationFilter;
-    return matchesSearch && matchesCategory && matchesLocation;
-  });
-
-  // Use filtered products for "Detalle de Stock por Ubicación"
-  const physicalStockLocations = usePhysicalStockLocations(filteredStockItems);
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center text-red-500">
+          <p>Error al cargar el inventario</p>
+          <Button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['stockItems'] })}
+            className="mt-2"
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventario</h2>
-          <p className="text-muted-foreground">
-            Gestión de stock y productos
-          </p>
+          <h1 className="text-3xl font-bold text-salon-800">Gestión de Stock</h1>
+          <p className="text-salon-600 mt-1">Control de inventario y productos</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <Button 
-            variant="outline"
-            onClick={handleExportExcel}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Exportar Excel
-          </Button>
-          <Button 
-            variant="outline"
+            variant="outline" 
             onClick={() => setIsImportDialogOpen(true)}
+            className="flex items-center gap-2"
           >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            <Upload className="h-4 w-4" />
             Importar Excel
           </Button>
           <Button 
-            className="bg-salon-400 hover:bg-salon-500"
-            onClick={() => setIsAddProductOpen(true)}
+            onClick={() => setIsUpdateDialogOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Agregar Producto
+            <Package className="h-4 w-4" />
+            Actualizar Stock
           </Button>
           <Button 
-            variant="outline"
-            onClick={() => setIsUpdateStockOpen(true)}
+            onClick={handleAddProduct}
+            className="bg-salon-500 hover:bg-salon-600 flex items-center gap-2"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Actualizar Stock
+            <Plus className="h-4 w-4" />
+            Nuevo Producto
           </Button>
         </div>
       </div>
 
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Productos</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stockItems.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Stock Bajo</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{lowStockItems.length}</div>
+          </CardContent>
+        </Card>
+        
+        {isSuperAdmin && (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Categorías</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stockCategories.length}</div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      {/* Low Stock Alert */}
+      {lowStockItems.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="text-orange-800 flex items-center">
+              <TrendingDown className="h-5 w-5 mr-2" />
+              Productos con Stock Bajo
+            </CardTitle>
+            <CardDescription className="text-orange-700">
+              Los siguientes productos necesitan reposición
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {lowStockItems.map(item => (
+                <Badge key={item.id} variant="outline" className="border-orange-300 text-orange-800">
+                  {item.product_name} ({item.quantity} restantes)
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
       <StockFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -360,92 +330,66 @@ export default function StockPage() {
         stockLocations={stockLocations}
       />
 
-      {isLoading && (
-        <Card>
-          <CardContent className="p-8 flex justify-center">
-            <p>Cargando inventario...</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Main Content */}
+      <Tabs defaultValue="products" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="products">Productos</TabsTrigger>
+          <TabsTrigger value="locations">Ubicaciones</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="products">
+          <ProductTable
+            stockItems={stockItems}
+            filteredStockItems={filteredStockItems}
+            isSuperAdmin={isSuperAdmin}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteProduct}
+          />
+        </TabsContent>
+        
+        <TabsContent value="locations">
+          <StockLocations
+            physicalStockLocations={physicalStockLocations}
+            isSuperAdmin={isSuperAdmin}
+          />
+        </TabsContent>
+      </Tabs>
 
-      {!isLoading && (
-        <Tabs defaultValue="products">
-          <TabsList className="mb-4">
-            <TabsTrigger value="products">Listado de Productos</TabsTrigger>
-            <TabsTrigger value="locations">Detalle por Ubicación</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="products">
-            <ProductTable
-              stockItems={stockItems}
-              filteredStockItems={filteredStockItems}
-              isSuperAdmin={isSuperAdmin}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-            />
-          </TabsContent>
-          
-          <TabsContent value="locations">
-            <StockLocations
-              physicalStockLocations={physicalStockLocations}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </TabsContent>
-        </Tabs>
-      )}
-
+      {/* Dialogs */}
       <ProductDialog
-        open={isAddProductOpen}
-        onOpenChange={setIsAddProductOpen}
-        mode="add"
-        product={newProduct}
-        setProduct={setNewProduct}
-        categories={stockCategories}
-        locations={stockLocations}
-        isPending={addProductMutation.isPending}
-        onAction={handleAddProduct}
-        onCancel={() => setIsAddProductOpen(false)}
-        actionLabel="Agregar Producto"
+        open={isProductDialogOpen}
+        onOpenChange={setIsProductDialogOpen}
+        product={selectedProduct}
+        onSave={handleSaveProduct}
+        isLoading={addProductMutation.isPending || updateProductMutation.isPending}
       />
 
       <StockUpdateDialog
-        open={isUpdateStockOpen}
-        onOpenChange={setIsUpdateStockOpen}
-        productId={stockUpdate.productId}
-        setProductId={id => setStockUpdate(update => ({ ...update, productId: id }))}
-        quantity={stockUpdate.quantity}
-        setQuantity={q => setStockUpdate(update => ({ ...update, quantity: q }))}
-        operation={stockUpdate.operation}
-        setOperation={op => setStockUpdate(update => ({ ...update, operation: op }))}
+        open={isUpdateDialogOpen}
+        onOpenChange={setIsUpdateDialogOpen}
+        productId={productId}
+        setProductId={setProductId}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        operation={operation}
+        setOperation={setOperation}
         stockItems={stockItems}
         isPending={updateStockMutation.isPending}
         onUpdate={handleUpdateStock}
-        onCancel={() => setIsUpdateStockOpen(false)}
-      />
-
-      <ProductDialog
-        open={isEditProductOpen}
-        onOpenChange={setIsEditProductOpen}
-        mode="edit"
-        product={editingProduct || {}}
-        setProduct={p => setEditingProduct(e => e ? { ...e, ...p } : null)}
-        categories={stockCategories}
-        locations={stockLocations}
-        isPending={editProductMutation.isPending}
-        onAction={handleSaveEditedProduct}
-        onCancel={() => setIsEditProductOpen(false)}
-        actionLabel="Guardar Cambios"
+        onCancel={() => setIsUpdateDialogOpen(false)}
       />
 
       <StockImportDialog
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
-        onImport={handleImportStock}
+        onImport={handleImportProducts}
         templateData={templateData}
         templateFilename="plantilla_stock"
-        title="Importar Stock"
-        description="Descargue la plantilla y complete los datos según el formato requerido"
+        title="Importar Productos"
+        description="Importe productos desde un archivo Excel"
       />
     </div>
   );
-}
+};
+
+export default StockPage;

@@ -50,7 +50,7 @@ export function ExpenseForm({
     concept: "",
     amount: 0,
     category: ensuredCategories[0]?.name || "Varios",
-    created_by: user?.username || "",
+    created_by: user?.email || "",
     details: "",
     due_date: "",
     provider: "",
@@ -59,7 +59,7 @@ export function ExpenseForm({
 
   useEffect(() => {
     if (user) {
-      setNewExpense(prev => ({ ...prev, created_by: user.username }));
+      setNewExpense(prev => ({ ...prev, created_by: user.email }));
     }
   }, [user]);
 

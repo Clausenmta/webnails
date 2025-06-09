@@ -40,7 +40,7 @@ const UserRoleInfo = ({ testRoles = ["superadmin", "employee"] }: UserRoleInfoPr
           <div>{user.name}</div>
           
           <div className="font-semibold">Email:</div>
-          <div>{user.username}</div>
+          <div>{user.email}</div>
           
           <div className="font-semibold">ID:</div>
           <div className="text-xs text-muted-foreground">{user.id}</div>

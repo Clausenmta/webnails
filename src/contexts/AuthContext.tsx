@@ -13,10 +13,12 @@ interface AuthUser extends User {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  isAuthenticated: boolean;
   isAuthorized: (requiredRole: UserRole) => boolean;
   hasSpecialPermission: (permission: string) => boolean;
+  updateUserRole: (email: string, newRole: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -114,7 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: userConfig.name,
           specialPermissions: userConfig.specialPermissions || []
         });
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error en login:', error);
       throw error;
@@ -147,14 +151,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user.specialPermissions?.includes(permission) || false;
   };
 
+  const updateUserRole = (email: string, newRole: UserRole): void => {
+    // Actualizar configuración local (en una implementación real esto debería ir a la base de datos)
+    USER_ROLES[email] = { ...USER_ROLES[email], role: newRole };
+    
+    // Si es el usuario actual, actualizar el estado
+    if (user && user.email === email) {
+      setUser({ ...user, role: newRole });
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       loading,
       login,
       logout,
+      isAuthenticated: !!user,
       isAuthorized,
-      hasSpecialPermission
+      hasSpecialPermission,
+      updateUserRole
     }}>
       {children}
     </AuthContext.Provider>

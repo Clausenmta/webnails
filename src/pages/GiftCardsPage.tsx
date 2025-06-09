@@ -3,13 +3,13 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Plus, FileSpreadsheet, Upload, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GiftCardFilters } from "@/components/giftcards/GiftCardFilters";
+import { GiftCardDialogs } from "@/components/giftcards/GiftCardDialogs";
 
 export default function GiftCardsPage() {
   const {
@@ -176,6 +176,9 @@ export default function GiftCardsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <GiftCardDialogs />
     </div>
   );
 }

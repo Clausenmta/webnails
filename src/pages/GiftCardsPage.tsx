@@ -30,29 +30,22 @@ export default function GiftCardsPage() {
     setIsDeleteDialogOpen,
     setIsImportDialogOpen,
     
-    handleExportToExcel,
-    safeAction
+    handleExportToExcel
   } = useGiftCardManagement();
 
   const handleViewDetails = (giftCard: any) => {
-    safeAction(() => {
-      setSelectedGiftCard(giftCard);
-      setIsViewDetailsDialogOpen(true);
-    });
+    setSelectedGiftCard(giftCard);
+    setIsViewDetailsDialogOpen(true);
   };
 
   const handleEdit = (giftCard: any) => {
-    safeAction(() => {
-      setSelectedGiftCard(giftCard);
-      setIsEditDialogOpen(true);
-    });
+    setSelectedGiftCard(giftCard);
+    setIsEditDialogOpen(true);
   };
 
   const handleDelete = (giftCard: any) => {
-    safeAction(() => {
-      setSelectedGiftCard(giftCard);
-      setIsDeleteDialogOpen(true);
-    });
+    setSelectedGiftCard(giftCard);
+    setIsDeleteDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -83,7 +76,7 @@ export default function GiftCardsPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => safeAction(() => setIsImportDialogOpen(true))}
+            onClick={() => setIsImportDialogOpen(true)}
           >
             <Upload className="w-4 h-4 mr-2" />
             Importar
@@ -96,7 +89,7 @@ export default function GiftCardsPage() {
             Exportar Excel
           </Button>
           <Button
-            onClick={() => safeAction(() => setIsAddDialogOpen(true))}
+            onClick={() => setIsAddDialogOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
             Nueva Gift Card

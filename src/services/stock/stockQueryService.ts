@@ -1,4 +1,3 @@
-
 import { supabase, getActiveSession } from "@/lib/supabase";
 import { toast } from "sonner";
 import { StockItem, MOCK_STOCK } from "@/types/stock";
@@ -7,7 +6,7 @@ import { StockItem, MOCK_STOCK } from "@/types/stock";
  * Service for fetching stock data from Supabase
  */
 export const stockQueryService = {
-  async fetchStock(): Promise<StockItem[]> {
+  async fetchStockItems(): Promise<StockItem[]> {
     try {
       console.log("Solicitando stock desde la base de datos");
       
@@ -36,6 +35,11 @@ export const stockQueryService = {
       toast.error(`Error al obtener stock: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       return [];
     }
+  },
+
+  // Keep the old method name for backward compatibility
+  async fetchStock(): Promise<StockItem[]> {
+    return this.fetchStockItems();
   },
 
   async getStockItem(id: number): Promise<StockItem | null> {

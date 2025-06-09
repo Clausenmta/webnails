@@ -9,7 +9,9 @@ export type { StockItem, NewStockItem } from "@/types/stock";
 // Create combined stockService with all methods
 export const stockService = {
   ...stockQueryService,
-  ...stockMutationService
+  ...stockMutationService,
+  // Alias for backward compatibility
+  createStockItem: stockMutationService.addStockItem
 };
 
 // Re-export stockCategories for easy access

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { stockQueryService } from "@/services/stock/stockQueryService";
@@ -41,7 +40,7 @@ const StockPage = () => {
   const [operation, setOperation] = useState<"add" | "remove">("add");
 
   // Data fetching
-  const { data: stockItems = [], isLoading, error } = useQuery({
+  const { data: stockItems = [], isLoading, error } = useQuery<StockItem[]>({
     queryKey: ['stockItems'],
     queryFn: stockQueryService.fetchStockItems,
   });
@@ -53,7 +52,7 @@ const StockPage = () => {
     const matchesSearch = searchTerm === "" || 
       item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.brand && item.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.provider && item.provider.toLowerCase().includes(searchTerm.toLowerCase()));
+      (item.supplier && item.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesCategory = categoryFilter === "all-categories" || item.category === categoryFilter;
     const matchesLocation = locationFilter === "all-locations" || item.location === locationFilter;
@@ -67,7 +66,7 @@ const StockPage = () => {
 
   // Mutations
   const addProductMutation = useMutation({
-    mutationFn: (product: NewStockItem) => stockMutationService.createStockItem({
+    mutationFn: (product: NewStockItem) => stockMutationService.addStockItem({
       ...product,
       created_by: user?.email || 'unknown'
     }),

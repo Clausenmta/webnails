@@ -111,5 +111,67 @@ export const stockMutationService = {
       toast.error(`Error al eliminar producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       throw error;
     }
+  },
+
+  async updateStock(productId: number, quantity: number, operation: "add" | "remove"): Promise<StockItem> {
+    try {
+      console.log("Actualizando stock:", { productId, quantity, operation });
+      
+      // Verificamos la sesión del usuario
+      const session = await getActiveSession();
+      if (!session) {
+        console.error("No hay sesión activa para actualizar stock");
+        toast.error("Debe iniciar sesión para actualizar stock");
+        throw new Error("No hay sesión activa");
+      }
+
+      // Primero obtenemos el stock actual
+      const { data: currentStock, error: fetchError } = await supabase
+        .from('stock')
+        .select('quantity')
+        .eq('id', productId)
+        .single();
+
+      if (fetchError) {
+        console.error("Error al obtener stock actual:", fetchError.message);
+        toast.error(`Error al obtener stock actual: ${fetchError.message}`);
+        throw fetchError;
+      }
+
+      // Calculamos la nueva cantidad
+      const currentQuantity = Number(currentStock.quantity);
+      let newQuantity: number;
+
+      if (operation === "add") {
+        newQuantity = currentQuantity + quantity;
+      } else {
+        newQuantity = currentQuantity - quantity;
+        if (newQuantity < 0) {
+          toast.error("No se puede reducir el stock por debajo de 0");
+          throw new Error("Stock insuficiente");
+        }
+      }
+
+      // Actualizamos el stock
+      const { data, error } = await supabase
+        .from('stock')
+        .update({ quantity: newQuantity })
+        .eq('id', productId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error al actualizar stock:", error.message);
+        toast.error(`Error al actualizar stock: ${error.message}`);
+        throw error;
+      }
+
+      console.log("Stock actualizado correctamente:", data);
+      return data;
+    } catch (error) {
+      console.error("Error al actualizar stock:", error);
+      toast.error(`Error al actualizar stock: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      throw error;
+    }
   }
 };

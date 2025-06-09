@@ -1,34 +1,29 @@
 
-import { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types/auth';
+import { Navigate } from 'react-router-dom';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: UserRole;
-  requiredPermission?: string;
 }
 
-const ProtectedRoute = ({ children, requiredRole, requiredPermission }: ProtectedRouteProps) => {
-  const { isAuthenticated, isAuthorized, hasSpecialPermission } = useAuth();
-  const location = useLocation();
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { user, loading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // Mostrar loading mientras verifica autenticación
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Verificando autenticación...</div>
+      </div>
+    );
   }
 
-  // Verificar permiso especial si se requiere
-  if (requiredPermission && !hasSpecialPermission(requiredPermission)) {
-    return <Navigate to="/dashboard" replace />;
+  // Si no hay usuario autenticado, redirigir al login
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Verificar rol si se requiere
-  if (requiredRole && !isAuthorized(requiredRole) && 
-      !(requiredPermission && hasSpecialPermission(requiredPermission))) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // Si está autenticado, mostrar el contenido protegido
   return <>{children}</>;
 };
 

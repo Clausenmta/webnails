@@ -75,6 +75,7 @@ export function useGiftCardManagement() {
   // Mutaciones
   const addGiftCardMutation = useMutation({
     mutationFn: (newGiftCard: NewGiftCard) => {
+      console.log("Adding gift card:", newGiftCard);
       return giftCardService.addGiftCard(newGiftCard);
     },
     onSuccess: () => {
@@ -90,6 +91,7 @@ export function useGiftCardManagement() {
 
   const updateGiftCardMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number, updates: Partial<NewGiftCard> }) => {
+      console.log("Updating gift card:", id, updates);
       return giftCardService.updateGiftCard(id, updates);
     },
     onSuccess: () => {
@@ -104,10 +106,14 @@ export function useGiftCardManagement() {
   });
 
   const deleteGiftCardMutation = useMutation({
-    mutationFn: (id: number) => giftCardService.deleteGiftCard(id),
+    mutationFn: (id: number) => {
+      console.log("Deleting gift card:", id);
+      return giftCardService.deleteGiftCard(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['giftCards'] });
       setIsDeleteDialogOpen(false);
+      setSelectedGiftCard(null);
       toast.success("Tarjeta de regalo eliminada correctamente");
     },
     onError: (error: any) => {
@@ -139,6 +145,17 @@ export function useGiftCardManagement() {
       format: 'excel'
     });
   };
+
+  // Debug: log dialog states
+  useEffect(() => {
+    console.log("Dialog states:", {
+      isAddDialogOpen,
+      isEditDialogOpen,
+      isViewDetailsDialogOpen,
+      isDeleteDialogOpen,
+      selectedGiftCard
+    });
+  }, [isAddDialogOpen, isEditDialogOpen, isViewDetailsDialogOpen, isDeleteDialogOpen, selectedGiftCard]);
 
   return {
     giftCards: filteredGiftCards,

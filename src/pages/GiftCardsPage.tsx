@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GiftCardFilters } from "@/components/giftcards/GiftCardFilters";
 import { GiftCardDialogs } from "@/components/giftcards/GiftCardDialogs";
+import { GiftCard } from "@/services/giftCardService";
 
 export default function GiftCardsPage() {
   const {
@@ -33,19 +34,28 @@ export default function GiftCardsPage() {
     handleExportToExcel
   } = useGiftCardManagement();
 
-  const handleViewDetails = (giftCard: any) => {
+  const handleViewDetails = (giftCard: GiftCard) => {
+    console.log("Opening view details for:", giftCard);
     setSelectedGiftCard(giftCard);
     setIsViewDetailsDialogOpen(true);
   };
 
-  const handleEdit = (giftCard: any) => {
+  const handleEdit = (giftCard: GiftCard) => {
+    console.log("Opening edit for:", giftCard);
     setSelectedGiftCard(giftCard);
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (giftCard: any) => {
+  const handleDelete = (giftCard: GiftCard) => {
+    console.log("Opening delete for:", giftCard);
     setSelectedGiftCard(giftCard);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleAddNew = () => {
+    console.log("Opening add new gift card dialog");
+    setSelectedGiftCard(null);
+    setIsAddDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -88,9 +98,7 @@ export default function GiftCardsPage() {
             <FileSpreadsheet className="w-4 h-4 mr-2" />
             Exportar Excel
           </Button>
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-          >
+          <Button onClick={handleAddNew}>
             <Plus className="w-4 h-4 mr-2" />
             Nueva Gift Card
           </Button>

@@ -24,13 +24,23 @@ export default function GiftCardsPage() {
     selectedMonth,
     setSelectedMonth,
     
-    setSelectedGiftCard,
+    isAddDialogOpen,
     setIsAddDialogOpen,
+    isEditDialogOpen,
     setIsEditDialogOpen,
+    isViewDetailsDialogOpen,
     setIsViewDetailsDialogOpen,
+    isDeleteDialogOpen,
     setIsDeleteDialogOpen,
-    setIsImportDialogOpen,
+    selectedGiftCard,
+    setSelectedGiftCard,
     
+    addGiftCardMutation,
+    updateGiftCardMutation,
+    deleteGiftCardMutation,
+    updateExpiryDate,
+    
+    setIsImportDialogOpen,
     handleExportToExcel
   } = useGiftCardManagement();
 
@@ -179,7 +189,21 @@ export default function GiftCardsPage() {
       </Card>
 
       {/* Dialogs */}
-      <GiftCardDialogs />
+      <GiftCardDialogs 
+        isAddDialogOpen={isAddDialogOpen}
+        setIsAddDialogOpen={setIsAddDialogOpen}
+        isEditDialogOpen={isEditDialogOpen}
+        setIsEditDialogOpen={setIsEditDialogOpen}
+        isViewDetailsDialogOpen={isViewDetailsDialogOpen}
+        setIsViewDetailsDialogOpen={setIsViewDetailsDialogOpen}
+        isDeleteDialogOpen={isDeleteDialogOpen}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        selectedGiftCard={selectedGiftCard}
+        addGiftCardMutation={addGiftCardMutation}
+        updateGiftCardMutation={updateGiftCardMutation}
+        deleteGiftCardMutation={deleteGiftCardMutation}
+        updateExpiryDate={updateExpiryDate}
+      />
     </div>
   );
 }

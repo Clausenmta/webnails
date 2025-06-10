@@ -4,27 +4,40 @@ import { AddGiftCardDialog } from './AddGiftCardDialog';
 import { EditGiftCardDialog } from './EditGiftCardDialog';
 import { ViewGiftCardDialog } from './ViewGiftCardDialog';
 import { DeleteGiftCardDialog } from './DeleteGiftCardDialog';
-import { useGiftCardManagement } from "@/hooks/useGiftCardManagement";
+import { GiftCard, NewGiftCard } from "@/services/giftCardService";
+import { UseMutationResult } from "@tanstack/react-query";
 
-export const GiftCardDialogs = () => {
-  const {
-    isAddDialogOpen,
-    setIsAddDialogOpen,
-    isEditDialogOpen,
-    setIsEditDialogOpen,
-    isViewDetailsDialogOpen,
-    setIsViewDetailsDialogOpen,
-    isDeleteDialogOpen,
-    setIsDeleteDialogOpen,
-    selectedGiftCard,
-    
-    addGiftCardMutation,
-    updateGiftCardMutation,
-    deleteGiftCardMutation,
-    
-    updateExpiryDate
-  } = useGiftCardManagement();
+interface GiftCardDialogsProps {
+  isAddDialogOpen: boolean;
+  setIsAddDialogOpen: (open: boolean) => void;
+  isEditDialogOpen: boolean;
+  setIsEditDialogOpen: (open: boolean) => void;
+  isViewDetailsDialogOpen: boolean;
+  setIsViewDetailsDialogOpen: (open: boolean) => void;
+  isDeleteDialogOpen: boolean;
+  setIsDeleteDialogOpen: (open: boolean) => void;
+  selectedGiftCard: GiftCard | null;
+  addGiftCardMutation: UseMutationResult<GiftCard, any, NewGiftCard, unknown>;
+  updateGiftCardMutation: UseMutationResult<GiftCard, any, { id: number, updates: Partial<NewGiftCard> }, unknown>;
+  deleteGiftCardMutation: UseMutationResult<void, any, number, unknown>;
+  updateExpiryDate: (purchaseDate: string) => string;
+}
 
+export const GiftCardDialogs = ({
+  isAddDialogOpen,
+  setIsAddDialogOpen,
+  isEditDialogOpen,
+  setIsEditDialogOpen,
+  isViewDetailsDialogOpen,
+  setIsViewDetailsDialogOpen,
+  isDeleteDialogOpen,
+  setIsDeleteDialogOpen,
+  selectedGiftCard,
+  addGiftCardMutation,
+  updateGiftCardMutation,
+  deleteGiftCardMutation,
+  updateExpiryDate
+}: GiftCardDialogsProps) => {
   return (
     <>
       <AddGiftCardDialog
